@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Avicole - Tableau de Bord</title>
+    <title>Tableau de Bord - Suivi Production Avicole</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,6 +12,7 @@
             --bg-primary: #0a0f1a;
             --bg-secondary: #111827;
             --bg-card: #1a2236;
+            --bg-card-hover: #1f2a42;
             --accent-green: #10b981;
             --accent-green-light: rgba(16, 185, 129, 0.15);
             --accent-amber: #f59e0b;
@@ -33,17 +34,20 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
+            line-height: 1.6;
         }
 
+        /* ========== PAGES ========== */
         .page { display: none; min-height: 100vh; }
         .page.active { display: flex; align-items: center; justify-content: center; }
         .page-app.active { display: block; }
 
-        .box { width: 100%; max-width: 420px; padding: 1rem; }
+        /* ========== LOGIN ========== */
+        .login-container { width: 100%; max-width: 420px; padding: 2rem; }
 
-        .header { text-align: center; margin-bottom: 2rem; }
+        .login-logo { text-align: center; margin-bottom: 2rem; }
 
-        .icon {
+        .login-logo-icon {
             width: 80px; height: 80px;
             background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
             border-radius: 20px;
@@ -52,16 +56,18 @@
             justify-content: center;
             font-size: 2.5rem;
             margin-bottom: 1rem;
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
         }
 
-        .header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .header p { color: var(--text-muted); }
+        .login-logo h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .login-logo p { color: var(--text-muted); font-size: 0.9rem; }
 
-        .card {
+        .login-card {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 2rem;
             border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .form-group { margin-bottom: 1.25rem; }
@@ -72,6 +78,7 @@
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
+            letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
 
@@ -86,10 +93,13 @@
             font-size: 1rem;
         }
 
-        .form-input:focus { outline: none; border-color: var(--accent-blue); }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px var(--accent-blue-light);
+        }
 
         .btn {
-            display: block;
             width: 100%;
             padding: 1rem;
             border: none;
@@ -98,7 +108,7 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            text-align: center;
+            margin-top: 0.5rem;
         }
 
         .btn-primary {
@@ -110,14 +120,19 @@
             background: var(--bg-secondary);
             border: 2px solid var(--border);
             color: var(--text-secondary);
-            margin-top: 1rem;
+        }
+
+        .btn-config {
+            background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));
+            color: white;
         }
 
         .alert {
-            padding: 1rem;
-            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
             margin-bottom: 1rem;
             display: none;
+            font-size: 0.85rem;
         }
 
         .alert.show { display: block; }
@@ -125,23 +140,27 @@
         .alert-success { background: var(--accent-green-light); border: 1px solid var(--accent-green); color: var(--accent-green); }
         .alert-info { background: var(--accent-blue-light); border: 1px solid var(--accent-blue); color: var(--accent-blue); }
 
-        .status-box {
+        .status-line {
+            text-align: center;
             margin-top: 1.5rem;
             padding: 0.75rem;
             background: var(--bg-secondary);
             border-radius: 8px;
-            text-align: center;
             font-size: 0.85rem;
         }
 
-        .status-box.ok { background: var(--accent-green-light); color: var(--accent-green); }
-        .status-box.warning { background: var(--accent-amber-light); color: var(--accent-amber); }
+        .status-line.ok { background: var(--accent-green-light); color: var(--accent-green); }
+        .status-line.warning { background: var(--accent-amber-light); color: var(--accent-amber); }
+
+        /* ========== CONFIG ========== */
+        .config-container { width: 100%; max-width: 520px; padding: 2rem; }
 
         .config-section {
             margin-bottom: 2rem;
             padding-bottom: 2rem;
             border-bottom: 1px solid var(--border);
         }
+
         .config-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
         .config-title { font-weight: 600; margin-bottom: 1rem; color: var(--accent-blue); }
@@ -157,54 +176,163 @@
             cursor: pointer;
         }
 
-        .app-bar {
+        /* ========== SESSION INDICATOR ========== */
+        .session-indicator {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
             background: var(--bg-card);
-            padding: 1rem 2rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .app-bar-left { display: flex; align-items: center; gap: 1rem; }
-
-        .app-logo {
-            width: 40px; height: 40px;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .app-bar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 50px;
             padding: 0.5rem 1rem;
-            background: var(--bg-secondary);
-            border-radius: 20px;
-            font-size: 0.85rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            z-index: 1000;
         }
 
-        .user-role {
+        .session-user { color: var(--text-primary); font-weight: 500; }
+
+        .session-role {
             padding: 0.2rem 0.5rem;
             border-radius: 4px;
             font-size: 0.7rem;
             font-weight: 600;
-            background: var(--accent-amber-light);
-            color: var(--accent-amber);
         }
 
-        .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; width: auto; display: inline-block; }
+        .session-role.admin { background: var(--accent-amber-light); color: var(--accent-amber); }
+        .session-role.eleveur { background: var(--accent-green-light); color: var(--accent-green); }
+        .session-role.technicien { background: var(--accent-blue-light); color: var(--accent-blue); }
+        .session-role.config { background: var(--accent-red-light); color: var(--accent-red); }
 
-        .app-content { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .logout-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.35rem 0.7rem;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
 
-        .selector-grid {
+        .logout-btn:hover { background: var(--accent-red-light); border-color: var(--accent-red); color: var(--accent-red); }
+
+        .config-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.35rem 0.7rem;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        /* ========== APP CONTAINER ========== */
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-title { display: flex; align-items: center; gap: 1rem; }
+
+        .logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .header h1 { font-size: 1.75rem; font-weight: 700; }
+        .header-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem; }
+
+        .last-update {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* Farmer Section */
+        .farmer-card {
+            background: linear-gradient(135deg, var(--bg-card), #1e2a3d);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .farmer-icon {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, var(--accent-green-light), var(--accent-blue-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .farmer-info { flex: 1; min-width: 200px; }
+
+        .farmer-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .farmer-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.15rem; }
+        .farmer-company { font-size: 0.9rem; color: var(--accent-green); font-weight: 500; }
+
+        .farmer-details { display: flex; gap: 2rem; flex-wrap: wrap; }
+
+        .farmer-detail-item { display: flex; flex-direction: column; gap: 0.2rem; }
+
+        .detail-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Selectors */
+        .selectors-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .selectors-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
@@ -212,137 +340,368 @@
 
         .selector-group label {
             display: block;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-size: 0.7rem;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
             margin-bottom: 0.5rem;
+            font-weight: 600;
         }
 
-        .selector-group select {
+        .selector-select {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.75rem 2.5rem 0.75rem 1rem;
             background: var(--bg-secondary);
-            border: 2px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text-primary);
             font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
         }
 
-        .selector-group select:disabled { opacity: 0.5; }
+        .selector-select:disabled { opacity: 0.5; }
 
-        .info-grid {
+        .selector-select:focus { outline: none; border-color: var(--accent-blue); }
+
+        /* Lot Info */
+        .lot-info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .lot-info-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lot-info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 1rem;
-            margin-top: 1rem;
         }
 
-        .info-item {
+        .lot-info-item {
             background: var(--bg-secondary);
-            padding: 1rem;
+            padding: 0.75rem;
             border-radius: 8px;
         }
 
-        .info-item label {
-            display: block;
+        .lot-info-label {
             font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
             margin-bottom: 0.25rem;
         }
 
-        .info-item span { font-weight: 600; }
-        .info-item span.hl { color: var(--accent-green); }
+        .lot-info-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
 
-        .stats-grid {
+        .lot-info-value.highlight { color: var(--accent-green); }
+
+        /* Controls */
+        .controls-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin: 1.5rem 0;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .stat-card {
+        .control-group {
             background: var(--bg-card);
-            padding: 1.25rem;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-        .stat-value { font-size: 1.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-top: 0.5rem; }
-        .stat-unit { font-size: 0.9rem; color: var(--text-secondary); }
-
-        .chart-box {
-            background: var(--bg-card);
-            padding: 1.5rem;
             border-radius: 16px;
+            padding: 1.5rem;
             border: 1px solid var(--border);
         }
 
-        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .chart-title { font-size: 1.25rem; font-weight: 600; }
-        .chart-area { height: 350px; }
+        .control-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
 
-        .type-btns { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .type-selector { display: flex; flex-direction: column; gap: 0.5rem; }
 
         .type-btn {
-            padding: 0.5rem 1rem;
-            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.75rem 1rem;
             border: 2px solid var(--border);
+            background: transparent;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            width: 100%;
+            text-align: left;
+        }
+
+        .type-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+        .type-btn.active {
+            border-color: var(--accent-green);
+            background: var(--accent-green-light);
+            color: var(--accent-green);
+        }
+
+        .type-btn.active[data-type="mortalite"] {
+            border-color: var(--accent-amber);
+            background: var(--accent-amber-light);
+            color: var(--accent-amber);
+        }
+
+        .type-btn.active[data-type="aliment"] {
+            border-color: var(--accent-blue);
+            background: var(--accent-blue-light);
+            color: var(--accent-blue);
+        }
+
+        .type-icon { font-size: 1.1rem; }
+
+        .period-selector { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+        .period-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .period-btn:hover { border-color: var(--text-muted); }
+
+        .period-btn.active {
+            background: var(--bg-secondary);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 1.5rem;
+        }
+
+        /* Chart */
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title-section h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.25rem; }
+        .chart-subtitle { color: var(--text-muted); font-size: 0.85rem; }
+
+        .chart-legend { display: flex; gap: 1.5rem; }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-line { width: 24px; height: 3px; border-radius: 2px; }
+        .legend-line.actual { background: var(--accent-green); }
+        .legend-line.standard { background: var(--accent-blue); opacity: 0.5; }
+
+        .chart-container { position: relative; height: 400px; }
+
+        /* Side Panel */
+        .side-panel { display: flex; flex-direction: column; gap: 1.5rem; }
+
+        .stats-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+        }
+
+        .stats-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stats-card-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .stats-card-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .stats-card-icon.green { background: var(--accent-green-light); }
+        .stats-card-icon.amber { background: var(--accent-amber-light); }
+
+        .stats-value { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .stats-unit { font-size: 1rem; font-weight: 400; color: var(--text-secondary); margin-left: 0.25rem; }
+
+        .stats-trend { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+
+        .trend-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .trend-badge.positive { background: var(--accent-green-light); color: var(--accent-green); }
+        .trend-badge.negative { background: var(--accent-red-light); color: var(--accent-red); }
+        .trend-badge.neutral { background: var(--accent-amber-light); color: var(--accent-amber); }
+
+        .trend-label { color: var(--text-muted); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state-icon { font-size: 4rem; margin-bottom: 1rem; }
+
+        /* Footer */
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-note { font-size: 0.8rem; color: var(--text-muted); }
+
+        .export-btns { display: flex; gap: 0.75rem; }
+
+        .export-btn {
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text-secondary);
             font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .type-btn.active { background: var(--accent-blue-light); border-color: var(--accent-blue); color: var(--accent-blue); }
-
-        .empty-box { text-align: center; padding: 4rem 2rem; }
-        .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .export-btn:hover { background: var(--bg-card); border-color: var(--accent-blue); color: var(--text-primary); }
 
         .hidden { display: none !important; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .side-panel {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .controls-section { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 1rem; }
+            .chart-container { height: 300px; }
+            .session-indicator { flex-wrap: wrap; font-size: 0.7rem; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- PAGE LOGIN -->
+    <!-- ========== PAGE LOGIN ========== -->
     <div class="page active" id="pageLogin">
-        <div class="box">
-            <div class="header">
-                <div class="icon">🐔</div>
-                <h1>Production Avicole</h1>
-                <p>Tableau de bord de suivi</p>
+        <div class="login-container">
+            <div class="login-logo">
+                <div class="login-logo-icon">🐔</div>
+                <h1>Suivi Production Avicole</h1>
+                <p>Connectez-vous pour accéder au tableau de bord</p>
             </div>
-            <div class="card">
+
+            <div class="login-card">
                 <div class="alert" id="loginAlert"></div>
 
-                <!-- PAS DE FORM - juste des inputs -->
                 <div class="form-group">
-                    <label class="form-label">Identifiant</label>
+                    <label class="form-label">Identifiant ou Email</label>
                     <input type="text" class="form-input" id="loginUser" placeholder="admin ou votre email">
                 </div>
+
                 <div class="form-group">
                     <label class="form-label">Mot de passe</label>
                     <input type="password" class="form-input" id="loginPass" placeholder="••••••••">
                 </div>
+
                 <button type="button" class="btn btn-primary" id="loginBtn">Se connecter</button>
 
-                <div class="status-box" id="dbStatusBox">
+                <div class="status-line" id="dbStatus">
                     Base de données : <span id="dbStatusText">Vérification...</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- PAGE CONFIG -->
+    <!-- ========== PAGE CONFIG ========== -->
     <div class="page" id="pageConfig">
-        <div class="box" style="max-width: 520px;">
-            <div class="header">
-                <div class="icon" style="background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));">⚙️</div>
+        <div class="config-container">
+            <div class="login-logo">
+                <div class="login-logo-icon" style="background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));">⚙️</div>
                 <h1>Configuration</h1>
                 <p>Paramètres de connexion</p>
             </div>
-            <div class="card">
+
+            <div class="login-card">
                 <div class="alert" id="configAlert"></div>
 
                 <div class="config-section">
@@ -362,7 +721,7 @@
                 </div>
 
                 <div class="config-section">
-                    <div class="config-title">🔑 API Tuffigo</div>
+                    <div class="config-title">🔑 API Tuffigo Rapidex</div>
                     <div class="form-group">
                         <label class="form-label">Clé API</label>
                         <input type="text" class="form-input" id="cfgTuffigo" placeholder="Votre clé API Tuffigo">
@@ -375,142 +734,270 @@
         </div>
     </div>
 
-    <!-- PAGE APP -->
-    <div class="page page-app" id="pageApp">
-        <div class="app-bar">
-            <div class="app-bar-left">
-                <div class="app-logo">🐔</div>
-                <strong>Tableau de Bord Avicole</strong>
-            </div>
-            <div class="app-bar-right">
-                <div class="user-badge">
-                    <span id="appUserName">Utilisateur</span>
-                    <span class="user-role" id="appUserRole">ROLE</span>
-                </div>
-                <button class="btn btn-secondary btn-sm hidden" id="appBtnConfig">⚙️ Config</button>
-                <button class="btn btn-secondary btn-sm" id="appBtnLogout">🚪 Déconnexion</button>
-            </div>
-        </div>
+    <!-- ========== SESSION INDICATOR ========== -->
+    <div class="session-indicator" id="sessionIndicator">
+        <span class="session-user" id="sessionUser">👤 Utilisateur</span>
+        <span class="session-role" id="sessionRole">ROLE</span>
+        <button class="config-btn hidden" id="btnSessionConfig">⚙️</button>
+        <button class="logout-btn" id="btnLogout">Déconnexion</button>
+    </div>
 
-        <div class="app-content">
-            <div class="card">
-                <div class="selector-grid">
+    <!-- ========== PAGE APP ========== -->
+    <div class="page page-app" id="pageApp">
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-title">
+                    <div class="logo">🐔</div>
+                    <div>
+                        <h1>Suivi de Production</h1>
+                        <p class="header-subtitle">Analyse des performances avec données Supabase</p>
+                    </div>
+                </div>
+                <div class="last-update">
+                    Dernière MAJ : <span id="lastUpdate">--</span>
+                </div>
+            </header>
+
+            <!-- Farmer Card -->
+            <div class="farmer-card" id="farmerCard">
+                <div class="farmer-icon">👨‍🌾</div>
+                <div class="farmer-info">
+                    <div class="farmer-label">Éleveur</div>
+                    <div class="farmer-name" id="farmerName">--</div>
+                    <div class="farmer-company" id="farmerCompany">--</div>
+                </div>
+                <div class="farmer-details">
+                    <div class="farmer-detail-item">
+                        <span class="detail-label">Code éleveur</span>
+                        <span class="detail-value" id="farmerCode">--</span>
+                    </div>
+                    <div class="farmer-detail-item">
+                        <span class="detail-label">Site actif</span>
+                        <span class="detail-value" id="farmerSite">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selectors -->
+            <div class="selectors-card">
+                <div class="selectors-grid">
                     <div class="selector-group">
                         <label>Éleveur</label>
-                        <select id="selEleveur"><option value="">-- Choisir --</option></select>
+                        <select class="selector-select" id="selectEleveur">
+                            <option value="">-- Sélectionner --</option>
+                        </select>
                     </div>
                     <div class="selector-group">
                         <label>Site</label>
-                        <select id="selSite" disabled><option value="">-- Choisir --</option></select>
+                        <select class="selector-select" id="selectSite" disabled>
+                            <option value="">-- Sélectionner --</option>
+                        </select>
                     </div>
                     <div class="selector-group">
                         <label>Bâtiment</label>
-                        <select id="selBatiment" disabled><option value="">-- Choisir --</option></select>
+                        <select class="selector-select" id="selectBatiment" disabled>
+                            <option value="">-- Sélectionner --</option>
+                        </select>
                     </div>
                     <div class="selector-group">
                         <label>Lot</label>
-                        <select id="selLot" disabled><option value="">-- Choisir --</option></select>
+                        <select class="selector-select" id="selectLot" disabled>
+                            <option value="">-- Sélectionner --</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <div class="card hidden" id="lotInfoCard">
-                <strong>🐥 Informations du Lot</strong>
-                <div class="info-grid">
-                    <div class="info-item"><label>Code</label><span id="lotCode">-</span></div>
-                    <div class="info-item"><label>Souche</label><span id="lotSouche">-</span></div>
-                    <div class="info-item"><label>Effectif</label><span id="lotEffectif" class="hl">-</span></div>
-                    <div class="info-item"><label>Date</label><span id="lotDate">-</span></div>
-                    <div class="info-item"><label>Âge</label><span id="lotAge" class="hl">-</span></div>
-                    <div class="info-item"><label>Statut</label><span id="lotStatut">-</span></div>
+            <!-- Lot Info -->
+            <div class="lot-info-card hidden" id="lotInfoCard">
+                <div class="lot-info-card-title">🐥 Informations du Lot</div>
+                <div class="lot-info-grid">
+                    <div class="lot-info-item">
+                        <div class="lot-info-label">Code Lot</div>
+                        <div class="lot-info-value" id="lotCode">--</div>
+                    </div>
+                    <div class="lot-info-item">
+                        <div class="lot-info-label">Souche</div>
+                        <div class="lot-info-value" id="lotSouche">--</div>
+                    </div>
+                    <div class="lot-info-item">
+                        <div class="lot-info-label">Effectif</div>
+                        <div class="lot-info-value highlight" id="lotEffectif">--</div>
+                    </div>
+                    <div class="lot-info-item">
+                        <div class="lot-info-label">Mise en place</div>
+                        <div class="lot-info-value" id="lotDate">--</div>
+                    </div>
+                    <div class="lot-info-item">
+                        <div class="lot-info-label">Âge</div>
+                        <div class="lot-info-value highlight" id="lotAge">--</div>
+                    </div>
+                    <div class="lot-info-item">
+                        <div class="lot-info-label">Statut</div>
+                        <div class="lot-info-value" id="lotStatut">--</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="stats-grid hidden" id="statsCards">
-                <div class="stat-card"><div class="stat-label">Poids moyen</div><div class="stat-value"><span id="sPoids">-</span><span class="stat-unit">g</span></div></div>
-                <div class="stat-card"><div class="stat-label">Mortalité</div><div class="stat-value"><span id="sMort">-</span><span class="stat-unit">%</span></div></div>
-                <div class="stat-card"><div class="stat-label">Conso. aliment</div><div class="stat-value"><span id="sAlim">-</span><span class="stat-unit">g/j</span></div></div>
-                <div class="stat-card"><div class="stat-label">IC</div><div class="stat-value"><span id="sIC">-</span></div></div>
-            </div>
-
-            <div class="chart-box hidden" id="chartBox">
-                <div class="chart-header"><div class="chart-title" id="chartTitle">Évolution</div></div>
-                <div class="type-btns" id="typeBtns">
-                    <button class="type-btn active" data-type="poids">⚖️ Poids</button>
-                    <button class="type-btn" data-type="mortalite">💀 Mortalité</button>
-                    <button class="type-btn" data-type="aliment">🌾 Aliment</button>
+            <!-- Controls -->
+            <section class="controls-section hidden" id="controlsSection">
+                <div class="control-group">
+                    <div class="control-label">Type de données</div>
+                    <div class="type-selector" id="typeSelector">
+                        <button class="type-btn active" data-type="poids">
+                            <span class="type-icon">📈</span>
+                            <span>Croissance en poids</span>
+                        </button>
+                        <button class="type-btn" data-type="mortalite">
+                            <span class="type-icon">⚠️</span>
+                            <span>Mortalité</span>
+                        </button>
+                        <button class="type-btn" data-type="aliment">
+                            <span class="type-icon">🌾</span>
+                            <span>Consommation aliment</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="chart-area"><canvas id="chart"></canvas></div>
+
+                <div class="control-group">
+                    <div class="control-label">Période d'analyse</div>
+                    <div class="period-selector" id="periodSelector">
+                        <button class="period-btn" data-period="7">1 sem.</button>
+                        <button class="period-btn" data-period="14">2 sem.</button>
+                        <button class="period-btn active" data-period="all">Tout</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard -->
+            <div class="dashboard-grid hidden" id="dashboardGrid">
+                <!-- Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title-section">
+                            <h2 id="chartTitle">Évolution</h2>
+                            <p class="chart-subtitle" id="chartSubtitle">Données du lot sélectionné</p>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-line actual"></span>
+                                <span>Données réelles</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-line standard"></span>
+                                <span>Standard</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Side Panel -->
+                <div class="side-panel">
+                    <div class="stats-card">
+                        <div class="stats-card-header">
+                            <span class="stats-card-title">Valeur actuelle</span>
+                            <div class="stats-card-icon green">📊</div>
+                        </div>
+                        <div class="stats-value" id="statsValue">--<span class="stats-unit" id="statsUnit">g</span></div>
+                        <div class="stats-trend">
+                            <span class="trend-badge neutral" id="statsTrend">--</span>
+                            <span class="trend-label">dernière mesure</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-card">
+                        <div class="stats-card-header">
+                            <span class="stats-card-title">Écart standard</span>
+                            <div class="stats-card-icon amber">🎯</div>
+                        </div>
+                        <div class="stats-value" id="statsGap">--<span class="stats-unit">%</span></div>
+                        <div class="stats-trend">
+                            <span class="trend-badge neutral" id="statsGapStatus">--</span>
+                            <span class="trend-label">vs objectif</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="card" id="emptyCard">
-                <div class="empty-box">
-                    <div class="empty-icon">📊</div>
+            <!-- Empty State -->
+            <div class="chart-card" id="emptyState">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
                     <h3>Sélectionnez un lot</h3>
-                    <p style="color:var(--text-secondary)">Choisissez un éleveur, site, bâtiment et lot.</p>
+                    <p style="color: var(--text-secondary);">Choisissez un éleveur, site, bâtiment et lot pour voir les données.</p>
                 </div>
             </div>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-note">
+                    Tableau de bord connecté à Supabase
+                </div>
+                <div class="export-btns">
+                    <button class="export-btn" id="exportPdfBtn">
+                        <span>📄</span> Export PDF
+                    </button>
+                </div>
+            </footer>
         </div>
     </div>
 
     <script>
-        // ====================
-        // ADMIN LOCAL
-        // ====================
-        var ADMIN_USER = 'admin';
-        var ADMIN_PASS = 'admin2024!';
+        // ============================================================
+        // CONFIGURATION ADMIN LOCAL
+        // ============================================================
+        var ADMIN_LOCAL = {
+            username: 'admin',
+            password: 'admin2024!'
+        };
 
-        // ====================
-        // VARIABLES
-        // ====================
+        // ============================================================
+        // VARIABLES GLOBALES
+        // ============================================================
         var supabaseClient = null;
         var currentUser = null;
-        var isAdminUser = false;
-        var myChart = null;
-        var dataLot = { poids: [], mortalite: [], aliment: [] };
-        var chartType = 'poids';
+        var currentRole = 'eleveur';
+        var isLocalAdmin = false;
+        var mainChart = null;
+        var lotData = { poids: [], mortalite: [], aliment: [] };
+        var standardsData = { poids: [], mortalite: [], aliment: [] };
+        var currentType = 'poids';
+        var currentPeriod = 'all';
+        var currentLotInfo = null;
 
-        // ====================
-        // DOM ELEMENTS
-        // ====================
-        var $ = function(id) { return document.getElementById(id); };
+        // ============================================================
+        // HELPERS
+        // ============================================================
+        function $(id) { return document.getElementById(id); }
 
-        // ====================
-        // NAVIGATION
-        // ====================
-        function showPage(id) {
-            var pages = document.getElementsByClassName('page');
+        function showPage(pageId) {
+            var pages = document.querySelectorAll('.page');
             for (var i = 0; i < pages.length; i++) {
                 pages[i].classList.remove('active');
             }
-            $(id).classList.add('active');
+            $(pageId).classList.add('active');
         }
 
-        // ====================
-        // ALERTS
-        // ====================
-        function showLoginAlert(type, msg) {
-            var el = $('loginAlert');
-            el.className = 'alert alert-' + type + ' show';
-            el.innerHTML = msg;
-        }
-
-        function hideLoginAlert() {
-            $('loginAlert').className = 'alert';
-        }
-
-        function showConfigAlert(type, msg) {
-            var el = $('configAlert');
-            el.className = 'alert alert-' + type + ' show';
-            el.innerHTML = msg;
-            if (type !== 'info') {
-                setTimeout(function() { el.className = 'alert'; }, 4000);
+        function showAlert(elementId, type, msg) {
+            var el = $(elementId);
+            if (el) {
+                el.className = 'alert alert-' + type + ' show';
+                el.innerHTML = msg;
             }
         }
 
-        // ====================
-        // CONFIG STORAGE
-        // ====================
+        function hideAlert(elementId) {
+            var el = $(elementId);
+            if (el) el.classList.remove('show');
+        }
+
+        // ============================================================
+        // SUPABASE CONFIG
+        // ============================================================
         function loadConfig() {
             try {
                 var s = localStorage.getItem('supabaseConfig');
@@ -518,19 +1005,19 @@
             } catch (e) { return {}; }
         }
 
-        function storeConfig(url, key) {
+        function saveConfig(url, key) {
             localStorage.setItem('supabaseConfig', JSON.stringify({ url: url, key: key }));
         }
 
-        function initDB() {
+        function initSupabase() {
             var cfg = loadConfig();
-            var statusBox = $('dbStatusBox');
+            var statusEl = $('dbStatus');
             var statusText = $('dbStatusText');
 
             if (cfg.url && cfg.key) {
                 try {
                     supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
-                    statusBox.className = 'status-box ok';
+                    statusEl.className = 'status-line ok';
                     statusText.textContent = 'Configurée ✓';
                     return true;
                 } catch (e) {
@@ -538,155 +1025,53 @@
                 }
             }
 
-            statusBox.className = 'status-box warning';
+            statusEl.className = 'status-line warning';
             statusText.textContent = 'Non configurée';
             return false;
         }
 
-        // ====================
-        // LOGIN
-        // ====================
-        function doLogin() {
-            var user = $('loginUser').value.trim();
-            var pass = $('loginPass').value;
-            var btn = $('loginBtn');
-
-            hideLoginAlert();
-
-            if (!user || !pass) {
-                showLoginAlert('error', '❌ Veuillez remplir tous les champs');
-                return;
-            }
-
-            console.log('Login:', user);
-
-            // Admin local
-            if (user === ADMIN_USER && pass === ADMIN_PASS) {
-                console.log('Admin OK');
-                
-                isAdminUser = true;
-                currentUser = { nom: 'Administrateur', role: 'admin' };
-
-                $('appUserName').textContent = 'Admin Local';
-                $('appUserRole').textContent = 'ADMIN';
-                $('appBtnConfig').classList.remove('hidden');
-
-                showLoginAlert('success', '✅ Connexion administrateur réussie !');
-
-                setTimeout(function() {
-                    showPage('pageConfig');
-                }, 800);
-
-                return;
-            }
-
-            // Supabase
-            if (!supabaseClient) {
-                showLoginAlert('error', '❌ Base de données non configurée.<br>Identifiant admin : <b>admin</b> / <b>admin2024!</b>');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Connexion...';
-            showLoginAlert('info', '⏳ Connexion en cours...');
-
-            supabaseClient.auth.signInWithPassword({
-                email: user,
-                password: pass
-            }).then(function(authRes) {
-                if (authRes.error) {
-                    throw authRes.error;
-                }
-
-                return supabaseClient.from('users')
-                    .select('*')
-                    .eq('auth_id', authRes.data.user.id)
-                    .single();
-            }).then(function(userRes) {
-                currentUser = userRes.data || { email: user, role: 'eleveur' };
-                isAdminUser = (currentUser.role === 'admin');
-
-                var displayName = currentUser.prenom ? currentUser.prenom + ' ' + currentUser.nom : currentUser.email;
-                $('appUserName').textContent = displayName;
-                $('appUserRole').textContent = (currentUser.role || 'eleveur').toUpperCase();
-
-                if (isAdminUser) {
-                    $('appBtnConfig').classList.remove('hidden');
-                }
-
-                showLoginAlert('success', '✅ Connexion réussie !');
-                
-                fetchEleveurs();
-
-                setTimeout(function() {
-                    showPage('pageApp');
-                }, 500);
-            }).catch(function(err) {
-                showLoginAlert('error', '❌ ' + (err.message || 'Erreur de connexion'));
-            }).finally(function() {
-                btn.disabled = false;
-                btn.textContent = 'Se connecter';
-            });
-        }
-
-        function doLogout() {
-            if (supabaseClient) {
-                supabaseClient.auth.signOut();
-            }
-            currentUser = null;
-            isAdminUser = false;
-            $('loginUser').value = '';
-            $('loginPass').value = '';
-            $('appBtnConfig').classList.add('hidden');
-            hideLoginAlert();
-            showPage('pageLogin');
-        }
-
-        // ====================
-        // CONFIG
-        // ====================
         function testSupabase() {
             var url = $('cfgUrl').value.trim();
             var key = $('cfgKey').value.trim();
 
             if (!url || !key) {
-                showConfigAlert('error', '❌ Remplissez tous les champs');
+                showAlert('configAlert', 'error', '❌ Remplissez tous les champs');
                 return;
             }
 
-            showConfigAlert('info', '⏳ Test en cours...');
+            showAlert('configAlert', 'info', '⏳ Test en cours...');
 
             try {
                 var testClient = window.supabase.createClient(url, key);
                 testClient.from('eleveurs').select('count').limit(1).then(function(res) {
                     if (res.error && res.error.message.indexOf('does not exist') === -1) {
-                        showConfigAlert('error', '❌ ' + res.error.message);
+                        showAlert('configAlert', 'error', '❌ ' + res.error.message);
                     } else {
-                        showConfigAlert('success', '✅ Connexion réussie !');
+                        showAlert('configAlert', 'success', '✅ Connexion réussie !');
                     }
                 });
             } catch (e) {
-                showConfigAlert('error', '❌ ' + e.message);
+                showAlert('configAlert', 'error', '❌ ' + e.message);
             }
         }
 
-        function saveSupabase() {
+        function saveSupabaseConfig() {
             var url = $('cfgUrl').value.trim();
             var key = $('cfgKey').value.trim();
 
             if (!url || !key) {
-                showConfigAlert('error', '❌ Remplissez tous les champs');
+                showAlert('configAlert', 'error', '❌ Remplissez tous les champs');
                 return;
             }
 
-            storeConfig(url, key);
-            initDB();
-            showConfigAlert('success', '✅ Configuration enregistrée !');
+            saveConfig(url, key);
+            initSupabase();
+            showAlert('configAlert', 'success', '✅ Configuration enregistrée !');
         }
 
-        function saveTuffigo() {
+        function saveTuffigoConfig() {
             if (!supabaseClient) {
-                showConfigAlert('error', '❌ Configurez d\'abord Supabase');
+                showAlert('configAlert', 'error', '❌ Configurez d\'abord Supabase');
                 return;
             }
 
@@ -699,49 +1084,171 @@
                 is_active: true
             }).then(function(res) {
                 if (res.error) {
-                    showConfigAlert('error', '❌ ' + res.error.message);
+                    showAlert('configAlert', 'error', '❌ ' + res.error.message);
                 } else {
-                    showConfigAlert('success', '✅ Clé Tuffigo enregistrée !');
+                    showAlert('configAlert', 'success', '✅ Clé Tuffigo enregistrée !');
                 }
             });
         }
 
-        // ====================
-        // DATA FETCHING
-        // ====================
-        function fetchEleveurs() {
+        // ============================================================
+        // LOGIN
+        // ============================================================
+        function doLogin() {
+            var user = $('loginUser').value.trim();
+            var pass = $('loginPass').value;
+            var btn = $('loginBtn');
+
+            hideAlert('loginAlert');
+
+            if (!user || !pass) {
+                showAlert('loginAlert', 'error', '❌ Veuillez remplir tous les champs');
+                return;
+            }
+
+            // ===== ADMIN LOCAL =====
+            if (user === ADMIN_LOCAL.username && pass === ADMIN_LOCAL.password) {
+                isLocalAdmin = true;
+                currentUser = { nom: 'Administrateur', prenom: 'Local' };
+                currentRole = 'config';
+
+                $('sessionUser').textContent = '👑 Admin Local';
+                $('sessionRole').textContent = 'CONFIG';
+                $('sessionRole').className = 'session-role config';
+                $('btnSessionConfig').classList.remove('hidden');
+                $('sessionIndicator').style.display = 'flex';
+
+                showAlert('loginAlert', 'success', '✅ Connexion admin réussie !');
+
+                setTimeout(function() {
+                    showPage('pageConfig');
+                }, 500);
+
+                return;
+            }
+
+            // ===== SUPABASE AUTH =====
+            if (!supabaseClient) {
+                showAlert('loginAlert', 'error', '❌ Base non configurée.<br>Identifiant admin : <b>admin</b> / <b>admin2024!</b>');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connexion...';
+            showAlert('loginAlert', 'info', '⏳ Connexion en cours...');
+
+            supabaseClient.auth.signInWithPassword({
+                email: user,
+                password: pass
+            }).then(function(authRes) {
+                if (authRes.error) throw authRes.error;
+
+                return supabaseClient.from('users')
+                    .select('*')
+                    .eq('auth_id', authRes.data.user.id)
+                    .single();
+            }).then(function(userRes) {
+                currentUser = userRes.data || { email: user, role: 'eleveur' };
+                currentRole = currentUser.role || 'eleveur';
+                isLocalAdmin = false;
+
+                var displayName = currentUser.prenom ? currentUser.prenom + ' ' + currentUser.nom : currentUser.email;
+                $('sessionUser').textContent = '👤 ' + displayName;
+                $('sessionRole').textContent = currentRole.toUpperCase();
+                $('sessionRole').className = 'session-role ' + currentRole;
+
+                if (currentRole === 'admin') {
+                    $('btnSessionConfig').classList.remove('hidden');
+                }
+
+                $('sessionIndicator').style.display = 'flex';
+
+                showAlert('loginAlert', 'success', '✅ Connexion réussie !');
+
+                loadEleveurs();
+
+                setTimeout(function() {
+                    showPage('pageApp');
+                }, 500);
+            }).catch(function(err) {
+                showAlert('loginAlert', 'error', '❌ ' + (err.message || 'Erreur de connexion'));
+            }).finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Se connecter';
+            });
+        }
+
+        function doLogout() {
+            if (supabaseClient && !isLocalAdmin) {
+                supabaseClient.auth.signOut();
+            }
+
+            currentUser = null;
+            isLocalAdmin = false;
+            currentRole = 'eleveur';
+
+            $('loginUser').value = '';
+            $('loginPass').value = '';
+            $('sessionIndicator').style.display = 'none';
+            $('btnSessionConfig').classList.add('hidden');
+
+            hideAlert('loginAlert');
+            showPage('pageLogin');
+        }
+
+        // ============================================================
+        // DATA LOADING
+        // ============================================================
+        function loadEleveurs() {
             if (!supabaseClient) return;
 
             supabaseClient.from('eleveurs').select('*').order('nom').then(function(res) {
-                var sel = $('selEleveur');
-                sel.innerHTML = '<option value="">-- Choisir --</option>';
+                var sel = $('selectEleveur');
+                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+
                 var data = res.data || [];
                 for (var i = 0; i < data.length; i++) {
                     var e = data[i];
                     var opt = document.createElement('option');
                     opt.value = e.id;
+                    opt.setAttribute('data-json', JSON.stringify(e));
                     opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
                     sel.appendChild(opt);
                 }
+
                 if (data.length === 1) {
                     sel.value = data[0].id;
-                    fetchSites();
+                    onEleveurChange();
                 }
+
+                $('lastUpdate').textContent = new Date().toLocaleString('fr-FR');
             });
         }
 
-        function fetchSites() {
-            var eleveurId = $('selEleveur').value;
-            var sel = $('selSite');
-            sel.innerHTML = '<option value="">-- Choisir --</option>';
-            sel.disabled = !eleveurId;
-            $('selBatiment').innerHTML = '<option value="">-- Choisir --</option>';
-            $('selBatiment').disabled = true;
-            $('selLot').innerHTML = '<option value="">-- Choisir --</option>';
-            $('selLot').disabled = true;
-            hideCards();
+        function onEleveurChange() {
+            var eleveurId = $('selectEleveur').value;
+            var selSite = $('selectSite');
 
-            if (!eleveurId || !supabaseClient) return;
+            selSite.innerHTML = '<option value="">-- Sélectionner --</option>';
+            selSite.disabled = !eleveurId;
+            $('selectBatiment').innerHTML = '<option value="">-- Sélectionner --</option>';
+            $('selectBatiment').disabled = true;
+            $('selectLot').innerHTML = '<option value="">-- Sélectionner --</option>';
+            $('selectLot').disabled = true;
+            hideDataCards();
+
+            if (!eleveurId) return;
+
+            // Update farmer card
+            var opt = document.querySelector('#selectEleveur option[value="' + eleveurId + '"]');
+            if (opt) {
+                try {
+                    var e = JSON.parse(opt.getAttribute('data-json'));
+                    $('farmerName').textContent = e.nom + ' ' + (e.prenom || '');
+                    $('farmerCompany').textContent = e.raison_sociale || '--';
+                    $('farmerCode').textContent = e.code_eleveur || '--';
+                } catch (err) {}
+            }
 
             supabaseClient.from('sites').select('*').eq('eleveur_id', eleveurId).order('nom').then(function(res) {
                 var data = res.data || [];
@@ -749,26 +1256,38 @@
                     var s = data[i];
                     var opt = document.createElement('option');
                     opt.value = s.id;
+                    opt.setAttribute('data-json', JSON.stringify(s));
                     opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
-                    sel.appendChild(opt);
+                    selSite.appendChild(opt);
                 }
+
                 if (data.length === 1) {
-                    sel.value = data[0].id;
-                    fetchBatiments();
+                    selSite.value = data[0].id;
+                    onSiteChange();
                 }
             });
         }
 
-        function fetchBatiments() {
-            var siteId = $('selSite').value;
-            var sel = $('selBatiment');
-            sel.innerHTML = '<option value="">-- Choisir --</option>';
-            sel.disabled = !siteId;
-            $('selLot').innerHTML = '<option value="">-- Choisir --</option>';
-            $('selLot').disabled = true;
-            hideCards();
+        function onSiteChange() {
+            var siteId = $('selectSite').value;
+            var selBat = $('selectBatiment');
 
-            if (!siteId || !supabaseClient) return;
+            selBat.innerHTML = '<option value="">-- Sélectionner --</option>';
+            selBat.disabled = !siteId;
+            $('selectLot').innerHTML = '<option value="">-- Sélectionner --</option>';
+            $('selectLot').disabled = true;
+            hideDataCards();
+
+            if (!siteId) return;
+
+            // Update site in farmer card
+            var opt = document.querySelector('#selectSite option[value="' + siteId + '"]');
+            if (opt) {
+                try {
+                    var s = JSON.parse(opt.getAttribute('data-json'));
+                    $('farmerSite').textContent = s.nom + (s.ville ? ' - ' + s.ville : '');
+                } catch (err) {}
+            }
 
             supabaseClient.from('batiments').select('*').eq('site_id', siteId).order('nom').then(function(res) {
                 var data = res.data || [];
@@ -776,24 +1295,26 @@
                     var b = data[i];
                     var opt = document.createElement('option');
                     opt.value = b.id;
-                    opt.textContent = b.nom;
-                    sel.appendChild(opt);
+                    opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ' places)' : '');
+                    selBat.appendChild(opt);
                 }
+
                 if (data.length === 1) {
-                    sel.value = data[0].id;
-                    fetchLots();
+                    selBat.value = data[0].id;
+                    onBatimentChange();
                 }
             });
         }
 
-        function fetchLots() {
-            var batId = $('selBatiment').value;
-            var sel = $('selLot');
-            sel.innerHTML = '<option value="">-- Choisir --</option>';
-            sel.disabled = !batId;
-            hideCards();
+        function onBatimentChange() {
+            var batId = $('selectBatiment').value;
+            var selLot = $('selectLot');
 
-            if (!batId || !supabaseClient) return;
+            selLot.innerHTML = '<option value="">-- Sélectionner --</option>';
+            selLot.disabled = !batId;
+            hideDataCards();
+
+            if (!batId) return;
 
             supabaseClient.from('lots').select('*, souches(nom)').eq('batiment_id', batId)
                 .order('date_mise_place', { ascending: false }).then(function(res) {
@@ -806,194 +1327,349 @@
                     var ico = l.statut === 'actif' ? '🟢' : '⚪';
                     var sn = l.souches ? l.souches.nom : 'N/A';
                     opt.textContent = ico + ' ' + l.code_lot + ' - ' + sn;
-                    sel.appendChild(opt);
+                    selLot.appendChild(opt);
                 }
-                var active = data.find(function(x) { return x.statut === 'actif'; });
-                if (active) {
-                    sel.value = active.id;
-                    fetchLotData();
+
+                // Auto-select active lot
+                var activeLot = data.find(function(x) { return x.statut === 'actif'; });
+                if (activeLot) {
+                    selLot.value = activeLot.id;
+                    onLotChange();
                 }
             });
         }
 
-        function fetchLotData() {
-            var lotId = $('selLot').value;
-            if (!lotId || !supabaseClient) {
-                hideCards();
+        function onLotChange() {
+            var lotId = $('selectLot').value;
+
+            if (!lotId) {
+                hideDataCards();
                 return;
             }
 
-            var opt = document.querySelector('#selLot option[value="' + lotId + '"]');
+            var opt = document.querySelector('#selectLot option[value="' + lotId + '"]');
             var lot = {};
             try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
 
-            $('lotCode').textContent = lot.code_lot || '-';
-            $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '-';
-            $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '-';
-            $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '-';
+            currentLotInfo = lot;
+
+            // Display lot info
+            $('lotCode').textContent = lot.code_lot || '--';
+            $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
+            $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '--';
+            $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
+
             if (lot.date_mise_place) {
                 var age = Math.floor((new Date() - new Date(lot.date_mise_place)) / 86400000);
-                $('lotAge').textContent = age + ' j';
+                $('lotAge').textContent = age + ' jours';
             } else {
-                $('lotAge').textContent = '-';
+                $('lotAge').textContent = '--';
             }
-            $('lotStatut').textContent = lot.statut || '-';
 
+            $('lotStatut').textContent = lot.statut || '--';
+
+            // Load data
             Promise.all([
                 supabaseClient.from('donnees_poids').select('*').eq('lot_id', lotId).order('jour_age'),
                 supabaseClient.from('donnees_mortalite').select('*').eq('lot_id', lotId).order('jour_age'),
                 supabaseClient.from('donnees_aliment').select('*').eq('lot_id', lotId).order('jour_age')
             ]).then(function(results) {
-                dataLot.poids = results[0].data || [];
-                dataLot.mortalite = results[1].data || [];
-                dataLot.aliment = results[2].data || [];
-                updateStats();
-                drawChart();
-                showCards();
+                lotData.poids = results[0].data || [];
+                lotData.mortalite = results[1].data || [];
+                lotData.aliment = results[2].data || [];
+
+                // Load standards if souche exists
+                if (lot.souche_id) {
+                    loadStandards(lot.souche_id);
+                } else {
+                    updateUI();
+                    showDataCards();
+                }
             });
         }
 
+        function loadStandards(soucheId) {
+            Promise.all([
+                supabaseClient.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
+                supabaseClient.from('standards_mortalite').select('*').eq('souche_id', soucheId).order('jour_age'),
+                supabaseClient.from('standards_aliment').select('*').eq('souche_id', soucheId).order('jour_age')
+            ]).then(function(results) {
+                standardsData.poids = results[0].data || [];
+                standardsData.mortalite = results[1].data || [];
+                standardsData.aliment = results[2].data || [];
+
+                updateUI();
+                showDataCards();
+            }).catch(function() {
+                updateUI();
+                showDataCards();
+            });
+        }
+
+        function showDataCards() {
+            $('lotInfoCard').classList.remove('hidden');
+            $('controlsSection').classList.remove('hidden');
+            $('dashboardGrid').classList.remove('hidden');
+            $('emptyState').classList.add('hidden');
+        }
+
+        function hideDataCards() {
+            $('lotInfoCard').classList.add('hidden');
+            $('controlsSection').classList.add('hidden');
+            $('dashboardGrid').classList.add('hidden');
+            $('emptyState').classList.remove('hidden');
+        }
+
+        // ============================================================
+        // UI UPDATE
+        // ============================================================
+        function updateUI() {
+            updateStats();
+            updateChart();
+        }
+
         function updateStats() {
-            if (dataLot.poids.length) {
-                var p = dataLot.poids[dataLot.poids.length - 1];
-                $('sPoids').textContent = Math.round(p.poids_moyen || 0);
-            }
-            if (dataLot.mortalite.length) {
-                var m = dataLot.mortalite[dataLot.mortalite.length - 1];
-                $('sMort').textContent = (m.taux_mortalite_cumul || 0).toFixed(2);
-            }
-            if (dataLot.aliment.length) {
-                var a = dataLot.aliment[dataLot.aliment.length - 1];
-                $('sAlim').textContent = Math.round(a.conso_par_animal || 0);
-                $('sIC').textContent = a.indice_conso ? a.indice_conso.toFixed(2) : '-';
-            }
-        }
+            var data = lotData[currentType] || [];
+            var unit = currentType === 'poids' ? 'g' : (currentType === 'mortalite' ? '%' : 'g');
 
-        function setChartType(t) {
-            chartType = t;
-            var btns = $('typeBtns').getElementsByClassName('type-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].classList.remove('active');
-                if (btns[i].getAttribute('data-type') === t) {
-                    btns[i].classList.add('active');
+            if (data.length > 0) {
+                var last = data[data.length - 1];
+                var value = '--';
+                
+                if (currentType === 'poids') {
+                    value = Math.round(last.poids_moyen || 0);
+                } else if (currentType === 'mortalite') {
+                    value = (last.taux_mortalite_cumul || 0).toFixed(2);
+                } else if (currentType === 'aliment') {
+                    value = Math.round(last.conso_par_animal || 0);
                 }
-            }
-            drawChart();
-        }
 
-        function drawChart() {
-            var ctx = $('chart').getContext('2d');
-            if (myChart) myChart.destroy();
+                $('statsValue').innerHTML = value + '<span class="stats-unit">' + unit + '</span>';
 
-            var vals = [], lbls = [], title = '', unit = '';
-
-            if (chartType === 'poids') {
-                for (var i = 0; i < dataLot.poids.length; i++) {
-                    vals.push(dataLot.poids[i].poids_moyen);
-                    lbls.push('J' + dataLot.poids[i].jour_age);
+                // Calculate trend
+                if (data.length > 1) {
+                    var prev = data[data.length - 2];
+                    var prevVal = currentType === 'poids' ? prev.poids_moyen : (currentType === 'mortalite' ? prev.taux_mortalite_cumul : prev.conso_par_animal);
+                    var currVal = currentType === 'poids' ? last.poids_moyen : (currentType === 'mortalite' ? last.taux_mortalite_cumul : last.conso_par_animal);
+                    
+                    if (prevVal && currVal) {
+                        var diff = ((currVal - prevVal) / prevVal * 100).toFixed(1);
+                        var sign = diff >= 0 ? '+' : '';
+                        $('statsTrend').textContent = sign + diff + '%';
+                        $('statsTrend').className = 'trend-badge ' + (diff >= 0 ? 'positive' : 'negative');
+                    }
                 }
-                title = 'Poids moyen'; unit = 'g';
-            } else if (chartType === 'mortalite') {
-                for (var i = 0; i < dataLot.mortalite.length; i++) {
-                    vals.push(dataLot.mortalite[i].taux_mortalite_cumul || 0);
-                    lbls.push('J' + dataLot.mortalite[i].jour_age);
+
+                // Calculate gap vs standard
+                var standards = standardsData[currentType] || [];
+                var dayAge = last.jour_age;
+                var std = standards.find(function(s) { return s.jour_age === dayAge; });
+
+                if (std) {
+                    var stdVal = currentType === 'poids' ? std.poids_cible : (currentType === 'mortalite' ? std.mortalite_cible : std.conso_cible);
+                    var currVal = currentType === 'poids' ? last.poids_moyen : (currentType === 'mortalite' ? last.taux_mortalite_cumul : last.conso_par_animal);
+                    
+                    if (stdVal && currVal) {
+                        var gap = ((currVal - stdVal) / stdVal * 100).toFixed(1);
+                        var sign = gap >= 0 ? '+' : '';
+                        $('statsGap').innerHTML = sign + gap + '<span class="stats-unit">%</span>';
+                        $('statsGapStatus').textContent = Math.abs(gap) < 5 ? 'Dans la norme' : (gap > 0 ? 'Au-dessus' : 'En dessous');
+                        $('statsGapStatus').className = 'trend-badge ' + (Math.abs(gap) < 5 ? 'neutral' : (gap > 0 ? 'positive' : 'negative'));
+                    }
+                } else {
+                    $('statsGap').innerHTML = '--<span class="stats-unit">%</span>';
+                    $('statsGapStatus').textContent = 'Pas de standard';
                 }
-                title = 'Mortalité cumulée'; unit = '%';
             } else {
-                for (var i = 0; i < dataLot.aliment.length; i++) {
-                    vals.push(dataLot.aliment[i].conso_par_animal || 0);
-                    lbls.push('J' + dataLot.aliment[i].jour_age);
+                $('statsValue').innerHTML = '--<span class="stats-unit">' + unit + '</span>';
+                $('statsTrend').textContent = '--';
+                $('statsGap').innerHTML = '--<span class="stats-unit">%</span>';
+            }
+        }
+
+        function updateChart() {
+            var ctx = $('mainChart').getContext('2d');
+            if (mainChart) mainChart.destroy();
+
+            var data = lotData[currentType] || [];
+            var standards = standardsData[currentType] || [];
+
+            var labels = [];
+            var values = [];
+            var stdValues = [];
+
+            var title = 'Évolution';
+            var unit = 'g';
+
+            if (currentType === 'poids') {
+                title = 'Courbe de Croissance';
+                unit = 'g';
+                for (var i = 0; i < data.length; i++) {
+                    labels.push('J' + data[i].jour_age);
+                    values.push(data[i].poids_moyen);
+                    var std = standards.find(function(s) { return s.jour_age === data[i].jour_age; });
+                    stdValues.push(std ? std.poids_cible : null);
                 }
-                title = 'Consommation aliment'; unit = 'g';
+            } else if (currentType === 'mortalite') {
+                title = 'Mortalité Cumulée';
+                unit = '%';
+                for (var i = 0; i < data.length; i++) {
+                    labels.push('J' + data[i].jour_age);
+                    values.push(data[i].taux_mortalite_cumul || 0);
+                    var std = standards.find(function(s) { return s.jour_age === data[i].jour_age; });
+                    stdValues.push(std ? std.mortalite_cible : null);
+                }
+            } else if (currentType === 'aliment') {
+                title = 'Consommation Aliment';
+                unit = 'g/animal';
+                for (var i = 0; i < data.length; i++) {
+                    labels.push('J' + data[i].jour_age);
+                    values.push(data[i].conso_par_animal || 0);
+                    var std = standards.find(function(s) { return s.jour_age === data[i].jour_age; });
+                    stdValues.push(std ? std.conso_cible : null);
+                }
+            }
+
+            // Apply period filter
+            if (currentPeriod !== 'all') {
+                var days = parseInt(currentPeriod);
+                labels = labels.slice(-days);
+                values = values.slice(-days);
+                stdValues = stdValues.slice(-days);
             }
 
             $('chartTitle').textContent = title;
+            $('chartSubtitle').textContent = 'Lot ' + (currentLotInfo ? currentLotInfo.code_lot : '--');
 
-            myChart = new Chart(ctx, {
+            var datasets = [{
+                label: 'Données réelles',
+                data: values,
+                borderColor: currentType === 'poids' ? '#10b981' : (currentType === 'mortalite' ? '#f59e0b' : '#3b82f6'),
+                backgroundColor: currentType === 'poids' ? 'rgba(16,185,129,0.1)' : (currentType === 'mortalite' ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)'),
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }];
+
+            if (stdValues.some(function(v) { return v !== null; })) {
+                datasets.push({
+                    label: 'Standard',
+                    data: stdValues,
+                    borderColor: 'rgba(148, 163, 184, 0.5)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 0
+                });
+            }
+
+            mainChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: lbls,
-                    datasets: [{
-                        label: title,
-                        data: vals,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59,130,246,0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
+                data: { labels: labels, datasets: datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { y: { ticks: { callback: function(v) { return v + ' ' + unit; } } } }
+                    scales: {
+                        y: {
+                            ticks: { callback: function(v) { return v + ' ' + unit; } },
+                            grid: { color: 'rgba(45, 58, 82, 0.5)' }
+                        },
+                        x: { grid: { color: 'rgba(45, 58, 82, 0.5)' } }
+                    }
                 }
             });
         }
 
-        function showCards() {
-            $('lotInfoCard').classList.remove('hidden');
-            $('statsCards').classList.remove('hidden');
-            $('chartBox').classList.remove('hidden');
-            $('emptyCard').classList.add('hidden');
-        }
-
-        function hideCards() {
-            $('lotInfoCard').classList.add('hidden');
-            $('statsCards').classList.add('hidden');
-            $('chartBox').classList.add('hidden');
-            $('emptyCard').classList.remove('hidden');
-        }
-
-        // ====================
+        // ============================================================
         // EVENT LISTENERS
-        // ====================
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
             // Load config
             var cfg = loadConfig();
             if (cfg.url) $('cfgUrl').value = cfg.url;
             if (cfg.key) $('cfgKey').value = cfg.key;
-            initDB();
+            initSupabase();
 
             // Login
             $('loginBtn').addEventListener('click', doLogin);
-            
-            // Enter key on password field
             $('loginPass').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    doLogin();
-                }
+                if (e.key === 'Enter') doLogin();
             });
-            
-            // Enter key on user field
             $('loginUser').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    $('loginPass').focus();
-                }
+                if (e.key === 'Enter') $('loginPass').focus();
             });
 
             // Config
             $('btnTestSupabase').addEventListener('click', testSupabase);
-            $('btnSaveSupabase').addEventListener('click', saveSupabase);
-            $('btnSaveTuffigo').addEventListener('click', saveTuffigo);
+            $('btnSaveSupabase').addEventListener('click', saveSupabaseConfig);
+            $('btnSaveTuffigo').addEventListener('click', saveTuffigoConfig);
             $('btnBackLogin').addEventListener('click', function() { showPage('pageLogin'); });
 
-            // App
-            $('appBtnConfig').addEventListener('click', function() { showPage('pageConfig'); });
-            $('appBtnLogout').addEventListener('click', doLogout);
+            // Session
+            $('btnLogout').addEventListener('click', doLogout);
+            $('btnSessionConfig').addEventListener('click', function() { showPage('pageConfig'); });
 
             // Selectors
-            $('selEleveur').addEventListener('change', fetchSites);
-            $('selSite').addEventListener('change', fetchBatiments);
-            $('selBatiment').addEventListener('change', fetchLots);
-            $('selLot').addEventListener('change', fetchLotData);
+            $('selectEleveur').addEventListener('change', onEleveurChange);
+            $('selectSite').addEventListener('change', onSiteChange);
+            $('selectBatiment').addEventListener('change', onBatimentChange);
+            $('selectLot').addEventListener('change', onLotChange);
 
-            // Chart type buttons
-            var typeBtns = $('typeBtns').getElementsByClassName('type-btn');
+            // Type buttons
+            var typeBtns = document.querySelectorAll('#typeSelector .type-btn');
             for (var i = 0; i < typeBtns.length; i++) {
                 typeBtns[i].addEventListener('click', function() {
-                    setChartType(this.getAttribute('data-type'));
+                    for (var j = 0; j < typeBtns.length; j++) {
+                        typeBtns[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    currentType = this.getAttribute('data-type');
+                    updateUI();
+                });
+            }
+
+            // Period buttons
+            var periodBtns = document.querySelectorAll('#periodSelector .period-btn');
+            for (var i = 0; i < periodBtns.length; i++) {
+                periodBtns[i].addEventListener('click', function() {
+                    for (var j = 0; j < periodBtns.length; j++) {
+                        periodBtns[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    currentPeriod = this.getAttribute('data-period');
+                    updateUI();
+                });
+            }
+
+            // Check existing session
+            if (supabaseClient) {
+                supabaseClient.auth.getSession().then(function(result) {
+                    if (result.data && result.data.session) {
+                        supabaseClient.from('users')
+                            .select('*')
+                            .eq('auth_id', result.data.session.user.id)
+                            .single()
+                            .then(function(userRes) {
+                                currentUser = userRes.data || { email: result.data.session.user.email, role: 'eleveur' };
+                                currentRole = currentUser.role || 'eleveur';
+
+                                var displayName = currentUser.prenom ? currentUser.prenom + ' ' + currentUser.nom : currentUser.email;
+                                $('sessionUser').textContent = '👤 ' + displayName;
+                                $('sessionRole').textContent = currentRole.toUpperCase();
+                                $('sessionRole').className = 'session-role ' + currentRole;
+
+                                if (currentRole === 'admin') {
+                                    $('btnSessionConfig').classList.remove('hidden');
+                                }
+
+                                $('sessionIndicator').style.display = 'flex';
+
+                                loadEleveurs();
+                                showPage('pageApp');
+                            });
+                    }
                 });
             }
         });
