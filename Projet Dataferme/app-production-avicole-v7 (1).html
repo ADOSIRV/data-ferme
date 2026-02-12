@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Avicole - Tableau de Bord</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2236;
+            --accent-green: #10b981;
+            --accent-green-light: rgba(16, 185, 129, 0.15);
+            --accent-amber: #f59e0b;
+            --accent-amber-light: rgba(245, 158, 11, 0.15);
+            --accent-blue: #3b82f6;
+            --accent-blue-light: rgba(59, 130, 246, 0.15);
+            --accent-red: #ef4444;
+            --accent-red-light: rgba(239, 68, 68, 0.15);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2d3a52;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .page { display: none; min-height: 100vh; }
+        .page.active { display: flex; align-items: center; justify-content: center; }
+        .page-app.active { display: block; }
+
+        .box { width: 100%; max-width: 420px; padding: 1rem; }
+
+        .header { text-align: center; margin-bottom: 2rem; }
+
+        .icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .header p { color: var(--text-muted); }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .form-group { margin-bottom: 1.25rem; }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .form-input:focus { outline: none; border-color: var(--accent-blue); }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            color: var(--text-secondary);
+            margin-top: 1rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.show { display: block; }
+        .alert-error { background: var(--accent-red-light); border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .alert-success { background: var(--accent-green-light); border: 1px solid var(--accent-green); color: var(--accent-green); }
+        .alert-info { background: var(--accent-blue-light); border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+
+        .status-box {
+            margin-top: 1.5rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .status-box.ok { background: var(--accent-green-light); color: var(--accent-green); }
+        .status-box.warning { background: var(--accent-amber-light); color: var(--accent-amber); }
+
+        .config-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .config-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .config-title { font-weight: 600; margin-bottom: 1rem; color: var(--accent-blue); }
+
+        .btn-group { display: flex; gap: 1rem; margin-top: 1rem; }
+        .btn-group .btn { flex: 1; margin-top: 0; }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .app-bar {
+            background: var(--bg-card);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .app-bar-left { display: flex; align-items: center; gap: 1rem; }
+
+        .app-logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-bar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .user-role {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--accent-amber-light);
+            color: var(--accent-amber);
+        }
+
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; width: auto; display: inline-block; }
+
+        .app-content { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+
+        .selector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .selector-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .selector-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .selector-group select:disabled { opacity: 0.5; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .info-item {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-item span { font-weight: 600; }
+        .info-item span.hl { color: var(--accent-green); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+        .stat-value { font-size: 1.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-top: 0.5rem; }
+        .stat-unit { font-size: 0.9rem; color: var(--text-secondary); }
+
+        .chart-box {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .chart-title { font-size: 1.25rem; font-weight: 600; }
+        .chart-area { height: 350px; }
+
+        .type-btns { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+        .type-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .type-btn.active { background: var(--accent-blue-light); border-color: var(--accent-blue); color: var(--accent-blue); }
+
+        .empty-box { text-align: center; padding: 4rem 2rem; }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- PAGE LOGIN -->
+    <div class="page active" id="pageLogin">
+        <div class="box">
+            <div class="header">
+                <div class="icon">🐔</div>
+                <h1>Production Avicole</h1>
+                <p>Tableau de bord de suivi</p>
+            </div>
+            <div class="card">
+                <div class="alert" id="loginAlert"></div>
+
+                <!-- PAS DE FORM - juste des inputs -->
+                <div class="form-group">
+                    <label class="form-label">Identifiant</label>
+                    <input type="text" class="form-input" id="loginUser" placeholder="admin ou votre email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" class="form-input" id="loginPass" placeholder="••••••••">
+                </div>
+                <button type="button" class="btn btn-primary" id="loginBtn">Se connecter</button>
+
+                <div class="status-box" id="dbStatusBox">
+                    Base de données : <span id="dbStatusText">Vérification...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE CONFIG -->
+    <div class="page" id="pageConfig">
+        <div class="box" style="max-width: 520px;">
+            <div class="header">
+                <div class="icon" style="background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));">⚙️</div>
+                <h1>Configuration</h1>
+                <p>Paramètres de connexion</p>
+            </div>
+            <div class="card">
+                <div class="alert" id="configAlert"></div>
+
+                <div class="config-section">
+                    <div class="config-title">🔌 Connexion Supabase</div>
+                    <div class="form-group">
+                        <label class="form-label">URL du projet</label>
+                        <input type="url" class="form-input" id="cfgUrl" placeholder="https://xxxxx.supabase.co">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Clé Anon (publique)</label>
+                        <input type="text" class="form-input" id="cfgKey" placeholder="eyJhbGciOiJIUzI1NiIs...">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" id="btnTestSupabase">🔍 Tester</button>
+                        <button type="button" class="btn btn-primary" id="btnSaveSupabase">💾 Enregistrer</button>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="config-title">🔑 API Tuffigo</div>
+                    <div class="form-group">
+                        <label class="form-label">Clé API</label>
+                        <input type="text" class="form-input" id="cfgTuffigo" placeholder="Votre clé API Tuffigo">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btnSaveTuffigo">💾 Enregistrer</button>
+                </div>
+
+                <span class="back-link" id="btnBackLogin">← Retour à la connexion</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE APP -->
+    <div class="page page-app" id="pageApp">
+        <div class="app-bar">
+            <div class="app-bar-left">
+                <div class="app-logo">🐔</div>
+                <strong>Tableau de Bord Avicole</strong>
+            </div>
+            <div class="app-bar-right">
+                <div class="user-badge">
+                    <span id="appUserName">Utilisateur</span>
+                    <span class="user-role" id="appUserRole">ROLE</span>
+                </div>
+                <button class="btn btn-secondary btn-sm hidden" id="appBtnConfig">⚙️ Config</button>
+                <button class="btn btn-secondary btn-sm" id="appBtnLogout">🚪 Déconnexion</button>
+            </div>
+        </div>
+
+        <div class="app-content">
+            <div class="card">
+                <div class="selector-grid">
+                    <div class="selector-group">
+                        <label>Éleveur</label>
+                        <select id="selEleveur"><option value="">-- Choisir --</option></select>
+                    </div>
+                    <div class="selector-group">
+                        <label>Site</label>
+                        <select id="selSite" disabled><option value="">-- Choisir --</option></select>
+                    </div>
+                    <div class="selector-group">
+                        <label>Bâtiment</label>
+                        <select id="selBatiment" disabled><option value="">-- Choisir --</option></select>
+                    </div>
+                    <div class="selector-group">
+                        <label>Lot</label>
+                        <select id="selLot" disabled><option value="">-- Choisir --</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="lotInfoCard">
+                <strong>🐥 Informations du Lot</strong>
+                <div class="info-grid">
+                    <div class="info-item"><label>Code</label><span id="lotCode">-</span></div>
+                    <div class="info-item"><label>Souche</label><span id="lotSouche">-</span></div>
+                    <div class="info-item"><label>Effectif</label><span id="lotEffectif" class="hl">-</span></div>
+                    <div class="info-item"><label>Date</label><span id="lotDate">-</span></div>
+                    <div class="info-item"><label>Âge</label><span id="lotAge" class="hl">-</span></div>
+                    <div class="info-item"><label>Statut</label><span id="lotStatut">-</span></div>
+                </div>
+            </div>
+
+            <div class="stats-grid hidden" id="statsCards">
+                <div class="stat-card"><div class="stat-label">Poids moyen</div><div class="stat-value"><span id="sPoids">-</span><span class="stat-unit">g</span></div></div>
+                <div class="stat-card"><div class="stat-label">Mortalité</div><div class="stat-value"><span id="sMort">-</span><span class="stat-unit">%</span></div></div>
+                <div class="stat-card"><div class="stat-label">Conso. aliment</div><div class="stat-value"><span id="sAlim">-</span><span class="stat-unit">g/j</span></div></div>
+                <div class="stat-card"><div class="stat-label">IC</div><div class="stat-value"><span id="sIC">-</span></div></div>
+            </div>
+
+            <div class="chart-box hidden" id="chartBox">
+                <div class="chart-header"><div class="chart-title" id="chartTitle">Évolution</div></div>
+                <div class="type-btns" id="typeBtns">
+                    <button class="type-btn active" data-type="poids">⚖️ Poids</button>
+                    <button class="type-btn" data-type="mortalite">💀 Mortalité</button>
+                    <button class="type-btn" data-type="aliment">🌾 Aliment</button>
+                </div>
+                <div class="chart-area"><canvas id="chart"></canvas></div>
+            </div>
+
+            <div class="card" id="emptyCard">
+                <div class="empty-box">
+                    <div class="empty-icon">📊</div>
+                    <h3>Sélectionnez un lot</h3>
+                    <p style="color:var(--text-secondary)">Choisissez un éleveur, site, bâtiment et lot.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====================
+        // ADMIN LOCAL
+        // ====================
+        var ADMIN_USER = 'admin';
+        var ADMIN_PASS = 'admin2024!';
+
+        // ====================
+        // VARIABLES
+        // ====================
+        var supabaseClient = null;
+        var currentUser = null;
+        var isAdminUser = false;
+        var myChart = null;
+        var dataLot = { poids: [], mortalite: [], aliment: [] };
+        var chartType = 'poids';
+
+        // ====================
+        // DOM ELEMENTS
+        // ====================
+        var $ = function(id) { return document.getElementById(id); };
+
+        // ====================
+        // NAVIGATION
+        // ====================
+        function showPage(id) {
+            var pages = document.getElementsByClassName('page');
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].classList.remove('active');
+            }
+            $(id).classList.add('active');
+        }
+
+        // ====================
+        // ALERTS
+        // ====================
+        function showLoginAlert(type, msg) {
+            var el = $('loginAlert');
+            el.className = 'alert alert-' + type + ' show';
+            el.innerHTML = msg;
+        }
+
+        function hideLoginAlert() {
+            $('loginAlert').className = 'alert';
+        }
+
+        function showConfigAlert(type, msg) {
+            var el = $('configAlert');
+            el.className = 'alert alert-' + type + ' show';
+            el.innerHTML = msg;
+            if (type !== 'info') {
+                setTimeout(function() { el.className = 'alert'; }, 4000);
+            }
+        }
+
+        // ====================
+        // CONFIG STORAGE
+        // ====================
+        function loadConfig() {
+            try {
+                var s = localStorage.getItem('supabaseConfig');
+                return s ? JSON.parse(s) : {};
+            } catch (e) { return {}; }
+        }
+
+        function storeConfig(url, key) {
+            localStorage.setItem('supabaseConfig', JSON.stringify({ url: url, key: key }));
+        }
+
+        function initDB() {
+            var cfg = loadConfig();
+            var statusBox = $('dbStatusBox');
+            var statusText = $('dbStatusText');
+
+            if (cfg.url && cfg.key) {
+                try {
+                    supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+                    statusBox.className = 'status-box ok';
+                    statusText.textContent = 'Configurée ✓';
+                    return true;
+                } catch (e) {
+                    console.error('Erreur Supabase:', e);
+                }
+            }
+
+            statusBox.className = 'status-box warning';
+            statusText.textContent = 'Non configurée';
+            return false;
+        }
+
+        // ====================
+        // LOGIN
+        // ====================
+        function doLogin() {
+            var user = $('loginUser').value.trim();
+            var pass = $('loginPass').value;
+            var btn = $('loginBtn');
+
+            hideLoginAlert();
+
+            if (!user || !pass) {
+                showLoginAlert('error', '❌ Veuillez remplir tous les champs');
+                return;
+            }
+
+            console.log('Login:', user);
+
+            // Admin local
+            if (user === ADMIN_USER && pass === ADMIN_PASS) {
+                console.log('Admin OK');
+                
+                isAdminUser = true;
+                currentUser = { nom: 'Administrateur', role: 'admin' };
+
+                $('appUserName').textContent = 'Admin Local';
+                $('appUserRole').textContent = 'ADMIN';
+                $('appBtnConfig').classList.remove('hidden');
+
+                showLoginAlert('success', '✅ Connexion administrateur réussie !');
+
+                setTimeout(function() {
+                    showPage('pageConfig');
+                }, 800);
+
+                return;
+            }
+
+            // Supabase
+            if (!supabaseClient) {
+                showLoginAlert('error', '❌ Base de données non configurée.<br>Identifiant admin : <b>admin</b> / <b>admin2024!</b>');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connexion...';
+            showLoginAlert('info', '⏳ Connexion en cours...');
+
+            supabaseClient.auth.signInWithPassword({
+                email: user,
+                password: pass
+            }).then(function(authRes) {
+                if (authRes.error) {
+                    throw authRes.error;
+                }
+
+                return supabaseClient.from('users')
+                    .select('*')
+                    .eq('auth_id', authRes.data.user.id)
+                    .single();
+            }).then(function(userRes) {
+                currentUser = userRes.data || { email: user, role: 'eleveur' };
+                isAdminUser = (currentUser.role === 'admin');
+
+                var displayName = currentUser.prenom ? currentUser.prenom + ' ' + currentUser.nom : currentUser.email;
+                $('appUserName').textContent = displayName;
+                $('appUserRole').textContent = (currentUser.role || 'eleveur').toUpperCase();
+
+                if (isAdminUser) {
+                    $('appBtnConfig').classList.remove('hidden');
+                }
+
+                showLoginAlert('success', '✅ Connexion réussie !');
+                
+                fetchEleveurs();
+
+                setTimeout(function() {
+                    showPage('pageApp');
+                }, 500);
+            }).catch(function(err) {
+                showLoginAlert('error', '❌ ' + (err.message || 'Erreur de connexion'));
+            }).finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Se connecter';
+            });
+        }
+
+        function doLogout() {
+            if (supabaseClient) {
+                supabaseClient.auth.signOut();
+            }
+            currentUser = null;
+            isAdminUser = false;
+            $('loginUser').value = '';
+            $('loginPass').value = '';
+            $('appBtnConfig').classList.add('hidden');
+            hideLoginAlert();
+            showPage('pageLogin');
+        }
+
+        // ====================
+        // CONFIG
+        // ====================
+        function testSupabase() {
+            var url = $('cfgUrl').value.trim();
+            var key = $('cfgKey').value.trim();
+
+            if (!url || !key) {
+                showConfigAlert('error', '❌ Remplissez tous les champs');
+                return;
+            }
+
+            showConfigAlert('info', '⏳ Test en cours...');
+
+            try {
+                var testClient = window.supabase.createClient(url, key);
+                testClient.from('eleveurs').select('count').limit(1).then(function(res) {
+                    if (res.error && res.error.message.indexOf('does not exist') === -1) {
+                        showConfigAlert('error', '❌ ' + res.error.message);
+                    } else {
+                        showConfigAlert('success', '✅ Connexion réussie !');
+                    }
+                });
+            } catch (e) {
+                showConfigAlert('error', '❌ ' + e.message);
+            }
+        }
+
+        function saveSupabase() {
+            var url = $('cfgUrl').value.trim();
+            var key = $('cfgKey').value.trim();
+
+            if (!url || !key) {
+                showConfigAlert('error', '❌ Remplissez tous les champs');
+                return;
+            }
+
+            storeConfig(url, key);
+            initDB();
+            showConfigAlert('success', '✅ Configuration enregistrée !');
+        }
+
+        function saveTuffigo() {
+            if (!supabaseClient) {
+                showConfigAlert('error', '❌ Configurez d\'abord Supabase');
+                return;
+            }
+
+            var apiKey = $('cfgTuffigo').value.trim();
+
+            supabaseClient.from('api_config').upsert({
+                id: 1,
+                api_key: apiKey,
+                base_url: 'https://api.mytuffigorapidex.com',
+                is_active: true
+            }).then(function(res) {
+                if (res.error) {
+                    showConfigAlert('error', '❌ ' + res.error.message);
+                } else {
+                    showConfigAlert('success', '✅ Clé Tuffigo enregistrée !');
+                }
+            });
+        }
+
+        // ====================
+        // DATA FETCHING
+        // ====================
+        function fetchEleveurs() {
+            if (!supabaseClient) return;
+
+            supabaseClient.from('eleveurs').select('*').order('nom').then(function(res) {
+                var sel = $('selEleveur');
+                sel.innerHTML = '<option value="">-- Choisir --</option>';
+                var data = res.data || [];
+                for (var i = 0; i < data.length; i++) {
+                    var e = data[i];
+                    var opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
+                    sel.appendChild(opt);
+                }
+                if (data.length === 1) {
+                    sel.value = data[0].id;
+                    fetchSites();
+                }
+            });
+        }
+
+        function fetchSites() {
+            var eleveurId = $('selEleveur').value;
+            var sel = $('selSite');
+            sel.innerHTML = '<option value="">-- Choisir --</option>';
+            sel.disabled = !eleveurId;
+            $('selBatiment').innerHTML = '<option value="">-- Choisir --</option>';
+            $('selBatiment').disabled = true;
+            $('selLot').innerHTML = '<option value="">-- Choisir --</option>';
+            $('selLot').disabled = true;
+            hideCards();
+
+            if (!eleveurId || !supabaseClient) return;
+
+            supabaseClient.from('sites').select('*').eq('eleveur_id', eleveurId).order('nom').then(function(res) {
+                var data = res.data || [];
+                for (var i = 0; i < data.length; i++) {
+                    var s = data[i];
+                    var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
+                    sel.appendChild(opt);
+                }
+                if (data.length === 1) {
+                    sel.value = data[0].id;
+                    fetchBatiments();
+                }
+            });
+        }
+
+        function fetchBatiments() {
+            var siteId = $('selSite').value;
+            var sel = $('selBatiment');
+            sel.innerHTML = '<option value="">-- Choisir --</option>';
+            sel.disabled = !siteId;
+            $('selLot').innerHTML = '<option value="">-- Choisir --</option>';
+            $('selLot').disabled = true;
+            hideCards();
+
+            if (!siteId || !supabaseClient) return;
+
+            supabaseClient.from('batiments').select('*').eq('site_id', siteId).order('nom').then(function(res) {
+                var data = res.data || [];
+                for (var i = 0; i < data.length; i++) {
+                    var b = data[i];
+                    var opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.nom;
+                    sel.appendChild(opt);
+                }
+                if (data.length === 1) {
+                    sel.value = data[0].id;
+                    fetchLots();
+                }
+            });
+        }
+
+        function fetchLots() {
+            var batId = $('selBatiment').value;
+            var sel = $('selLot');
+            sel.innerHTML = '<option value="">-- Choisir --</option>';
+            sel.disabled = !batId;
+            hideCards();
+
+            if (!batId || !supabaseClient) return;
+
+            supabaseClient.from('lots').select('*, souches(nom)').eq('batiment_id', batId)
+                .order('date_mise_place', { ascending: false }).then(function(res) {
+                var data = res.data || [];
+                for (var i = 0; i < data.length; i++) {
+                    var l = data[i];
+                    var opt = document.createElement('option');
+                    opt.value = l.id;
+                    opt.setAttribute('data-json', JSON.stringify(l));
+                    var ico = l.statut === 'actif' ? '🟢' : '⚪';
+                    var sn = l.souches ? l.souches.nom : 'N/A';
+                    opt.textContent = ico + ' ' + l.code_lot + ' - ' + sn;
+                    sel.appendChild(opt);
+                }
+                var active = data.find(function(x) { return x.statut === 'actif'; });
+                if (active) {
+                    sel.value = active.id;
+                    fetchLotData();
+                }
+            });
+        }
+
+        function fetchLotData() {
+            var lotId = $('selLot').value;
+            if (!lotId || !supabaseClient) {
+                hideCards();
+                return;
+            }
+
+            var opt = document.querySelector('#selLot option[value="' + lotId + '"]');
+            var lot = {};
+            try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
+
+            $('lotCode').textContent = lot.code_lot || '-';
+            $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '-';
+            $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '-';
+            $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '-';
+            if (lot.date_mise_place) {
+                var age = Math.floor((new Date() - new Date(lot.date_mise_place)) / 86400000);
+                $('lotAge').textContent = age + ' j';
+            } else {
+                $('lotAge').textContent = '-';
+            }
+            $('lotStatut').textContent = lot.statut || '-';
+
+            Promise.all([
+                supabaseClient.from('donnees_poids').select('*').eq('lot_id', lotId).order('jour_age'),
+                supabaseClient.from('donnees_mortalite').select('*').eq('lot_id', lotId).order('jour_age'),
+                supabaseClient.from('donnees_aliment').select('*').eq('lot_id', lotId).order('jour_age')
+            ]).then(function(results) {
+                dataLot.poids = results[0].data || [];
+                dataLot.mortalite = results[1].data || [];
+                dataLot.aliment = results[2].data || [];
+                updateStats();
+                drawChart();
+                showCards();
+            });
+        }
+
+        function updateStats() {
+            if (dataLot.poids.length) {
+                var p = dataLot.poids[dataLot.poids.length - 1];
+                $('sPoids').textContent = Math.round(p.poids_moyen || 0);
+            }
+            if (dataLot.mortalite.length) {
+                var m = dataLot.mortalite[dataLot.mortalite.length - 1];
+                $('sMort').textContent = (m.taux_mortalite_cumul || 0).toFixed(2);
+            }
+            if (dataLot.aliment.length) {
+                var a = dataLot.aliment[dataLot.aliment.length - 1];
+                $('sAlim').textContent = Math.round(a.conso_par_animal || 0);
+                $('sIC').textContent = a.indice_conso ? a.indice_conso.toFixed(2) : '-';
+            }
+        }
+
+        function setChartType(t) {
+            chartType = t;
+            var btns = $('typeBtns').getElementsByClassName('type-btn');
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].classList.remove('active');
+                if (btns[i].getAttribute('data-type') === t) {
+                    btns[i].classList.add('active');
+                }
+            }
+            drawChart();
+        }
+
+        function drawChart() {
+            var ctx = $('chart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            var vals = [], lbls = [], title = '', unit = '';
+
+            if (chartType === 'poids') {
+                for (var i = 0; i < dataLot.poids.length; i++) {
+                    vals.push(dataLot.poids[i].poids_moyen);
+                    lbls.push('J' + dataLot.poids[i].jour_age);
+                }
+                title = 'Poids moyen'; unit = 'g';
+            } else if (chartType === 'mortalite') {
+                for (var i = 0; i < dataLot.mortalite.length; i++) {
+                    vals.push(dataLot.mortalite[i].taux_mortalite_cumul || 0);
+                    lbls.push('J' + dataLot.mortalite[i].jour_age);
+                }
+                title = 'Mortalité cumulée'; unit = '%';
+            } else {
+                for (var i = 0; i < dataLot.aliment.length; i++) {
+                    vals.push(dataLot.aliment[i].conso_par_animal || 0);
+                    lbls.push('J' + dataLot.aliment[i].jour_age);
+                }
+                title = 'Consommation aliment'; unit = 'g';
+            }
+
+            $('chartTitle').textContent = title;
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: lbls,
+                    datasets: [{
+                        label: title,
+                        data: vals,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { ticks: { callback: function(v) { return v + ' ' + unit; } } } }
+                }
+            });
+        }
+
+        function showCards() {
+            $('lotInfoCard').classList.remove('hidden');
+            $('statsCards').classList.remove('hidden');
+            $('chartBox').classList.remove('hidden');
+            $('emptyCard').classList.add('hidden');
+        }
+
+        function hideCards() {
+            $('lotInfoCard').classList.add('hidden');
+            $('statsCards').classList.add('hidden');
+            $('chartBox').classList.add('hidden');
+            $('emptyCard').classList.remove('hidden');
+        }
+
+        // ====================
+        // EVENT LISTENERS
+        // ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load config
+            var cfg = loadConfig();
+            if (cfg.url) $('cfgUrl').value = cfg.url;
+            if (cfg.key) $('cfgKey').value = cfg.key;
+            initDB();
+
+            // Login
+            $('loginBtn').addEventListener('click', doLogin);
+            
+            // Enter key on password field
+            $('loginPass').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    doLogin();
+                }
+            });
+            
+            // Enter key on user field
+            $('loginUser').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    $('loginPass').focus();
+                }
+            });
+
+            // Config
+            $('btnTestSupabase').addEventListener('click', testSupabase);
+            $('btnSaveSupabase').addEventListener('click', saveSupabase);
+            $('btnSaveTuffigo').addEventListener('click', saveTuffigo);
+            $('btnBackLogin').addEventListener('click', function() { showPage('pageLogin'); });
+
+            // App
+            $('appBtnConfig').addEventListener('click', function() { showPage('pageConfig'); });
+            $('appBtnLogout').addEventListener('click', doLogout);
+
+            // Selectors
+            $('selEleveur').addEventListener('change', fetchSites);
+            $('selSite').addEventListener('change', fetchBatiments);
+            $('selBatiment').addEventListener('change', fetchLots);
+            $('selLot').addEventListener('change', fetchLotData);
+
+            // Chart type buttons
+            var typeBtns = $('typeBtns').getElementsByClassName('type-btn');
+            for (var i = 0; i < typeBtns.length; i++) {
+                typeBtns[i].addEventListener('click', function() {
+                    setChartType(this.getAttribute('data-type'));
+                });
+            }
+        });
+    </script>
+</body>
+</html>

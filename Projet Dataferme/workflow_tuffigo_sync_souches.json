@@ -1,0 +1,481 @@
+{
+  "name": "Tuffigo - Sync Souches",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily",
+      "name": "Tous les jours 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.mytuffigorapidex.com/group/strains",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.TUFFIGO_API_KEY }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-strains",
+      "name": "GET Souches Tuffigo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "strains",
+        "options": {}
+      },
+      "id": "split-strains",
+      "name": "Split Souches",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/souches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tuffigo_id\": {{ $json.id }},\n  \"nom\": \"{{ $json.name }}\",\n  \"visibilite\": \"{{ $json.shared ? 'shared' : 'private' }}\",\n  \"created_at_tuffigo\": \"{{ $json.date || null }}\",\n  \"last_sync_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "upsert-souche",
+      "name": "Upsert Souche",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.mytuffigorapidex.com/group/strains/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.TUFFIGO_API_KEY }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-strain-detail",
+      "name": "GET Détail Souche",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transformer les consignes de souche (data.daily) en standards\nconst strainData = $input.first().json;\nconst strainId = strainData.id;\nconst results = [];\n\n// Vérifier si data.daily existe\nif (strainData.data && strainData.data.daily && Array.isArray(strainData.data.daily)) {\n  for (const dayConsign of strainData.data.daily) {\n    const jourAge = dayConsign.dayAge || dayConsign.day;\n    \n    // Standards de poids\n    if (dayConsign.weight !== undefined) {\n      results.push({\n        type: 'poids',\n        souche_tuffigo_id: strainId,\n        jour_age: jourAge,\n        poids_min: Math.round(dayConsign.weight * 0.92),\n        poids_max: Math.round(dayConsign.weight * 1.08),\n        poids_cible: dayConsign.weight\n      });\n    }\n    \n    // Standards de mortalité cumulée\n    if (dayConsign.cumMortality !== undefined) {\n      results.push({\n        type: 'mortalite',\n        souche_tuffigo_id: strainId,\n        jour_age: jourAge,\n        mortalite_min: Math.max(0, dayConsign.cumMortality - 1),\n        mortalite_max: dayConsign.cumMortality + 1.5,\n        mortalite_cible: dayConsign.cumMortality\n      });\n    }\n    \n    // Standards de consommation d'aliment\n    if (dayConsign.feedConsumption !== undefined) {\n      results.push({\n        type: 'aliment',\n        souche_tuffigo_id: strainId,\n        jour_age: jourAge,\n        conso_min: Math.round(dayConsign.feedConsumption * 0.9 * 10) / 10,\n        conso_max: Math.round(dayConsign.feedConsumption * 1.1 * 10) / 10,\n        conso_cible: dayConsign.feedConsumption\n      });\n    }\n  }\n}\n\nreturn results.map(item => ({ json: item }));"
+      },
+      "id": "transform-standards",
+      "name": "Transformer Standards",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "poids",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "poids",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "mortalite",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "mortalite",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "aliment",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "aliment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "router-standards",
+      "name": "Router Standards",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_standard_poids",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "upsert-standard-poids",
+      "name": "Upsert Standard Poids",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_standard_mortalite",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "upsert-standard-mortalite",
+      "name": "Upsert Standard Mortalité",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_standard_aliment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "upsert-standard-aliment",
+      "name": "Upsert Standard Aliment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/sync_logs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type_entite\": \"souches\",\n  \"action\": \"sync\",\n  \"status\": \"success\",\n  \"completed_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "log-sync",
+      "name": "Log Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1800, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Synchronisation des Souches\n\nCe workflow synchronise :\n- Les souches depuis l'API Tuffigo\n- Les standards (poids, mortalité, aliment) par jour d'âge\n\n**Fréquence** : 1 fois par jour à 6h\n\n**Endpoints utilisés** :\n- GET /strains\n- GET /strains/{id}",
+        "height": 220,
+        "width": 300
+      },
+      "id": "note",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-280, 200]
+    }
+  ],
+  "connections": {
+    "Tous les jours 6h": {
+      "main": [
+        [
+          {
+            "node": "GET Souches Tuffigo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Souches Tuffigo": {
+      "main": [
+        [
+          {
+            "node": "Split Souches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Souches": {
+      "main": [
+        [
+          {
+            "node": "Upsert Souche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Souche": {
+      "main": [
+        [
+          {
+            "node": "GET Détail Souche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Détail Souche": {
+      "main": [
+        [
+          {
+            "node": "Transformer Standards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transformer Standards": {
+      "main": [
+        [
+          {
+            "node": "Router Standards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Standards": {
+      "main": [
+        [
+          {
+            "node": "Upsert Standard Poids",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Standard Mortalité",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Standard Aliment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Standard Poids": {
+      "main": [
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Standard Mortalité": {
+      "main": [
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Standard Aliment": {
+      "main": [
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Tuffigo"
+    },
+    {
+      "name": "Souches"
+    }
+  ]
+}

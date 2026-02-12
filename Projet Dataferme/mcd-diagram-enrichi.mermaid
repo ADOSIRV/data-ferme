@@ -1,0 +1,341 @@
+erDiagram
+    %% Configuration API
+    API_CONFIG {
+        uuid id PK
+        varchar api_key
+        varchar base_url
+        timestamptz last_sync
+        timestamptz created_at
+    }
+
+    %% Utilisateurs et Éleveurs
+    USERS ||--o| ELEVEURS : "possede compte"
+    USERS {
+        uuid id PK
+        varchar email UK
+        varchar password_hash
+        varchar nom
+        varchar role
+        timestamptz created_at
+        timestamptz last_login
+    }
+
+    ELEVEURS ||--|{ SITES : "possede"
+    ELEVEURS ||--|{ PRE_BANDES : "prepare"
+    ELEVEURS {
+        uuid id PK
+        integer tuffigo_id UK "breeder_id API"
+        varchar inrae_id "SIRET national"
+        uuid user_id FK
+        varchar code_eleveur UK
+        varchar nom
+        varchar prenom
+        varchar raison_sociale
+        varchar telephone
+        varchar email
+        varchar siret
+        jsonb adresse_json
+        jsonb permissions_json
+        timestamptz created_at
+    }
+
+    %% Sites et Bâtiments
+    SITES ||--|{ BATIMENTS : "contient"
+    SITES {
+        uuid id PK
+        integer tuffigo_id UK "breeding_id API"
+        uuid eleveur_id FK
+        varchar nom
+        varchar adresse
+        varchar code_postal
+        varchar ville
+        varchar departement
+        timestamptz created_at
+    }
+
+    BATIMENTS ||--|{ LOTS : "accueille"
+    BATIMENTS ||--|{ REGULATEURS : "equipe"
+    BATIMENTS ||--o{ SILOS : "contient"
+    BATIMENTS ||--o{ COMPTEURS_EAU : "contient"
+    BATIMENTS ||--o{ VANNES : "contient"
+    BATIMENTS {
+        uuid id PK
+        integer tuffigo_id UK "building_id API"
+        uuid site_id FK
+        varchar nom
+        integer capacite
+        timestamptz created_at
+    }
+
+    REGULATEURS {
+        uuid id PK
+        integer tuffigo_id UK
+        uuid batiment_id FK
+        varchar nom
+        varchar type "avitouch etc"
+        varchar version
+        timestamptz created_at_tuffigo
+        timestamptz created_at
+    }
+
+    %% Souches et Standards
+    SOUCHES ||--|{ LOTS : "utilisee par"
+    SOUCHES ||--|{ STANDARDS_POIDS : "definit"
+    SOUCHES ||--|{ STANDARDS_MORTALITE : "definit"
+    SOUCHES ||--|{ STANDARDS_OEUFS : "definit"
+    SOUCHES ||--|{ STANDARDS_ALIMENT : "definit"
+    SOUCHES {
+        uuid id PK
+        integer tuffigo_id UK "strain id API"
+        varchar nom UK
+        varchar type "shared ou private"
+        text description
+        jsonb consignes_json "data.daily API"
+        date created_at_tuffigo
+        timestamptz created_at
+    }
+
+    STANDARDS_POIDS {
+        uuid id PK
+        uuid souche_id FK
+        integer jour_age
+        decimal poids_min
+        decimal poids_max
+        date date_effet
+        timestamptz created_at
+    }
+
+    STANDARDS_MORTALITE {
+        uuid id PK
+        uuid souche_id FK
+        integer jour_age
+        decimal mortalite_min
+        decimal mortalite_max
+        date date_effet
+        timestamptz created_at
+    }
+
+    STANDARDS_OEUFS {
+        uuid id PK
+        uuid souche_id FK
+        integer jour_age
+        decimal taux_ponte_min
+        decimal taux_ponte_max
+        date date_effet
+        timestamptz created_at
+    }
+
+    STANDARDS_ALIMENT {
+        uuid id PK
+        uuid souche_id FK
+        integer jour_age
+        decimal conso_min
+        decimal conso_max
+        date date_effet
+        timestamptz created_at
+    }
+
+    %% Lots et Pré-bandes
+    LOTS ||--|{ DONNEES_POIDS : "mesures"
+    LOTS ||--|{ DONNEES_MORTALITE : "mesures"
+    LOTS ||--|{ DONNEES_OEUFS : "mesures"
+    LOTS ||--|{ DONNEES_ALIMENT : "mesures"
+    LOTS ||--|{ DONNEES_EAU : "mesures"
+    LOTS ||--|{ DONNEES_AMBIANCE : "mesures"
+    LOTS ||--|{ DONNEES_ENERGIE : "mesures"
+    LOTS {
+        uuid id PK
+        integer tuffigo_id UK "batch id API"
+        uuid batiment_id FK
+        uuid souche_id FK
+        varchar code_lot UK
+        integer effectif_depart
+        integer effectif_male
+        integer effectif_femelle
+        date date_mise_place "entranceDate"
+        date date_sortie_prevue "exitDate"
+        varchar statut
+        varchar couvoir_id "hatchery_id"
+        timestamptz created_at
+    }
+
+    PRE_BANDES {
+        uuid id PK
+        integer tuffigo_id UK
+        uuid eleveur_id FK
+        uuid batiment_id FK
+        uuid souche_id FK
+        varchar nom
+        integer effectif_male
+        integer effectif_femelle
+        date date_entree_prevue
+        date date_sortie_prevue
+        timestamptz created_at
+    }
+
+    %% Données de Production
+    DONNEES_POIDS {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        decimal poids_moyen
+        decimal poids_moyen_male
+        decimal poids_moyen_femelle
+        integer nb_pesees
+        decimal homogeneite
+        decimal objectif_poids
+        varchar source "tuffigo ou manuel"
+        timestamptz created_at
+    }
+
+    DONNEES_MORTALITE {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        integer nombre_morts
+        integer morts_male
+        integer morts_femelle
+        integer morts_elimines
+        integer morts_malades
+        integer effectif_actuel
+        decimal taux_mortalite_cumul
+        varchar source
+        timestamptz created_at
+    }
+
+    DONNEES_OEUFS {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        integer nombre_oeufs
+        decimal taux_ponte
+        varchar source
+        timestamptz created_at
+    }
+
+    DONNEES_ALIMENT {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        decimal consommation_kg
+        decimal conso_par_animal
+        decimal indice_conso
+        decimal conso_cumul
+        varchar source
+        timestamptz created_at
+    }
+
+    DONNEES_EAU {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        decimal consommation_litres
+        decimal conso_par_animal
+        decimal ratio_eau_aliment
+        decimal conso_cumul
+        varchar source
+        timestamptz created_at
+    }
+
+    DONNEES_AMBIANCE {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        decimal temperature
+        decimal hygrometrie
+        integer co2
+        varchar source
+        timestamptz created_at
+    }
+
+    DONNEES_ENERGIE {
+        uuid id PK
+        uuid lot_id FK
+        date date_mesure
+        integer jour_age
+        decimal gaz_consommation
+        decimal electricite
+        decimal vitesse_air
+        varchar source
+        timestamptz created_at
+    }
+
+    %% WindToFeed - Équipements
+    SILOS ||--|{ MESURES_SILOS : "mesures"
+    SILOS {
+        uuid id PK
+        integer tuffigo_id UK
+        uuid batiment_id FK
+        varchar nom
+        varchar type
+        varchar formule
+        timestamptz created_at
+    }
+
+    MESURES_SILOS {
+        uuid id PK
+        uuid silo_id FK
+        uuid lot_id FK
+        date date_mesure
+        decimal quantite_distribuee
+        decimal humidite
+        timestamptz created_at
+    }
+
+    COMPTEURS_EAU ||--|{ MESURES_COMPTEURS_EAU : "mesures"
+    COMPTEURS_EAU {
+        uuid id PK
+        integer tuffigo_id UK
+        uuid batiment_id FK
+        varchar nom
+        varchar type
+        timestamptz created_at
+    }
+
+    MESURES_COMPTEURS_EAU {
+        uuid id PK
+        uuid compteur_id FK
+        uuid lot_id FK
+        date date_mesure
+        decimal valeur
+        decimal consumption
+        timestamptz created_at
+    }
+
+    VANNES ||--|{ MESURES_VANNES : "mesures"
+    VANNES {
+        uuid id PK
+        integer tuffigo_id UK
+        uuid batiment_id FK
+        varchar nom
+        varchar room_id
+        varchar animal_kind
+        timestamptz created_at
+    }
+
+    MESURES_VANNES {
+        uuid id PK
+        uuid vanne_id FK
+        uuid lot_id FK
+        date date_mesure
+        decimal quantite
+        timestamptz created_at
+    }
+
+    %% Synchronisation
+    SYNC_LOGS {
+        uuid id PK
+        varchar type_entite
+        uuid entite_id
+        integer tuffigo_id
+        varchar action "create update delete"
+        varchar status "success error"
+        text error_message
+        timestamptz synced_at
+    }

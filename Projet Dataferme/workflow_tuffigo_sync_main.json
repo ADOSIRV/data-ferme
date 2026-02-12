@@ -1,0 +1,1152 @@
+{
+  "name": "Tuffigo Rapidex - Synchronisation Complete",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Toutes les heures",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/get_api_config",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-api-config",
+      "name": "Récupérer Config API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-api-key",
+              "leftValue": "={{ $json.api_key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "check-active",
+              "leftValue": "={{ $json.is_active }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-config",
+      "name": "Config valide?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.mytuffigorapidex.com/group/breeders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Récupérer Config API').item.json.api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-breeders",
+      "name": "GET Éleveurs Tuffigo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "breeders",
+        "options": {}
+      },
+      "id": "split-breeders",
+      "name": "Split Éleveurs",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [920, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/eleveurs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tuffigo_id\": {{ $json.id }},\n  \"inrae_id\": \"{{ $json.inrae_id || '' }}\",\n  \"code_eleveur\": \"TUF-{{ $json.id }}\",\n  \"nom\": \"{{ $json.name || '' }}\",\n  \"prenom\": \"{{ $json.firstName || '' }}\",\n  \"raison_sociale\": \"{{ $json.company || '' }}\",\n  \"email\": \"{{ $json.email || '' }}\",\n  \"siret\": \"{{ $json.siret || '' }}\",\n  \"adresse_json\": {{ JSON.stringify($json.address || {}) }},\n  \"permissions_json\": {{ JSON.stringify($json.generalPermissions || {}) }},\n  \"statut_tuffigo\": \"{{ $json.status || 'actif' }}\",\n  \"last_sync_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "upsert-eleveur",
+      "name": "Upsert Éleveur Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1140, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.mytuffigorapidex.com/group/breeders/{{ $('Split Éleveurs').item.json.id }}/breedings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Récupérer Config API').item.json.api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-breedings",
+      "name": "GET Sites (Breedings)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1360, 200]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "breedings",
+        "options": {}
+      },
+      "id": "split-breedings",
+      "name": "Split Sites",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1580, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_site_from_tuffigo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tuffigo_id\": {{ $json.id }},\n  \"p_eleveur_tuffigo_id\": {{ $('Split Éleveurs').item.json.id }},\n  \"p_nom\": \"{{ $json.name || '' }}\",\n  \"p_adresse\": \"{{ $json.address?.street || '' }}\",\n  \"p_code_postal\": \"{{ $json.address?.zipCode || '' }}\",\n  \"p_ville\": \"{{ $json.address?.city || '' }}\"\n}",
+        "options": {}
+      },
+      "id": "upsert-site",
+      "name": "Upsert Site Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1800, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.mytuffigorapidex.com/group/breedings/{{ $json.id }}/buildings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Récupérer Config API').item.json.api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-buildings",
+      "name": "GET Bâtiments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2020, 200]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "buildings",
+        "options": {}
+      },
+      "id": "split-buildings",
+      "name": "Split Bâtiments",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [2240, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_batiment_from_tuffigo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tuffigo_id\": {{ $json.id }},\n  \"p_site_tuffigo_id\": {{ $('Split Sites').item.json.id }},\n  \"p_nom\": \"{{ $json.name || '' }}\",\n  \"p_capacite\": {{ $json.capacity || 'null' }}\n}",
+        "options": {}
+      },
+      "id": "upsert-batiment",
+      "name": "Upsert Bâtiment Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2460, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.mytuffigorapidex.com/group/buildings/{{ $json.id }}/batchs?filter=current",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Récupérer Config API').item.json.api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-batchs",
+      "name": "GET Lots (Batchs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2680, 200]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "batchs",
+        "options": {}
+      },
+      "id": "split-batchs",
+      "name": "Split Lots",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [2900, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_lot_from_tuffigo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tuffigo_id\": {{ $json.id }},\n  \"p_batiment_tuffigo_id\": {{ $('Split Bâtiments').item.json.id }},\n  \"p_souche_tuffigo_id\": {{ $json.strain?.id || 'null' }},\n  \"p_code_lot\": \"{{ $json.name || '' }}\",\n  \"p_effectif_depart\": {{ $json.animals?.reduce((sum, a) => sum + (a.delivered || 0), 0) || 0 }},\n  \"p_effectif_male\": {{ $json.animals?.find(a => a.kind === 'male')?.delivered || 0 }},\n  \"p_effectif_femelle\": {{ $json.animals?.find(a => a.kind === 'female')?.delivered || 0 }},\n  \"p_date_mise_place\": \"{{ $json.entranceDate || '' }}\",\n  \"p_date_sortie_prevue\": \"{{ $json.exitDate || '' }}\",\n  \"p_couvoir_id\": \"{{ $json.hatchery_id || '' }}\"\n}",
+        "options": {}
+      },
+      "id": "upsert-lot",
+      "name": "Upsert Lot Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3120, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.mytuffigorapidex.com/group/buildings/{{ $('Split Bâtiments').item.json.id }}/batch/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Récupérer Config API').item.json.api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-batch-data",
+      "name": "GET Données Production",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3340, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transformer les données de production Tuffigo en format Supabase\nconst batchData = $input.first().json;\nconst lotTuffigoId = $('Split Lots').first().json.id;\n\nconst results = [];\n\n// Données quotidiennes (data array)\nif (batchData.data && Array.isArray(batchData.data)) {\n  for (const dayData of batchData.data) {\n    const date = dayData.date;\n    const jourAge = dayData.dayAge || 0;\n    \n    // POIDS\n    if (dayData.weight !== undefined && dayData.weight !== null) {\n      results.push({\n        type: 'poids',\n        lot_tuffigo_id: lotTuffigoId,\n        date_mesure: date,\n        jour_age: jourAge,\n        poids_moyen: dayData.weight,\n        poids_moyen_male: dayData.weightByGender?.male || null,\n        poids_moyen_femelle: dayData.weightByGender?.female || null,\n        homogeneite: dayData.homogeneity || null,\n        nb_pesees: dayData.weighedAnimalsNumber || null\n      });\n    }\n    \n    // MORTALITÉ\n    if (dayData.totalDeadAnimals !== undefined) {\n      results.push({\n        type: 'mortalite',\n        lot_tuffigo_id: lotTuffigoId,\n        date_mesure: date,\n        jour_age: jourAge,\n        nombre_morts: dayData.totalDeadAnimals || 0,\n        morts_male: dayData.deadByGender?.male || 0,\n        morts_femelle: dayData.deadByGender?.female || 0,\n        morts_elimines: dayData.eliminatedAnimals || 0,\n        effectif_actuel: dayData.currentAnimals || null,\n        taux_mortalite_cumul: dayData.cumMortality || null\n      });\n    }\n    \n    // ALIMENT (consumption)\n    if (dayData.totalFeedConsumption !== undefined) {\n      results.push({\n        type: 'aliment',\n        lot_tuffigo_id: lotTuffigoId,\n        date_mesure: date,\n        jour_age: jourAge,\n        consommation_kg: dayData.totalFeedConsumption || 0,\n        conso_par_animal: dayData.animalFeedConsumption || null,\n        indice_conso: dayData.feedRate || null,\n        conso_cumul: dayData.cumFeedConsumption || null\n      });\n    }\n    \n    // EAU\n    if (dayData.totalWaterConsumption !== undefined) {\n      results.push({\n        type: 'eau',\n        lot_tuffigo_id: lotTuffigoId,\n        date_mesure: date,\n        jour_age: jourAge,\n        consommation_litres: dayData.totalWaterConsumption || 0,\n        conso_par_animal: dayData.animalWaterConsumption || null,\n        ratio_eau_aliment: dayData.waterFeedRatio || null\n      });\n    }\n    \n    // AMBIANCE\n    if (dayData.airTemperatureByProbe !== undefined || dayData.humidityByProbe !== undefined) {\n      results.push({\n        type: 'ambiance',\n        lot_tuffigo_id: lotTuffigoId,\n        date_mesure: date,\n        jour_age: jourAge,\n        temperature: dayData.airTemperatureByProbe || null,\n        hygrometrie: dayData.humidityByProbe || null,\n        co2: dayData.co2 || null\n      });\n    }\n    \n    // ENERGIE\n    if (dayData.gas !== undefined || dayData.electricity !== undefined) {\n      results.push({\n        type: 'energie',\n        lot_tuffigo_id: lotTuffigoId,\n        date_mesure: date,\n        jour_age: jourAge,\n        gaz_consommation: dayData.gas || null,\n        electricite: dayData.electricity || null,\n        vitesse_air: dayData.speed || null\n      });\n    }\n  }\n}\n\nreturn results.map(item => ({ json: item }));"
+      },
+      "id": "transform-data",
+      "name": "Transformer Données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3560, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "type-poids",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "poids",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "router-type",
+      "name": "Router par Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [3780, 200],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "poids",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "poids",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "mortalite",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "mortalite",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "aliment",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "aliment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "eau",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "eau",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "ambiance",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "ambiance",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "energie",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "energie",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_donnees_poids",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "insert-poids",
+      "name": "Insert Poids",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4020, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_donnees_mortalite",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "insert-mortalite",
+      "name": "Insert Mortalité",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4020, 120]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_donnees_aliment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "insert-aliment",
+      "name": "Insert Aliment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4020, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_donnees_eau",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "insert-eau",
+      "name": "Insert Eau",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4020, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_donnees_ambiance",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "insert-ambiance",
+      "name": "Insert Ambiance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4020, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/upsert_donnees_energie",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "insert-energie",
+      "name": "Insert Énergie",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4020, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/sync_logs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type_entite\": \"sync_complete\",\n  \"action\": \"sync\",\n  \"status\": \"success\",\n  \"records_processed\": {{ $('Split Éleveurs').all().length || 0 }},\n  \"completed_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "log-success",
+      "name": "Log Succès",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4300, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Workflow de Synchronisation Tuffigo Rapidex → Supabase\n\n### Flux de données :\n1. **Éleveurs** (breeders) → table `eleveurs`\n2. **Sites** (breedings) → table `sites`\n3. **Bâtiments** (buildings) → table `batiments`\n4. **Lots** (batchs) → table `lots`\n5. **Données Production** → tables `donnees_*`\n\n### Configuration requise :\n- Variable `SUPABASE_URL`\n- Variable `SUPABASE_ANON_KEY`\n- Variable `SUPABASE_SERVICE_KEY`\n- Clé API Tuffigo dans table `api_config`",
+        "height": 320,
+        "width": 380
+      },
+      "id": "note-info",
+      "name": "Info Workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-280, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-msg",
+              "name": "error",
+              "value": "Configuration API manquante ou désactivée",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-error",
+      "name": "Config Invalide",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [700, 400]
+    }
+  ],
+  "connections": {
+    "Toutes les heures": {
+      "main": [
+        [
+          {
+            "node": "Récupérer Config API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer Config API": {
+      "main": [
+        [
+          {
+            "node": "Config valide?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config valide?": {
+      "main": [
+        [
+          {
+            "node": "GET Éleveurs Tuffigo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Config Invalide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Éleveurs Tuffigo": {
+      "main": [
+        [
+          {
+            "node": "Split Éleveurs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Éleveurs": {
+      "main": [
+        [
+          {
+            "node": "Upsert Éleveur Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Éleveur Supabase": {
+      "main": [
+        [
+          {
+            "node": "GET Sites (Breedings)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Sites (Breedings)": {
+      "main": [
+        [
+          {
+            "node": "Split Sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Sites": {
+      "main": [
+        [
+          {
+            "node": "Upsert Site Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Site Supabase": {
+      "main": [
+        [
+          {
+            "node": "GET Bâtiments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Bâtiments": {
+      "main": [
+        [
+          {
+            "node": "Split Bâtiments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Bâtiments": {
+      "main": [
+        [
+          {
+            "node": "Upsert Bâtiment Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Bâtiment Supabase": {
+      "main": [
+        [
+          {
+            "node": "GET Lots (Batchs)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Lots (Batchs)": {
+      "main": [
+        [
+          {
+            "node": "Split Lots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Lots": {
+      "main": [
+        [
+          {
+            "node": "Upsert Lot Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Lot Supabase": {
+      "main": [
+        [
+          {
+            "node": "GET Données Production",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Données Production": {
+      "main": [
+        [
+          {
+            "node": "Transformer Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transformer Données": {
+      "main": [
+        [
+          {
+            "node": "Router par Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router par Type": {
+      "main": [
+        [
+          {
+            "node": "Insert Poids",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Mortalité",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Aliment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Eau",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Ambiance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Énergie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Poids": {
+      "main": [
+        [
+          {
+            "node": "Log Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Mortalité": {
+      "main": [
+        [
+          {
+            "node": "Log Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Aliment": {
+      "main": [
+        [
+          {
+            "node": "Log Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Eau": {
+      "main": [
+        [
+          {
+            "node": "Log Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Ambiance": {
+      "main": [
+        [
+          {
+            "node": "Log Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Énergie": {
+      "main": [
+        [
+          {
+            "node": "Log Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Tuffigo",
+      "createdAt": "2024-01-29T08:00:00.000Z",
+      "updatedAt": "2024-01-29T08:00:00.000Z"
+    },
+    {
+      "name": "Supabase",
+      "createdAt": "2024-01-29T08:00:00.000Z",
+      "updatedAt": "2024-01-29T08:00:00.000Z"
+    },
+    {
+      "name": "Production",
+      "createdAt": "2024-01-29T08:00:00.000Z",
+      "updatedAt": "2024-01-29T08:00:00.000Z"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-29T08:00:00.000Z",
+  "versionId": "1"
+}
