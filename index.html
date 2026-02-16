@@ -3,782 +3,975 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord Avicole v6</title>
+    <title>🐔 Avicole - Multi-Courbes v8</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root{--bg-primary:#0a0f1a;--bg-secondary:#111827;--bg-card:#1a2236;--accent-green:#10b981;--accent-green-light:rgba(16,185,129,0.15);--accent-amber:#f59e0b;--accent-amber-light:rgba(245,158,11,0.15);--accent-blue:#3b82f6;--accent-blue-light:rgba(59,130,246,0.15);--accent-red:#ef4444;--accent-red-light:rgba(239,68,68,0.15);--text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;--border:#2d3a52}
-        *{margin:0;padding:0;box-sizing:border-box}body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh}
-        .page{display:none;min-height:100vh}.page.active{display:flex;align-items:center;justify-content:center}.page-app.active{display:block}
-        .login-container{width:100%;max-width:420px;padding:1.5rem}
-        .login-logo{text-align:center;margin-bottom:1.5rem}
-        .login-logo-icon{width:70px;height:70px;background:linear-gradient(135deg,var(--accent-green),var(--accent-blue));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:0.75rem}
-        .login-logo h1{font-size:1.3rem;margin-bottom:0.25rem}.login-logo p{color:var(--text-muted);font-size:0.85rem}
-        .card{background:var(--bg-card);border-radius:16px;padding:1.5rem;border:1px solid var(--border)}
-        .form-group{margin-bottom:1rem}.form-label{display:block;font-size:0.75rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:0.4rem}
-        .form-input{width:100%;padding:0.75rem;background:var(--bg-secondary);border:2px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:inherit;font-size:0.95rem}
-        .form-input:focus{outline:none;border-color:var(--accent-blue)}
-        .btn{width:100%;padding:0.85rem;border:none;border-radius:8px;font-family:inherit;font-size:0.95rem;font-weight:600;cursor:pointer}
-        .btn-primary{background:linear-gradient(135deg,var(--accent-green),var(--accent-blue));color:white}
-        .btn-secondary{background:var(--bg-secondary);border:2px solid var(--border);color:var(--text-secondary)}
-        .alert{padding:0.65rem;border-radius:6px;margin-bottom:0.75rem;display:none;font-size:0.8rem}.alert.show{display:block}
-        .alert-error{background:var(--accent-red-light);border:1px solid var(--accent-red);color:var(--accent-red)}
-        .alert-success{background:var(--accent-green-light);border:1px solid var(--accent-green);color:var(--accent-green)}
-        .alert-info{background:var(--accent-blue-light);border:1px solid var(--accent-blue);color:var(--accent-blue)}
-        .status-box{text-align:center;margin-top:1rem;padding:0.6rem;background:var(--bg-secondary);border-radius:6px;font-size:0.8rem}
-        .status-box.ok{background:var(--accent-green-light);color:var(--accent-green)}.status-box.warning{background:var(--accent-amber-light);color:var(--accent-amber)}.status-box.error{background:var(--accent-red-light);color:var(--accent-red)}
-        .config-container{width:100%;max-width:500px;padding:1.5rem}
-        .config-section{margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}.config-section:last-child{border-bottom:none}
-        .config-title{font-weight:600;margin-bottom:0.75rem;color:var(--accent-blue);font-size:0.9rem}
-        .btn-group{display:flex;gap:0.75rem;margin-top:0.75rem}.btn-group .btn{flex:1}
-        .back-link{display:block;text-align:center;margin-top:1rem;color:var(--accent-blue);cursor:pointer;font-size:0.85rem}
-        .session-bar{position:fixed;top:0.75rem;right:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:30px;padding:0.4rem 0.75rem;display:none;align-items:center;gap:0.5rem;font-size:0.75rem;z-index:1000}
-        .session-user{color:var(--text-primary);font-weight:500}
-        .session-role{padding:0.15rem 0.4rem;border-radius:4px;font-size:0.65rem;font-weight:600}
-        .session-role.config{background:var(--accent-red-light);color:var(--accent-red)}
-        .session-role.admin{background:var(--accent-amber-light);color:var(--accent-amber)}
-        .session-role.eleveur{background:var(--accent-green-light);color:var(--accent-green)}
-        .session-role.technicien{background:var(--accent-blue-light);color:var(--accent-blue)}
-        .session-btn{background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:0.25rem 0.5rem;color:var(--text-muted);font-size:0.7rem;cursor:pointer}
-        .session-btn:hover{border-color:var(--accent-blue);color:var(--text-primary)}
-        .container{max-width:1400px;margin:0 auto;padding:1.5rem}
-        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
-        .header-left{display:flex;align-items:center;gap:0.75rem}
-        .logo{width:40px;height:40px;background:linear-gradient(135deg,var(--accent-green),var(--accent-blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
-        .header h1{font-size:1.25rem}.header-subtitle{color:var(--text-muted);font-size:0.8rem}
-        .last-update{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text-muted);background:var(--bg-secondary);padding:0.4rem 0.75rem;border-radius:6px}
-        .farmer-card{background:var(--bg-card);border-radius:12px;padding:1rem;border:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
-        .farmer-icon{width:44px;height:44px;background:var(--accent-green-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
-        .farmer-info{flex:1;min-width:150px}.farmer-label{font-size:0.65rem;text-transform:uppercase;color:var(--text-muted);font-weight:600}
-        .farmer-name{font-size:1rem;font-weight:600}.farmer-company{font-size:0.85rem;color:var(--accent-green)}
-        .farmer-details{display:flex;gap:1.5rem;flex-wrap:wrap}.farmer-detail{display:flex;flex-direction:column}
-        .detail-label{font-size:0.65rem;text-transform:uppercase;color:var(--text-muted)}.detail-value{font-family:'JetBrains Mono',monospace;font-size:0.8rem}
-        .selectors-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem}
-        .selectors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem}
-        .selector-group label{display:block;font-size:0.65rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem;font-weight:600}
-        .selector-select{width:100%;padding:0.6rem 2rem 0.6rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-family:inherit;font-size:0.85rem;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2394a3b8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center}
-        .selector-select:disabled{opacity:0.5}.selector-select:focus{outline:none;border-color:var(--accent-blue)}
-        .lot-info-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem}
-        .lot-info-title{font-size:0.85rem;font-weight:600;margin-bottom:0.75rem}
-        .lot-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.6rem}
-        .lot-info-item{background:var(--bg-secondary);padding:0.6rem;border-radius:6px}
-        .lot-info-label{font-size:0.6rem;color:var(--text-muted);text-transform:uppercase}
-        .lot-info-value{font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600}.lot-info-value.hl{color:var(--accent-green)}
-        .controls-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
-        .control-box{background:var(--bg-card);border-radius:12px;padding:1rem;border:1px solid var(--border)}
-        .control-label{font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.6rem;font-weight:600}
-        .type-btns{display:flex;flex-wrap:wrap;gap:0.4rem}
-        .type-btn{padding:0.5rem 0.85rem;border:2px solid var(--border);background:transparent;border-radius:20px;cursor:pointer;font-family:inherit;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:0.3rem}
-        .type-btn:hover{border-color:var(--text-muted)}
-        .type-btn.active{border-color:var(--accent-green);background:var(--accent-green-light);color:var(--accent-green)}
-        .type-btn.active[data-type="mortalite"]{border-color:var(--accent-amber);background:var(--accent-amber-light);color:var(--accent-amber)}
-        .type-btn.active[data-type="aliment"]{border-color:var(--accent-blue);background:var(--accent-blue-light);color:var(--accent-blue)}
-        .type-btn.active[data-type="oeufs"]{border-color:var(--accent-amber);background:var(--accent-amber-light);color:var(--accent-amber)}
-        .period-btns{display:flex;gap:0.4rem}
-        .period-btn{flex:1;padding:0.5rem;border:1px solid var(--border);background:transparent;border-radius:6px;cursor:pointer;font-family:inherit;font-size:0.8rem;color:var(--text-secondary)}
-        .period-btn:hover{border-color:var(--text-muted)}
-        .period-btn.active{background:var(--bg-secondary);border-color:var(--accent-blue);color:var(--text-primary)}
-        .dashboard-grid{display:grid;grid-template-columns:1fr 280px;gap:1rem}
-        .chart-card{background:var(--bg-card);border-radius:16px;padding:1.25rem;border:1px solid var(--border)}
-        .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem}
-        .chart-title{font-size:1.1rem;font-weight:600}.chart-subtitle{color:var(--text-muted);font-size:0.8rem}
-        .chart-legend{display:flex;gap:1rem}
-        .legend-item{display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--text-secondary)}
-        .legend-line{width:20px;height:3px;border-radius:2px}.legend-line.actual{background:var(--accent-green)}.legend-line.std{background:var(--accent-blue);opacity:0.5}
-        .chart-container{height:350px;position:relative}
-        .side-panel{display:flex;flex-direction:column;gap:1rem}
-        .stats-card{background:var(--bg-card);border-radius:12px;padding:1rem;border:1px solid var(--border)}
-        .stats-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem}
-        .stats-title{font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);font-weight:600}
-        .stats-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem}
-        .stats-icon.green{background:var(--accent-green-light)}.stats-icon.amber{background:var(--accent-amber-light)}
-        .stats-value{font-size:1.6rem;font-weight:700}.stats-unit{font-size:0.9rem;color:var(--text-secondary)}
-        .stats-trend{display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;margin-top:0.3rem}
-        .trend-badge{padding:0.15rem 0.5rem;border-radius:20px;font-size:0.7rem;font-weight:600}
-        .trend-badge.pos{background:var(--accent-green-light);color:var(--accent-green)}
-        .trend-badge.neg{background:var(--accent-red-light);color:var(--accent-red)}
-        .trend-badge.neu{background:var(--accent-amber-light);color:var(--accent-amber)}
-        .trend-label{color:var(--text-muted)}
-        .data-info{background:var(--bg-card);border-radius:12px;padding:1rem;border:1px solid var(--border)}
-        .data-info-title{font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem}
-        .data-info-value{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--accent-blue)}
-        .empty-box{text-align:center;padding:3rem 1.5rem}.empty-icon{font-size:3rem;margin-bottom:0.75rem}
-        .debug-box{background:#1e293b;border:2px solid var(--accent-amber);border-radius:8px;padding:1rem;margin-top:1rem;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#fbbf24;max-height:200px;overflow-y:auto}
-        .footer{margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted)}
-        .hidden{display:none !important}
-        @media(max-width:1100px){.dashboard-grid{grid-template-columns:1fr}.side-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
-        @media(max-width:700px){.controls-row{grid-template-columns:1fr}.container{padding:1rem}.chart-container{height:280px}}
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --green: #22c55e;
+            --green-light: rgba(34,197,94,0.15);
+            --orange: #f97316;
+            --orange-light: rgba(249,115,22,0.15);
+            --blue: #3b82f6;
+            --blue-light: rgba(59,130,246,0.15);
+            --purple: #a855f7;
+            --purple-light: rgba(168,85,247,0.15);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #475569;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; }
+        
+        /* Pages */
+        .page { display: none; min-height: 100vh; }
+        .page.active { display: flex; align-items: center; justify-content: center; }
+        .page-app.active { display: block; }
+        
+        /* Login */
+        .login-box { width: 100%; max-width: 400px; padding: 2rem; }
+        .login-header { text-align: center; margin-bottom: 2rem; }
+        .login-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .login-title { font-size: 1.5rem; font-weight: 700; }
+        .login-subtitle { color: var(--text-dim); margin-top: 0.5rem; }
+        .card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem; text-transform: uppercase; }
+        .form-input { width: 100%; padding: 0.8rem 1rem; background: var(--bg-input); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; }
+        .form-input:focus { outline: none; border-color: var(--blue); }
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
+        .btn-secondary { background: var(--bg-input); color: var(--text); border: 2px solid var(--border); }
+        .alert { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        .alert.show { display: block; }
+        .alert-error { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #ef4444; }
+        .alert-success { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+        .status-box { text-align: center; margin-top: 1rem; padding: 0.7rem; background: var(--bg-input); border-radius: 8px; font-size: 0.85rem; }
+        .status-box.ok { background: var(--green-light); color: var(--green); }
+        .status-box.warn { background: var(--orange-light); color: var(--orange); }
+        
+        /* Config */
+        .config-box { width: 100%; max-width: 480px; padding: 2rem; }
+        .config-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+        .config-title { font-weight: 600; color: var(--blue); margin-bottom: 1rem; }
+        .btn-row { display: flex; gap: 0.75rem; margin-top: 1rem; }
+        .btn-row .btn { flex: 1; }
+        .back-link { display: block; text-align: center; margin-top: 1rem; color: var(--blue); cursor: pointer; }
+        
+        /* Session bar */
+        .session-bar { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.8rem; z-index: 1000; }
+        .session-user { font-weight: 500; }
+        .session-role { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; background: var(--green-light); color: var(--green); }
+        .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; }
+        
+        /* App container */
+        .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+        
+        /* Header */
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .app-logo { display: flex; align-items: center; gap: 1rem; }
+        .logo-icon { font-size: 2.5rem; }
+        .app-title { font-size: 1.4rem; font-weight: 700; }
+        .app-subtitle { color: var(--text-dim); font-size: 0.85rem; }
+        
+        /* Selectors */
+        .selectors-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .selectors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .selector-group label { display: block; font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.3rem; font-weight: 600; }
+        .selector-select { width: 100%; padding: 0.7rem 1rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; cursor: pointer; }
+        .selector-select:disabled { opacity: 0.5; }
+        
+        /* Lot info */
+        .lot-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .lot-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+        .lot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; }
+        .lot-item { background: var(--bg-input); padding: 0.6rem; border-radius: 8px; }
+        .lot-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; }
+        .lot-value { font-size: 0.9rem; font-weight: 600; }
+        .lot-value.highlight { color: var(--green); }
+        
+        /* ===== CONTRÔLES MULTI-INDICATEURS ===== */
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .control-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); }
+        .control-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.75rem; font-weight: 600; }
+        .control-hint { font-weight: 400; font-style: italic; opacity: 0.7; }
+        
+        /* Boutons indicateurs */
+        .indicator-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+        .indicator-btn {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            border: 2px solid var(--border);
+            background: transparent;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            transition: all 0.2s ease;
+        }
+        .indicator-btn:hover { border-color: var(--text-dim); background: var(--bg-input); }
+        .indicator-btn .icon { font-size: 1.1rem; }
+        .indicator-btn .axis-tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-dim);
+            margin-left: 0.3rem;
+        }
+        
+        /* États actifs */
+        .indicator-btn.selected-y1 {
+            border-color: var(--green);
+            background: var(--green-light);
+            color: var(--green);
+        }
+        .indicator-btn.selected-y1 .axis-tag { background: var(--green); color: white; }
+        
+        .indicator-btn.selected-y2 {
+            border-color: var(--orange);
+            background: var(--orange-light);
+            color: var(--orange);
+        }
+        .indicator-btn.selected-y2 .axis-tag { background: var(--orange); color: white; }
+        
+        /* Périodes */
+        .period-btns { display: flex; gap: 0.5rem; }
+        .period-btn {
+            flex: 1;
+            padding: 0.7rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            transition: all 0.2s;
+        }
+        .period-btn:hover { border-color: var(--text-dim); }
+        .period-btn.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+        
+        /* ===== GRAPHIQUE ===== */
+        .chart-card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+        .chart-title { font-size: 1.3rem; font-weight: 700; }
+        .chart-subtitle { color: var(--text-dim); font-size: 0.9rem; margin-top: 0.25rem; }
+        
+        /* Légende */
+        .chart-legend { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; }
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dim); }
+        .legend-line { width: 28px; height: 3px; border-radius: 2px; }
+        .legend-area { width: 28px; height: 16px; border-radius: 4px; opacity: 0.4; }
+        
+        .chart-container { height: 420px; position: relative; }
+        
+        /* Stats row */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .stat-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .stat-title { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
+        .stat-icon { font-size: 1.2rem; }
+        .stat-value { font-size: 1.8rem; font-weight: 700; }
+        .stat-unit { font-size: 1rem; color: var(--text-dim); margin-left: 0.25rem; }
+        .stat-detail { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem; }
+        
+        /* Empty state */
+        .empty-state { text-align: center; padding: 4rem 2rem; }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .empty-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .empty-text { color: var(--text-dim); }
+        
+        .hidden { display: none !important; }
+        
+        /* Debug */
+        .debug-panel { background: var(--bg-input); border-radius: 8px; padding: 0.75rem; margin-top: 1rem; font-family: monospace; font-size: 0.7rem; color: var(--text-dim); max-height: 80px; overflow-y: auto; }
+        
+        @media (max-width: 800px) {
+            .controls-grid { grid-template-columns: 1fr; }
+            .chart-container { height: 300px; }
+        }
     </style>
 </head>
 <body>
+
+<!-- ========== LOGIN ========== -->
 <div class="page active" id="pageLogin">
-    <div class="login-container">
-        <div class="login-logo"><div class="login-logo-icon">🐔</div><h1>Production Avicole</h1><p>v6 - Fix RLS</p></div>
+    <div class="login-box">
+        <div class="login-header">
+            <div class="login-icon">🐔</div>
+            <div class="login-title">Production Avicole</div>
+            <div class="login-subtitle">Multi-Courbes v8</div>
+        </div>
         <div class="card">
             <div class="alert" id="loginAlert"></div>
-            <div class="form-group"><label class="form-label">Email</label><input type="text" class="form-input" id="loginUser" placeholder="email@exemple.com"></div>
-            <div class="form-group"><label class="form-label">Mot de passe</label><input type="password" class="form-input" id="loginPass" placeholder="••••••••"></div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="text" class="form-input" id="loginUser" placeholder="email@exemple.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mot de passe</label>
+                <input type="password" class="form-input" id="loginPass" placeholder="••••••••">
+            </div>
             <button class="btn btn-primary" id="loginBtn">Se connecter</button>
-            <div class="status-box" id="dbStatus">Base: <span id="dbStatusText">...</span></div>
+            <div class="status-box" id="dbStatus"><span id="dbStatusText">Vérification...</span></div>
         </div>
     </div>
 </div>
+
+<!-- ========== CONFIG ========== -->
 <div class="page" id="pageConfig">
-    <div class="config-container">
-        <div class="login-logo"><div class="login-logo-icon" style="background:linear-gradient(135deg,var(--accent-amber),var(--accent-red))">⚙️</div><h1>Configuration</h1></div>
+    <div class="config-box">
+        <div class="login-header">
+            <div class="login-icon">⚙️</div>
+            <div class="login-title">Configuration</div>
+        </div>
         <div class="card">
             <div class="alert" id="configAlert"></div>
             <div class="config-section">
-                <div class="config-title">🔌 Supabase</div>
-                <div class="form-group"><label class="form-label">URL</label><input type="url" class="form-input" id="cfgUrl" placeholder="https://xxx.supabase.co"></div>
-                <div class="form-group"><label class="form-label">Clé Anon</label><input type="text" class="form-input" id="cfgKey" placeholder="eyJ..."></div>
-                <div class="btn-group"><button class="btn btn-secondary" id="btnTestSupa">🔍 Tester</button><button class="btn btn-primary" id="btnSaveSupa">💾 Sauver</button></div>
+                <div class="config-title">🔌 Connexion Supabase</div>
+                <div class="form-group">
+                    <label class="form-label">URL du projet</label>
+                    <input type="url" class="form-input" id="cfgUrl" placeholder="https://xxx.supabase.co">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Clé Anon (publique)</label>
+                    <input type="text" class="form-input" id="cfgKey" placeholder="eyJhbG...">
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" id="btnTestSupa">🔍 Tester</button>
+                    <button class="btn btn-primary" id="btnSaveSupa">💾 Sauvegarder</button>
+                </div>
             </div>
-            <span class="back-link" id="btnBack">← Retour</span>
+            <span class="back-link" id="btnBack">← Retour à la connexion</span>
         </div>
     </div>
 </div>
+
+<!-- ========== SESSION BAR ========== -->
 <div class="session-bar" id="sessionBar">
-    <span class="session-user" id="sessionUser">👤</span>
-    <span class="session-role" id="sessionRole">-</span>
+    <span class="session-user" id="sessionUser">👤 Utilisateur</span>
+    <span class="session-role" id="sessionRole">ROLE</span>
     <button class="session-btn hidden" id="btnConfig">⚙️</button>
     <button class="session-btn" id="btnLogout">Déconnexion</button>
 </div>
+
+<!-- ========== APP ========== -->
 <div class="page page-app" id="pageApp">
     <div class="container">
-        <header class="header">
-            <div class="header-left"><div class="logo">🐔</div><div><h1>Suivi Production</h1><p class="header-subtitle">v6</p></div></div>
-            <div class="last-update">MAJ: <span id="lastUpdate">--</span></div>
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="app-logo">
+                <span class="logo-icon">🐔</span>
+                <div>
+                    <div class="app-title">Tableau de Bord Avicole</div>
+                    <div class="app-subtitle">Analyse multi-indicateurs</div>
+                </div>
+            </div>
         </header>
-        <div class="farmer-card">
-            <div class="farmer-icon">👨‍🌾</div>
-            <div class="farmer-info"><div class="farmer-label">Éleveur</div><div class="farmer-name" id="farmerName">--</div><div class="farmer-company" id="farmerCompany">--</div></div>
-            <div class="farmer-details"><div class="farmer-detail"><span class="detail-label">Code</span><span class="detail-value" id="farmerCode">--</span></div><div class="farmer-detail"><span class="detail-label">Site</span><span class="detail-value" id="farmerSite">--</span></div></div>
-        </div>
+        
+        <!-- Sélecteurs -->
         <div class="selectors-card">
             <div class="selectors-grid">
-                <div class="selector-group"><label>Éleveur</label><select class="selector-select" id="selEleveur"><option value="">-- Choisir --</option></select></div>
-                <div class="selector-group"><label>Site</label><select class="selector-select" id="selSite" disabled><option value="">-- Choisir --</option></select></div>
-                <div class="selector-group"><label>Bâtiment</label><select class="selector-select" id="selBatiment" disabled><option value="">-- Choisir --</option></select></div>
-                <div class="selector-group"><label>Lot</label><select class="selector-select" id="selLot" disabled><option value="">-- Choisir --</option></select></div>
-            </div>
-        </div>
-        <div class="lot-info-card hidden" id="lotInfoCard">
-            <div class="lot-info-title">🐥 Lot sélectionné</div>
-            <div class="lot-info-grid">
-                <div class="lot-info-item"><div class="lot-info-label">Code</div><div class="lot-info-value" id="lotCode">--</div></div>
-                <div class="lot-info-item"><div class="lot-info-label">Souche</div><div class="lot-info-value" id="lotSouche">--</div></div>
-                <div class="lot-info-item"><div class="lot-info-label">Effectif</div><div class="lot-info-value hl" id="lotEffectif">--</div></div>
-                <div class="lot-info-item"><div class="lot-info-label">Date</div><div class="lot-info-value" id="lotDate">--</div></div>
-                <div class="lot-info-item"><div class="lot-info-label">Âge</div><div class="lot-info-value hl" id="lotAge">--</div></div>
-                <div class="lot-info-item"><div class="lot-info-label">Statut</div><div class="lot-info-value" id="lotStatut">--</div></div>
-            </div>
-        </div>
-        <div class="controls-row hidden" id="controlsRow">
-            <div class="control-box">
-                <div class="control-label">Type de données</div>
-                <div class="type-btns" id="typeBtns">
-                    <button class="type-btn active" data-type="poids">📈 Poids</button>
-                    <button class="type-btn" data-type="mortalite">⚠️ Mortalité</button>
-                    <button class="type-btn" data-type="aliment">🌾 Aliment</button>
-                    <button class="type-btn" data-type="oeufs">🥚 Œufs</button>
+                <div class="selector-group">
+                    <label>Éleveur</label>
+                    <select class="selector-select" id="selEleveur"><option value="">-- Sélectionner --</option></select>
+                </div>
+                <div class="selector-group">
+                    <label>Site</label>
+                    <select class="selector-select" id="selSite" disabled><option value="">-- Sélectionner --</option></select>
+                </div>
+                <div class="selector-group">
+                    <label>Bâtiment</label>
+                    <select class="selector-select" id="selBatiment" disabled><option value="">-- Sélectionner --</option></select>
+                </div>
+                <div class="selector-group">
+                    <label>Lot</label>
+                    <select class="selector-select" id="selLot" disabled><option value="">-- Sélectionner --</option></select>
                 </div>
             </div>
-            <div class="control-box">
-                <div class="control-label">Période</div>
+        </div>
+        
+        <!-- Info lot -->
+        <div class="lot-card hidden" id="lotCard">
+            <div class="lot-title">🐥 Lot sélectionné</div>
+            <div class="lot-grid">
+                <div class="lot-item"><div class="lot-label">Code</div><div class="lot-value" id="lotCode">--</div></div>
+                <div class="lot-item"><div class="lot-label">Souche</div><div class="lot-value" id="lotSouche">--</div></div>
+                <div class="lot-item"><div class="lot-label">Effectif</div><div class="lot-value highlight" id="lotEffectif">--</div></div>
+                <div class="lot-item"><div class="lot-label">Mise en place</div><div class="lot-value" id="lotDate">--</div></div>
+                <div class="lot-item"><div class="lot-label">Âge</div><div class="lot-value highlight" id="lotAge">--</div></div>
+                <div class="lot-item"><div class="lot-label">Statut</div><div class="lot-value" id="lotStatut">--</div></div>
+            </div>
+        </div>
+        
+        <!-- ===== CONTRÔLES INDICATEURS ===== -->
+        <div class="controls-grid hidden" id="controlsGrid">
+            <div class="control-card">
+                <div class="control-title">Type de données <span class="control-hint">(sélectionnez 1 ou 2 indicateurs)</span></div>
+                <div class="indicator-btns" id="indicatorBtns">
+                    <button class="indicator-btn selected-y1" data-type="poids">
+                        <span class="icon">📈</span>
+                        Croissance en poids
+                        <span class="axis-tag">Y1</span>
+                    </button>
+                    <button class="indicator-btn" data-type="mortalite">
+                        <span class="icon">⚠️</span>
+                        Mortalité
+                        <span class="axis-tag"></span>
+                    </button>
+                    <button class="indicator-btn" data-type="oeufs">
+                        <span class="icon">🥚</span>
+                        Nombre œufs pondus
+                        <span class="axis-tag"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="control-card">
+                <div class="control-title">Période d'analyse</div>
                 <div class="period-btns" id="periodBtns">
-                    <button class="period-btn" data-period="7">7j</button>
-                    <button class="period-btn" data-period="14">14j</button>
-                    <button class="period-btn" data-period="30">30j</button>
-                    <button class="period-btn active" data-period="all">Tout</button>
+                    <button class="period-btn" data-period="7">1 sem.</button>
+                    <button class="period-btn" data-period="28">4 sem.</button>
+                    <button class="period-btn active" data-period="56">8 sem.</button>
+                    <button class="period-btn" data-period="all">Cycle complet</button>
                 </div>
             </div>
         </div>
-        <div class="dashboard-grid hidden" id="dashboardGrid">
-            <div class="chart-card">
-                <div class="chart-header">
-                    <div><div class="chart-title" id="chartTitle">Évolution</div><div class="chart-subtitle" id="chartSubtitle">--</div></div>
-                    <div class="chart-legend"><div class="legend-item"><span class="legend-line actual"></span>Réel</div><div class="legend-item"><span class="legend-line std"></span>Standard</div></div>
+        
+        <!-- ===== GRAPHIQUE ===== -->
+        <div class="chart-card hidden" id="chartCard">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title" id="chartTitle">Croissance en poids vs Mortalité</div>
+                    <div class="chart-subtitle" id="chartSubtitle">Comparaison sur deux axes</div>
                 </div>
-                <div class="chart-container"><canvas id="mainChart"></canvas></div>
+                <div class="chart-legend" id="chartLegend">
+                    <div class="legend-item"><span class="legend-line" style="background:#22c55e"></span>Croissance en poids</div>
+                    <div class="legend-item"><span class="legend-line" style="background:#f97316"></span>Mortalité</div>
+                    <div class="legend-item"><span class="legend-area" style="background:#22c55e"></span>Zone tolérance</div>
+                </div>
             </div>
-            <div class="side-panel">
-                <div class="stats-card">
-                    <div class="stats-header"><span class="stats-title">Dernière valeur</span><div class="stats-icon green">📊</div></div>
-                    <div class="stats-value"><span id="statsValue">--</span><span class="stats-unit" id="statsUnit">g</span></div>
-                    <div class="stats-trend"><span class="trend-badge neu" id="statsTrend">--</span><span class="trend-label">évolution</span></div>
-                </div>
-                <div class="stats-card">
-                    <div class="stats-header"><span class="stats-title">Écart standard</span><div class="stats-icon amber">🎯</div></div>
-                    <div class="stats-value"><span id="statsGap">--</span><span class="stats-unit">%</span></div>
-                    <div class="stats-trend"><span class="trend-badge neu" id="statsGapStatus">--</span><span class="trend-label">vs objectif</span></div>
-                </div>
-                <div class="data-info"><div class="data-info-title">Données chargées</div><div class="data-info-value" id="dataCount">0</div></div>
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
             </div>
         </div>
-        <div class="chart-card" id="emptyBox"><div class="empty-box"><div class="empty-icon">📊</div><h3>Sélectionnez un lot</h3><p style="color:var(--text-secondary)">Éleveur → Site → Bâtiment → Lot</p></div></div>
-        <div class="debug-box"><strong>Debug:</strong> <span id="debugLog">Prêt</span></div>
-        <footer class="footer">v6</footer>
+        
+        <!-- Stats -->
+        <div class="stats-row hidden" id="statsRow">
+            <div class="stat-card" id="statCard1">
+                <div class="stat-header">
+                    <span class="stat-title" id="statTitle1">Croissance en poids</span>
+                    <span class="stat-icon" id="statIcon1">📈</span>
+                </div>
+                <div class="stat-value"><span id="statValue1">--</span><span class="stat-unit" id="statUnit1">g</span></div>
+                <div class="stat-detail" id="statDetail1">Dernière mesure</div>
+            </div>
+            <div class="stat-card" id="statCard2">
+                <div class="stat-header">
+                    <span class="stat-title" id="statTitle2">Mortalité</span>
+                    <span class="stat-icon" id="statIcon2">⚠️</span>
+                </div>
+                <div class="stat-value"><span id="statValue2">--</span><span class="stat-unit" id="statUnit2">morts</span></div>
+                <div class="stat-detail" id="statDetail2">Dernière mesure</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Points de données</span>
+                    <span class="stat-icon">📊</span>
+                </div>
+                <div class="stat-value"><span id="dataCount">0</span></div>
+                <div class="stat-detail" id="dataPeriod">--</div>
+            </div>
+        </div>
+        
+        <!-- Empty state -->
+        <div class="chart-card" id="emptyState">
+            <div class="empty-state">
+                <div class="empty-icon">📊</div>
+                <div class="empty-title">Sélectionnez un lot</div>
+                <div class="empty-text">Choisissez un éleveur, site, bâtiment puis un lot pour afficher les graphiques</div>
+            </div>
+        </div>
+        
+        <!-- Debug -->
+        <div class="debug-panel">Debug: <span id="debugLog">Prêt</span></div>
+        
     </div>
 </div>
-<script>
-(function(){
-    var ADMIN = {user: 'admin', pass: 'admin2024!'};
-    var supabaseClient = null;
-    var currentUser = null;
-    var currentRole = '';
-    var isLocalAdmin = false;
-    var mainChart = null;
-    var lotData = {poids: [], mortalite: [], aliment: [], oeufs: []};
-    var standardsData = {poids: [], mortalite: [], aliment: [], oeufs: []};
-    var currentType = 'poids';
-    var currentPeriod = 'all';
-    var currentLotInfo = null;
-    var currentLotId = null;
 
-    function $(id) { return document.getElementById(id); }
+<script>
+(function() {
+    'use strict';
     
-    function log(m, type) {
-        var color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#fbbf24';
-        console.log('[APP]', m);
-        var e = $('debugLog');
-        if (e) {
-            var time = new Date().toLocaleTimeString();
-            e.innerHTML = '<span style="color:' + color + '">[' + time + '] ' + m + '</span><br>' + e.innerHTML.substring(0, 3000);
+    // ============ CONFIG ============
+    var ADMIN = { user: 'admin', pass: 'admin2024!' };
+    var supabase = null;
+    var currentUser = null;
+    var mainChart = null;
+    
+    // Données
+    var lotData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
+    var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
+    
+    // Sélection multi-indicateurs
+    var selectedIndicators = ['poids']; // Y1 par défaut
+    var currentPeriod = '56';
+    var currentLotInfo = null;
+    
+    // Configuration des indicateurs
+    var INDICATORS = {
+        poids: {
+            label: 'Croissance en poids',
+            shortLabel: 'Poids',
+            unit: 'g',
+            color: '#22c55e',
+            colorLight: 'rgba(34,197,94,0.15)',
+            icon: '📈',
+            dataField: 'poids_moyen',
+            stdMinField: 'poids_min',
+            stdMaxField: 'poids_max'
+        },
+        mortalite: {
+            label: 'Mortalité',
+            shortLabel: 'Mortalité',
+            unit: 'morts',
+            color: '#f97316',
+            colorLight: 'rgba(249,115,22,0.15)',
+            icon: '⚠️',
+            dataField: 'nombre_morts',
+            stdMinField: 'mortalite_min',
+            stdMaxField: 'mortalite_max'
+        },
+        oeufs: {
+            label: 'Nombre œufs pondus',
+            shortLabel: 'Œufs',
+            unit: 'œufs',
+            color: '#a855f7',
+            colorLight: 'rgba(168,85,247,0.15)',
+            icon: '🥚',
+            dataField: 'nombre_oeufs',
+            stdMinField: 'taux_ponte_min',
+            stdMaxField: 'taux_ponte_max'
         }
-    }
+    };
     
+    // ============ HELPERS ============
+    function $(id) { return document.getElementById(id); }
+    function log(msg) {
+        console.log('[APP]', msg);
+        var el = $('debugLog');
+        if (el) el.textContent = msg;
+    }
     function showPage(id) {
         document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
         $(id).classList.add('active');
     }
-    
     function showAlert(id, type, msg) {
-        var e = $(id);
-        if (e) { e.className = 'alert alert-' + type + ' show'; e.innerHTML = msg; }
+        var el = $(id);
+        if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; }
     }
     
-    function hideAlert(id) { var e = $(id); if (e) e.classList.remove('show'); }
-
-    function loadCfg() {
+    // ============ STORAGE ============
+    function loadConfig() {
         try { return JSON.parse(localStorage.getItem('avicole_cfg') || '{}'); }
         catch (e) { return {}; }
     }
+    function saveConfig(url, key) {
+        localStorage.setItem('avicole_cfg', JSON.stringify({ url: url, key: key }));
+    }
     
-    function saveCfg(url, key) {
-        localStorage.setItem('avicole_cfg', JSON.stringify({url: url, key: key}));
-    }
-
-    function isSupabaseLoaded() {
-        return typeof window.supabase !== 'undefined' && window.supabase !== null && typeof window.supabase.createClient === 'function';
-    }
-
+    // ============ SUPABASE ============
     function initSupabase() {
-        var cfg = loadCfg();
-        if (!isSupabaseLoaded()) {
-            $('dbStatus').className = 'status-box error';
+        var cfg = loadConfig();
+        if (typeof window.supabase === 'undefined') {
+            $('dbStatus').className = 'status-box warn';
             $('dbStatusText').textContent = 'SDK non chargé';
             return false;
         }
         if (cfg.url && cfg.key) {
             try {
-                supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+                supabase = window.supabase.createClient(cfg.url, cfg.key);
                 $('dbStatus').className = 'status-box ok';
-                $('dbStatusText').textContent = 'OK ✓';
-                log('Supabase initialisé', 'success');
+                $('dbStatusText').textContent = 'Connecté ✓';
+                log('Supabase OK');
                 return true;
             } catch (e) {
-                log('Erreur init: ' + e.message, 'error');
+                log('Erreur: ' + e.message);
             }
         }
-        $('dbStatus').className = 'status-box warning';
+        $('dbStatus').className = 'status-box warn';
         $('dbStatusText').textContent = 'Non configuré';
         return false;
     }
-
+    
     function testSupabase() {
         var url = $('cfgUrl').value.trim();
         var key = $('cfgKey').value.trim();
         if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
-        if (!isSupabaseLoaded()) { showAlert('configAlert', 'error', '❌ SDK non chargé'); return; }
-        showAlert('configAlert', 'info', '⏳ Test...');
+        showAlert('configAlert', 'info', '⏳ Test en cours...');
         try {
-            var testClient = window.supabase.createClient(url, key);
-            testClient.from('eleveurs').select('id').limit(1).then(function(res) {
+            var client = window.supabase.createClient(url, key);
+            client.from('eleveurs').select('id').limit(1).then(function(res) {
                 if (res.error) showAlert('configAlert', 'error', '❌ ' + res.error.message);
-                else showAlert('configAlert', 'success', '✅ OK!');
+                else showAlert('configAlert', 'success', '✅ Connexion réussie!');
             });
-        } catch (e) { showAlert('configAlert', 'error', '❌ ' + e.message); }
+        } catch (e) {
+            showAlert('configAlert', 'error', '❌ ' + e.message);
+        }
     }
-
-    function saveSupabaseCfg() {
+    
+    function saveSupabaseConfig() {
         var url = $('cfgUrl').value.trim();
         var key = $('cfgKey').value.trim();
         if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
-        saveCfg(url, key);
-        if (initSupabase()) showAlert('configAlert', 'success', '✅ Sauvé!');
+        saveConfig(url, key);
+        if (initSupabase()) {
+            showAlert('configAlert', 'success', '✅ Configuration sauvegardée!');
+        }
     }
-
+    
+    // ============ AUTH ============
     function doLogin() {
         var user = $('loginUser').value.trim();
         var pass = $('loginPass').value;
-        var btn = $('loginBtn');
-        hideAlert('loginAlert');
-        if (!user || !pass) { showAlert('loginAlert', 'error', '❌ Remplissez les champs'); return; }
         
+        if (!user || !pass) {
+            showAlert('loginAlert', 'error', '❌ Remplissez tous les champs');
+            return;
+        }
+        
+        // Admin local
         if (user === ADMIN.user && pass === ADMIN.pass) {
-            isLocalAdmin = true;
-            currentUser = {nom: 'Admin', role: 'admin'};
-            currentRole = 'config';
+            currentUser = { nom: 'Admin', role: 'admin' };
             $('sessionUser').textContent = '👑 Admin';
             $('sessionRole').textContent = 'CONFIG';
-            $('sessionRole').className = 'session-role config';
             $('btnConfig').classList.remove('hidden');
             $('sessionBar').style.display = 'flex';
-            showAlert('loginAlert', 'success', '✅ Admin OK!');
-            setTimeout(function() { showPage('pageConfig'); }, 300);
+            showPage('pageConfig');
             return;
         }
         
-        if (!supabaseClient) {
-            showAlert('loginAlert', 'error', '❌ Base non configurée.<br>Admin: <b>admin / admin2024!</b>');
+        if (!supabase) {
+            showAlert('loginAlert', 'error', '❌ Base non configurée. Admin: admin / admin2024!');
             return;
         }
         
+        var btn = $('loginBtn');
         btn.disabled = true;
         btn.textContent = 'Connexion...';
         
-        supabaseClient.from('users').select('*').eq('email', user).eq('is_active', true).single()
-        .then(function(res) {
-            if (res.error || !res.data) throw new Error('Utilisateur non trouvé');
-            var storedHash = res.data.password_hash || '';
-            if (storedHash !== pass && storedHash !== 'hash_' + pass) throw new Error('Mot de passe incorrect');
-            
-            currentUser = res.data;
-            currentRole = res.data.role || 'eleveur';
-            isLocalAdmin = false;
-            
-            var name = res.data.prenom ? res.data.prenom + ' ' + res.data.nom : res.data.email;
-            $('sessionUser').textContent = '👤 ' + name;
-            $('sessionRole').textContent = currentRole.toUpperCase();
-            $('sessionRole').className = 'session-role ' + currentRole;
-            if (currentRole === 'admin') $('btnConfig').classList.remove('hidden');
-            $('sessionBar').style.display = 'flex';
-            
-            log('Connecté: ' + name, 'success');
-            loadEleveurs();
-            setTimeout(function() { showPage('pageApp'); }, 300);
-        })
-        .catch(function(err) {
-            log('Erreur: ' + err.message, 'error');
-            showAlert('loginAlert', 'error', '❌ ' + err.message);
-        })
-        .finally(function() {
-            btn.disabled = false;
-            btn.textContent = 'Se connecter';
-        });
+        supabase.from('users').select('*').eq('email', user).eq('is_active', true).single()
+            .then(function(res) {
+                if (res.error || !res.data) throw new Error('Utilisateur non trouvé');
+                if (res.data.password_hash !== pass) throw new Error('Mot de passe incorrect');
+                
+                currentUser = res.data;
+                var name = (res.data.prenom || '') + ' ' + res.data.nom;
+                $('sessionUser').textContent = '👤 ' + name.trim();
+                $('sessionRole').textContent = (res.data.role || 'ELEVEUR').toUpperCase();
+                $('sessionBar').style.display = 'flex';
+                
+                loadEleveurs();
+                showPage('pageApp');
+            })
+            .catch(function(err) {
+                showAlert('loginAlert', 'error', '❌ ' + err.message);
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Se connecter';
+            });
     }
-
+    
     function doLogout() {
         currentUser = null;
-        isLocalAdmin = false;
-        $('loginUser').value = '';
-        $('loginPass').value = '';
         $('sessionBar').style.display = 'none';
-        $('btnConfig').classList.add('hidden');
         showPage('pageLogin');
     }
-
+    
+    // ============ CHARGEMENT DONNÉES ============
     function loadEleveurs() {
-        if (!supabaseClient) return;
-        log('Chargement éleveurs...', 'info');
+        if (!supabase) return;
+        log('Chargement éleveurs...');
         
-        supabaseClient.from('eleveurs').select('*').eq('is_active', true).order('nom')
-        .then(function(res) {
-            if (res.error) { log('Erreur: ' + res.error.message, 'error'); return; }
-            var sel = $('selEleveur');
-            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-            var data = res.data || [];
-            log('Éleveurs: ' + data.length, 'success');
-            data.forEach(function(e) {
-                var opt = document.createElement('option');
-                opt.value = e.id;
-                opt.setAttribute('data-json', JSON.stringify(e));
-                opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
-                sel.appendChild(opt);
+        supabase.from('eleveurs').select('*').eq('is_active', true).order('nom')
+            .then(function(res) {
+                var sel = $('selEleveur');
+                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+                (res.data || []).forEach(function(e) {
+                    var opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.setAttribute('data-json', JSON.stringify(e));
+                    opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
+                    sel.appendChild(opt);
+                });
+                log('Éleveurs: ' + (res.data || []).length);
             });
-            if (data.length === 1) { sel.value = data[0].id; onEleveurChange(); }
-            $('lastUpdate').textContent = new Date().toLocaleString('fr-FR');
-        });
     }
-
+    
     function onEleveurChange() {
         var id = $('selEleveur').value;
-        var selSite = $('selSite');
-        selSite.innerHTML = '<option value="">-- Sélectionner --</option>';
-        selSite.disabled = !id;
-        $('selBatiment').innerHTML = '<option value="">-- Sélectionner --</option>';
-        $('selBatiment').disabled = true;
-        $('selLot').innerHTML = '<option value="">-- Sélectionner --</option>';
-        $('selLot').disabled = true;
-        hideDataCards();
+        resetSelectors('site');
         if (!id) return;
         
-        var opt = document.querySelector('#selEleveur option[value="' + id + '"]');
-        if (opt) {
-            try {
-                var e = JSON.parse(opt.getAttribute('data-json'));
-                $('farmerName').textContent = e.nom + ' ' + (e.prenom || '');
-                $('farmerCompany').textContent = e.raison_sociale || '--';
-                $('farmerCode').textContent = e.code_eleveur || '--';
-            } catch (err) {}
-        }
-        
-        supabaseClient.from('sites').select('*').eq('eleveur_id', id).eq('is_active', true).order('nom')
-        .then(function(res) {
-            var data = res.data || [];
-            data.forEach(function(s) {
-                var opt = document.createElement('option');
-                opt.value = s.id;
-                opt.setAttribute('data-json', JSON.stringify(s));
-                opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
-                selSite.appendChild(opt);
+        supabase.from('sites').select('*').eq('eleveur_id', id).eq('is_active', true).order('nom')
+            .then(function(res) {
+                var sel = $('selSite');
+                sel.disabled = false;
+                (res.data || []).forEach(function(s) {
+                    var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
+                    sel.appendChild(opt);
+                });
             });
-            if (data.length === 1) { selSite.value = data[0].id; onSiteChange(); }
-        });
     }
-
+    
     function onSiteChange() {
         var id = $('selSite').value;
-        var selBat = $('selBatiment');
-        selBat.innerHTML = '<option value="">-- Sélectionner --</option>';
-        selBat.disabled = !id;
-        $('selLot').innerHTML = '<option value="">-- Sélectionner --</option>';
-        $('selLot').disabled = true;
-        hideDataCards();
+        resetSelectors('batiment');
         if (!id) return;
         
-        var opt = document.querySelector('#selSite option[value="' + id + '"]');
-        if (opt) {
-            try {
-                var s = JSON.parse(opt.getAttribute('data-json'));
-                $('farmerSite').textContent = s.nom + (s.ville ? ' - ' + s.ville : '');
-            } catch (err) {}
-        }
-        
-        supabaseClient.from('batiments').select('*').eq('site_id', id).eq('is_active', true).order('nom')
-        .then(function(res) {
-            var data = res.data || [];
-            data.forEach(function(b) {
-                var opt = document.createElement('option');
-                opt.value = b.id;
-                opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ')' : '');
-                selBat.appendChild(opt);
+        supabase.from('batiments').select('*').eq('site_id', id).eq('is_active', true).order('nom')
+            .then(function(res) {
+                var sel = $('selBatiment');
+                sel.disabled = false;
+                (res.data || []).forEach(function(b) {
+                    var opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ')' : '');
+                    sel.appendChild(opt);
+                });
             });
-            if (data.length === 1) { selBat.value = data[0].id; onBatimentChange(); }
-        });
     }
-
+    
     function onBatimentChange() {
         var id = $('selBatiment').value;
-        var selLot = $('selLot');
-        selLot.innerHTML = '<option value="">-- Sélectionner --</option>';
-        selLot.disabled = !id;
-        hideDataCards();
+        resetSelectors('lot');
         if (!id) return;
         
-        supabaseClient.from('lots').select('*, souches(nom)').eq('batiment_id', id).order('date_mise_place', {ascending: false})
-        .then(function(res) {
-            var data = res.data || [];
-            data.forEach(function(l) {
-                var opt = document.createElement('option');
-                opt.value = l.id;
-                opt.setAttribute('data-json', JSON.stringify(l));
-                var ico = l.statut === 'actif' ? '🟢' : '⚪';
-                var sn = l.souches ? l.souches.nom : 'N/A';
-                opt.textContent = ico + ' ' + l.code_lot + ' - ' + sn;
-                selLot.appendChild(opt);
+        supabase.from('lots').select('*, souches(nom)').eq('batiment_id', id).order('date_mise_place', { ascending: false })
+            .then(function(res) {
+                var sel = $('selLot');
+                sel.disabled = false;
+                (res.data || []).forEach(function(l) {
+                    var opt = document.createElement('option');
+                    opt.value = l.id;
+                    opt.setAttribute('data-json', JSON.stringify(l));
+                    var icon = l.statut === 'actif' ? '🟢' : '⚪';
+                    opt.textContent = icon + ' ' + l.code_lot + ' - ' + (l.souches ? l.souches.nom : 'N/A');
+                    sel.appendChild(opt);
+                });
+                // Auto-sélectionner le lot actif
+                var actif = (res.data || []).find(function(l) { return l.statut === 'actif'; });
+                if (actif) {
+                    sel.value = actif.id;
+                    onLotChange();
+                }
             });
-            var actif = data.find(function(x) { return x.statut === 'actif'; });
-            if (actif) { selLot.value = actif.id; onLotChange(); }
-        });
     }
-
+    
     function onLotChange() {
         var id = $('selLot').value;
-        if (!id) { hideDataCards(); return; }
-        
-        currentLotId = id;
-        log('LOT SÉLECTIONNÉ: ' + id, 'info');
+        if (!id) {
+            hideDataPanels();
+            return;
+        }
         
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
         var lot = {};
         try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
         
+        // Afficher infos lot
         $('lotCode').textContent = lot.code_lot || '--';
         $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '--';
         $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
-        if (lot.date_mise_place) {
-            var age = Math.floor((new Date() - new Date(lot.date_mise_place)) / 86400000);
-            $('lotAge').textContent = age + ' jours';
-        } else { $('lotAge').textContent = '--'; }
+        $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
         $('lotStatut').textContent = lot.statut || '--';
         
-        // CHARGEMENT DONNÉES SANS FILTRE lot_id D'ABORD POUR TESTER
-        log('Test: chargement TOUTES les données poids (sans filtre)...', 'info');
+        log('Chargement données lot ' + id);
         
-        supabaseClient.from('donnees_poids').select('*').limit(10)
-        .then(function(testRes) {
-            if (testRes.error) {
-                log('ERREUR RLS donnees_poids: ' + testRes.error.message + ' | code: ' + testRes.error.code, 'error');
-                log('>>> SOLUTION: Désactivez RLS sur donnees_poids ou ajoutez une policy SELECT', 'error');
-            } else {
-                log('Test SELECT sans filtre: ' + (testRes.data ? testRes.data.length : 0) + ' lignes', 'success');
-                if (testRes.data && testRes.data.length > 0) {
-                    log('Exemple lot_id en base: ' + testRes.data[0].lot_id, 'info');
-                    log('Lot_id recherché: ' + id, 'info');
-                    if (testRes.data[0].lot_id === id) {
-                        log('Les IDs correspondent!', 'success');
-                    }
-                }
-            }
+        // Charger toutes les données
+        Promise.all([
+            supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
+            supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
+            supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age')
+        ]).then(function(results) {
+            lotData.poids = results[0].data || [];
+            lotData.mortalite = results[1].data || [];
+            lotData.oeufs = results[2].data || [];
             
-            // Maintenant charger avec filtre
-            return loadLotData(id, lot.souche_id);
+            log('Données: P=' + lotData.poids.length + ' M=' + lotData.mortalite.length + ' O=' + lotData.oeufs.length);
+            
+            // Charger standards si souche définie
+            if (lot.souche_id) {
+                loadStandards(lot.souche_id);
+            } else {
+                showDataPanels();
+                updateUI();
+            }
         });
     }
     
-    function loadLotData(lotId, soucheId) {
-        log('Chargement données lot_id=' + lotId, 'info');
-        
-        Promise.all([
-            supabaseClient.from('donnees_poids').select('*').eq('lot_id', lotId).order('jour_age'),
-            supabaseClient.from('donnees_mortalite').select('*').eq('lot_id', lotId).order('jour_age'),
-            supabaseClient.from('donnees_aliment').select('*').eq('lot_id', lotId).order('jour_age'),
-            supabaseClient.from('donnees_oeufs').select('*').eq('lot_id', lotId).order('jour_age')
-        ]).then(function(results) {
-            // Vérifier erreurs RLS
-            if (results[0].error) log('ERR poids: ' + results[0].error.message, 'error');
-            if (results[1].error) log('ERR morta: ' + results[1].error.message, 'error');
-            if (results[2].error) log('ERR alim: ' + results[2].error.message, 'error');
-            if (results[3].error) log('ERR oeufs: ' + results[3].error.message, 'error');
-            
-            lotData.poids = results[0].data || [];
-            lotData.mortalite = results[1].data || [];
-            lotData.aliment = results[2].data || [];
-            lotData.oeufs = results[3].data || [];
-            
-            var total = lotData.poids.length + lotData.mortalite.length + lotData.aliment.length + lotData.oeufs.length;
-            log('DONNÉES: Poids=' + lotData.poids.length + ' Morta=' + lotData.mortalite.length + ' Alim=' + lotData.aliment.length + ' Oeufs=' + lotData.oeufs.length, total > 0 ? 'success' : 'error');
-            
-            if (lotData.poids.length > 0) {
-                log('Premier enregistrement poids: jour=' + lotData.poids[0].jour_age + ' poids=' + lotData.poids[0].poids_moyen, 'success');
-            }
-            
-            if (soucheId) {
-                loadStandards(soucheId);
-            } else {
-                updateUI();
-                showDataCards();
-            }
-        }).catch(function(err) {
-            log('EXCEPTION: ' + err.message, 'error');
-        });
-    }
-
     function loadStandards(soucheId) {
-        log('Standards souche=' + soucheId, 'info');
-        
         Promise.all([
-            supabaseClient.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
-            supabaseClient.from('standards_mortalite').select('*').eq('souche_id', soucheId).order('jour_age'),
-            supabaseClient.from('standards_aliment').select('*').eq('souche_id', soucheId).order('jour_age'),
-            supabaseClient.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age')
+            supabase.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
+            supabase.from('standards_mortalite').select('*').eq('souche_id', soucheId).order('jour_age'),
+            supabase.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age')
         ]).then(function(results) {
-            if (results[0].error) log('ERR std poids: ' + results[0].error.message, 'error');
-            
             standardsData.poids = results[0].data || [];
             standardsData.mortalite = results[1].data || [];
-            standardsData.aliment = results[2].data || [];
-            standardsData.oeufs = results[3].data || [];
-            
-            log('Standards: ' + standardsData.poids.length + ' poids', standardsData.poids.length > 0 ? 'success' : 'info');
+            standardsData.oeufs = results[2].data || [];
+            log('Standards: P=' + standardsData.poids.length);
+            showDataPanels();
             updateUI();
-            showDataCards();
-        }).catch(function(err) {
-            log('Err standards: ' + err.message, 'error');
-            updateUI();
-            showDataCards();
         });
     }
-
-    function showDataCards() {
-        $('lotInfoCard').classList.remove('hidden');
-        $('controlsRow').classList.remove('hidden');
-        $('dashboardGrid').classList.remove('hidden');
-        $('emptyBox').classList.add('hidden');
+    
+    function resetSelectors(from) {
+        var levels = ['site', 'batiment', 'lot'];
+        var start = levels.indexOf(from);
+        for (var i = start; i < levels.length; i++) {
+            var sel = $('sel' + levels[i].charAt(0).toUpperCase() + levels[i].slice(1));
+            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+            sel.disabled = true;
+        }
+        hideDataPanels();
     }
-
-    function hideDataCards() {
-        $('lotInfoCard').classList.add('hidden');
-        $('controlsRow').classList.add('hidden');
-        $('dashboardGrid').classList.add('hidden');
-        $('emptyBox').classList.remove('hidden');
+    
+    function showDataPanels() {
+        $('lotCard').classList.remove('hidden');
+        $('controlsGrid').classList.remove('hidden');
+        $('chartCard').classList.remove('hidden');
+        $('statsRow').classList.remove('hidden');
+        $('emptyState').classList.add('hidden');
     }
-
+    
+    function hideDataPanels() {
+        $('lotCard').classList.add('hidden');
+        $('controlsGrid').classList.add('hidden');
+        $('chartCard').classList.add('hidden');
+        $('statsRow').classList.add('hidden');
+        $('emptyState').classList.remove('hidden');
+    }
+    
+    // ============ UI UPDATE ============
     function updateUI() {
-        updateStats();
         updateChart();
+        updateStats();
+        updateLegend();
     }
-
+    
     function updateStats() {
-        var data = lotData[currentType] || [];
-        $('dataCount').textContent = data.length + ' enregistrements';
+        var ind1 = INDICATORS[selectedIndicators[0]];
+        var data1 = lotData[selectedIndicators[0]] || [];
         
-        if (data.length === 0) {
-            $('statsValue').textContent = '--';
-            $('statsUnit').textContent = '';
-            $('statsTrend').textContent = 'Pas de données';
-            $('statsGap').textContent = '--';
-            $('statsGapStatus').textContent = '--';
-            return;
+        // Stat 1
+        $('statTitle1').textContent = ind1.label;
+        $('statIcon1').textContent = ind1.icon;
+        $('statUnit1').textContent = ind1.unit;
+        if (data1.length > 0) {
+            var last1 = data1[data1.length - 1];
+            $('statValue1').textContent = Math.round(parseFloat(last1[ind1.dataField]) || 0);
+            $('statDetail1').textContent = 'Jour ' + last1.jour_age;
+        } else {
+            $('statValue1').textContent = '--';
+            $('statDetail1').textContent = 'Pas de données';
         }
         
-        var last = data[data.length - 1];
-        var val = 0, unit = '';
-        
-        if (currentType === 'poids') { val = parseFloat(last.poids_moyen) || 0; unit = 'g'; }
-        else if (currentType === 'mortalite') { val = parseFloat(last.taux_mortalite_cumul) || 0; unit = '%'; }
-        else if (currentType === 'aliment') { val = parseFloat(last.conso_par_animal) || parseFloat(last.consommation_kg) || 0; unit = 'g'; }
-        else if (currentType === 'oeufs') { val = parseFloat(last.taux_ponte) || parseFloat(last.nombre_oeufs) || 0; unit = '%'; }
-        
-        $('statsValue').textContent = val.toFixed(currentType === 'poids' || currentType === 'aliment' ? 0 : 2);
-        $('statsUnit').textContent = unit;
-        
-        if (data.length > 1) {
-            var prev = data[data.length - 2];
-            var prevVal = 0;
-            if (currentType === 'poids') prevVal = parseFloat(prev.poids_moyen) || 0;
-            else if (currentType === 'mortalite') prevVal = parseFloat(prev.taux_mortalite_cumul) || 0;
-            else if (currentType === 'aliment') prevVal = parseFloat(prev.conso_par_animal) || 0;
-            else if (currentType === 'oeufs') prevVal = parseFloat(prev.taux_ponte) || 0;
-            if (prevVal > 0) {
-                var diff = ((val - prevVal) / prevVal * 100).toFixed(1);
-                $('statsTrend').textContent = (diff >= 0 ? '+' : '') + diff + '%';
-                $('statsTrend').className = 'trend-badge ' + (diff >= 0 ? 'pos' : 'neg');
+        // Stat 2
+        if (selectedIndicators[1]) {
+            var ind2 = INDICATORS[selectedIndicators[1]];
+            var data2 = lotData[selectedIndicators[1]] || [];
+            $('statCard2').classList.remove('hidden');
+            $('statTitle2').textContent = ind2.label;
+            $('statIcon2').textContent = ind2.icon;
+            $('statUnit2').textContent = ind2.unit;
+            if (data2.length > 0) {
+                var last2 = data2[data2.length - 1];
+                $('statValue2').textContent = Math.round(parseFloat(last2[ind2.dataField]) || 0);
+                $('statDetail2').textContent = 'Jour ' + last2.jour_age;
+            } else {
+                $('statValue2').textContent = '--';
+                $('statDetail2').textContent = 'Pas de données';
             }
+        } else {
+            $('statCard2').classList.add('hidden');
         }
         
-        var stds = standardsData[currentType] || [];
-        var std = stds.find(function(s) { return s.jour_age === last.jour_age; });
-        if (std) {
-            var stdVal = 0;
-            if (currentType === 'poids') stdVal = parseFloat(std.poids_cible) || parseFloat(std.poids_max) || 0;
-            else if (currentType === 'mortalite') stdVal = parseFloat(std.mortalite_cible) || parseFloat(std.mortalite_max) || 0;
-            else if (currentType === 'aliment') stdVal = parseFloat(std.conso_cible) || parseFloat(std.conso_max) || 0;
-            else if (currentType === 'oeufs') stdVal = parseFloat(std.taux_ponte_cible) || parseFloat(std.taux_ponte_max) || 0;
-            if (stdVal > 0) {
-                var gap = ((val - stdVal) / stdVal * 100).toFixed(1);
-                $('statsGap').textContent = (gap >= 0 ? '+' : '') + gap;
-                $('statsGapStatus').textContent = Math.abs(gap) < 5 ? 'Normal' : (gap > 0 ? 'Sup' : 'Inf');
-                $('statsGapStatus').className = 'trend-badge ' + (Math.abs(gap) < 5 ? 'neu' : (gap > 0 ? 'pos' : 'neg'));
-            }
-        }
+        // Total points
+        var total = 0;
+        selectedIndicators.forEach(function(t) { total += (lotData[t] || []).length; });
+        $('dataCount').textContent = total;
+        $('dataPeriod').textContent = currentPeriod === 'all' ? 'Cycle complet' : currentPeriod + ' jours';
     }
-
+    
+    function updateLegend() {
+        var html = '';
+        selectedIndicators.forEach(function(type) {
+            var ind = INDICATORS[type];
+            html += '<div class="legend-item"><span class="legend-line" style="background:' + ind.color + '"></span>' + ind.label + '</div>';
+        });
+        html += '<div class="legend-item"><span class="legend-area" style="background:' + INDICATORS[selectedIndicators[0]].color + '"></span>Zone tolérance</div>';
+        $('chartLegend').innerHTML = html;
+    }
+    
     function updateChart() {
-        var ctx = $('mainChart');
-        if (!ctx) return;
-        ctx = ctx.getContext('2d');
+        var canvas = $('mainChart');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
         if (mainChart) mainChart.destroy();
         
-        var data = lotData[currentType] || [];
-        var stds = standardsData[currentType] || [];
+        var type1 = selectedIndicators[0];
+        var type2 = selectedIndicators[1];
+        var ind1 = INDICATORS[type1];
+        var data1 = filterByPeriod(lotData[type1] || []);
+        var std1 = standardsData[type1] || [];
         
-        if (data.length === 0) {
-            $('chartTitle').textContent = 'Aucune donnée';
-            $('chartSubtitle').textContent = 'Pas de données ' + currentType;
+        if (data1.length === 0) {
+            $('chartTitle').textContent = 'Aucune donnée disponible';
+            $('chartSubtitle').textContent = '';
             return;
         }
         
-        var labels = [], values = [], stdValues = [];
-        var title = '', unit = '', color = '#10b981';
+        // Labels (jours)
+        var labels = data1.map(function(d) { return 'J' + d.jour_age; });
+        var jourAges = data1.map(function(d) { return d.jour_age; });
         
-        if (currentType === 'poids') {
-            title = 'Poids Moyen'; unit = 'g'; color = '#10b981';
-            data.forEach(function(d) {
-                labels.push('J' + d.jour_age);
-                values.push(parseFloat(d.poids_moyen) || 0);
-                var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.poids_cible) || parseFloat(s.poids_max) || null) : null);
-            });
-        } else if (currentType === 'mortalite') {
-            title = 'Mortalité'; unit = '%'; color = '#f59e0b';
-            data.forEach(function(d) {
-                labels.push('J' + d.jour_age);
-                values.push(parseFloat(d.taux_mortalite_cumul) || 0);
-                var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.mortalite_cible) || null) : null);
-            });
-        } else if (currentType === 'aliment') {
-            title = 'Aliment'; unit = 'g'; color = '#3b82f6';
-            data.forEach(function(d) {
-                labels.push('J' + d.jour_age);
-                values.push(parseFloat(d.conso_par_animal) || parseFloat(d.consommation_kg) || 0);
-                var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.conso_cible) || null) : null);
-            });
-        } else if (currentType === 'oeufs') {
-            title = 'Ponte'; unit = '%'; color = '#f59e0b';
-            data.forEach(function(d) {
-                labels.push('J' + d.jour_age);
-                values.push(parseFloat(d.taux_ponte) || 0);
-                var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.taux_ponte_cible) || null) : null);
-            });
-        }
-        
-        if (currentPeriod !== 'all') {
-            var days = parseInt(currentPeriod);
-            if (labels.length > days) {
-                labels = labels.slice(-days);
-                values = values.slice(-days);
-                stdValues = stdValues.slice(-days);
-            }
-        }
-        
+        // Titre
+        var title = ind1.label;
+        if (type2) title += ' vs ' + INDICATORS[type2].label;
         $('chartTitle').textContent = title;
-        $('chartSubtitle').textContent = (currentLotInfo ? currentLotInfo.code_lot : '--') + ' | ' + values.length + ' pts';
+        $('chartSubtitle').textContent = type2 ? 'Comparaison sur deux axes' : 'Évolution temporelle';
         
-        log('GRAPHIQUE: ' + values.length + ' points', 'success');
+        var datasets = [];
         
-        var datasets = [{
-            label: 'Réel',
-            data: values,
-            borderColor: color,
-            backgroundColor: color + '22',
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-            pointRadius: values.length > 40 ? 0 : 3
-        }];
+        // ===== ZONE DE TOLÉRANCE Y1 =====
+        var stdMin1 = [], stdMax1 = [];
+        jourAges.forEach(function(ja) {
+            var s = std1.find(function(x) { return x.jour_age === ja; });
+            stdMin1.push(s ? (parseFloat(s[ind1.stdMinField]) || null) : null);
+            stdMax1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
+        });
         
-        if (stdValues.some(function(v) { return v !== null; })) {
+        // Aire de tolérance (fill between)
+        if (stdMax1.some(function(v) { return v !== null; })) {
+            // Max line (invisible, juste pour le fill)
             datasets.push({
-                label: 'Standard',
-                data: stdValues,
-                borderColor: 'rgba(148,163,184,0.6)',
-                borderWidth: 2,
+                label: 'Zone max',
+                data: stdMax1,
+                borderColor: 'transparent',
+                backgroundColor: ind1.color + '25',
+                fill: '+1',
+                pointRadius: 0,
+                yAxisID: 'y1',
+                order: 10
+            });
+            // Min line (pointillés)
+            datasets.push({
+                label: 'Zone min',
+                data: stdMin1,
+                borderColor: ind1.color + '50',
+                borderWidth: 1,
                 borderDash: [5, 5],
-                tension: 0.3,
+                backgroundColor: 'transparent',
                 fill: false,
-                pointRadius: 0
+                pointRadius: 0,
+                yAxisID: 'y1',
+                order: 9
+            });
+            // Max line (pointillés)
+            datasets.push({
+                label: 'Zone max ligne',
+                data: stdMax1,
+                borderColor: ind1.color + '50',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                backgroundColor: 'transparent',
+                fill: false,
+                pointRadius: 0,
+                yAxisID: 'y1',
+                order: 9
             });
         }
         
+        // ===== COURBE PRINCIPALE Y1 =====
+        var values1 = data1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
+        datasets.push({
+            label: ind1.label,
+            data: values1,
+            borderColor: ind1.color,
+            backgroundColor: ind1.color,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: false,
+            pointRadius: values1.length > 60 ? 0 : 4,
+            pointBackgroundColor: ind1.color,
+            yAxisID: 'y1',
+            order: 1
+        });
+        
+        // Scales
+        var scales = {
+            x: {
+                grid: { color: 'rgba(71,85,105,0.3)' },
+                ticks: { color: '#94a3b8', maxTicksLimit: 15 },
+                title: { display: true, text: 'Jours du cycle', color: '#64748b' }
+            },
+            y1: {
+                type: 'linear',
+                position: 'left',
+                grid: { color: 'rgba(71,85,105,0.3)' },
+                ticks: { color: ind1.color },
+                title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color }
+            }
+        };
+        
+        // ===== COURBE Y2 =====
+        if (type2) {
+            var ind2 = INDICATORS[type2];
+            var data2 = filterByPeriod(lotData[type2] || []);
+            
+            // Mapper sur les mêmes jours
+            var values2 = jourAges.map(function(ja) {
+                var d = data2.find(function(x) { return x.jour_age === ja; });
+                return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
+            });
+            
+            datasets.push({
+                label: ind2.label,
+                data: values2,
+                borderColor: ind2.color,
+                backgroundColor: ind2.color,
+                borderWidth: 3,
+                tension: 0.35,
+                fill: false,
+                pointRadius: values2.length > 60 ? 0 : 4,
+                pointBackgroundColor: ind2.color,
+                yAxisID: 'y2',
+                order: 2
+            });
+            
+            scales.y2 = {
+                type: 'linear',
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: { color: ind2.color },
+                title: { display: true, text: ind2.label + ' (' + ind2.unit + ')', color: ind2.color }
+            };
+        }
+        
+        // Créer le graphique
         mainChart = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: datasets },
@@ -786,45 +979,116 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: currentType === 'mortalite', grid: { color: 'rgba(45,58,82,0.4)' }, ticks: { color: '#94a3b8' } },
-                    x: { grid: { color: 'rgba(45,58,82,0.2)' }, ticks: { color: '#94a3b8', maxTicksLimit: 12 } }
-                }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(30,41,59,0.95)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#94a3b8',
+                        padding: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(ctx) {
+                                if (ctx.dataset.label.includes('Zone')) return null;
+                                return ctx.dataset.label + ': ' + ctx.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: scales
             }
         });
     }
-
+    
+    function filterByPeriod(data) {
+        if (!data || currentPeriod === 'all') return data;
+        var days = parseInt(currentPeriod);
+        return data.slice(-days);
+    }
+    
+    // ============ GESTION INDICATEURS ============
+    function onIndicatorClick(e) {
+        var btn = e.currentTarget;
+        var type = btn.getAttribute('data-type');
+        
+        var idx = selectedIndicators.indexOf(type);
+        
+        if (idx === 0) {
+            // Déjà Y1: le garder ou passer Y2 en Y1
+            if (selectedIndicators.length > 1) {
+                selectedIndicators = [selectedIndicators[1]];
+            }
+            // Si seul, ne rien faire
+        } else if (idx === 1) {
+            // Déjà Y2: le retirer
+            selectedIndicators = [selectedIndicators[0]];
+        } else {
+            // Pas encore sélectionné
+            if (selectedIndicators.length < 2) {
+                selectedIndicators.push(type);
+            } else {
+                // Remplacer Y2
+                selectedIndicators[1] = type;
+            }
+        }
+        
+        updateIndicatorButtons();
+        updateUI();
+    }
+    
+    function updateIndicatorButtons() {
+        document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
+            var type = btn.getAttribute('data-type');
+            var tag = btn.querySelector('.axis-tag');
+            
+            btn.classList.remove('selected-y1', 'selected-y2');
+            tag.textContent = '';
+            
+            if (selectedIndicators[0] === type) {
+                btn.classList.add('selected-y1');
+                tag.textContent = 'Y1';
+            } else if (selectedIndicators[1] === type) {
+                btn.classList.add('selected-y2');
+                tag.textContent = 'Y2';
+            }
+        });
+    }
+    
+    // ============ INIT ============
     document.addEventListener('DOMContentLoaded', function() {
-        log('App v6 démarrée', 'success');
-        var cfg = loadCfg();
+        log('App Multi-Courbes v8 démarrée');
+        
+        // Charger config
+        var cfg = loadConfig();
         if (cfg.url) $('cfgUrl').value = cfg.url;
         if (cfg.key) $('cfgKey').value = cfg.key;
         initSupabase();
         
+        // Events login
         $('loginBtn').addEventListener('click', doLogin);
         $('loginPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
+        
+        // Events config
         $('btnTestSupa').addEventListener('click', testSupabase);
-        $('btnSaveSupa').addEventListener('click', saveSupabaseCfg);
+        $('btnSaveSupa').addEventListener('click', saveSupabaseConfig);
         $('btnBack').addEventListener('click', function() { showPage('pageLogin'); });
+        
+        // Events session
         $('btnLogout').addEventListener('click', doLogout);
         $('btnConfig').addEventListener('click', function() { showPage('pageConfig'); });
         
+        // Events sélecteurs
         $('selEleveur').addEventListener('change', onEleveurChange);
         $('selSite').addEventListener('change', onSiteChange);
         $('selBatiment').addEventListener('change', onBatimentChange);
         $('selLot').addEventListener('change', onLotChange);
         
-        document.querySelectorAll('#typeBtns .type-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('#typeBtns .type-btn').forEach(function(b) { b.classList.remove('active'); });
-                this.classList.add('active');
-                currentType = this.getAttribute('data-type');
-                log('Type: ' + currentType, 'info');
-                updateUI();
-            });
+        // Events indicateurs
+        document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
+            btn.addEventListener('click', onIndicatorClick);
         });
         
+        // Events période
         document.querySelectorAll('#periodBtns .period-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('#periodBtns .period-btn').forEach(function(b) { b.classList.remove('active'); });
