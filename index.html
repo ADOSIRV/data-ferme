@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord Avicole - Debug</title>
+    <title>Tableau de Bord Avicole v6</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -104,8 +104,7 @@
         .data-info-title{font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem}
         .data-info-value{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--accent-blue)}
         .empty-box{text-align:center;padding:3rem 1.5rem}.empty-icon{font-size:3rem;margin-bottom:0.75rem}
-        .debug-box{background:#1e293b;border:2px solid var(--accent-amber);border-radius:8px;padding:1rem;margin-top:1rem;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#fbbf24;max-height:300px;overflow-y:auto}
-        .debug-box h4{color:#f59e0b;margin-bottom:0.5rem}
+        .debug-box{background:#1e293b;border:2px solid var(--accent-amber);border-radius:8px;padding:1rem;margin-top:1rem;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#fbbf24;max-height:200px;overflow-y:auto}
         .footer{margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted)}
         .hidden{display:none !important}
         @media(max-width:1100px){.dashboard-grid{grid-template-columns:1fr}.side-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
@@ -115,7 +114,7 @@
 <body>
 <div class="page active" id="pageLogin">
     <div class="login-container">
-        <div class="login-logo"><div class="login-logo-icon">🐔</div><h1>Production Avicole</h1><p>Version Debug</p></div>
+        <div class="login-logo"><div class="login-logo-icon">🐔</div><h1>Production Avicole</h1><p>v6 - Fix RLS</p></div>
         <div class="card">
             <div class="alert" id="loginAlert"></div>
             <div class="form-group"><label class="form-label">Email</label><input type="text" class="form-input" id="loginUser" placeholder="email@exemple.com"></div>
@@ -149,7 +148,7 @@
 <div class="page page-app" id="pageApp">
     <div class="container">
         <header class="header">
-            <div class="header-left"><div class="logo">🐔</div><div><h1>Suivi Production</h1><p class="header-subtitle">Version Debug v5</p></div></div>
+            <div class="header-left"><div class="logo">🐔</div><div><h1>Suivi Production</h1><p class="header-subtitle">v6</p></div></div>
             <div class="last-update">MAJ: <span id="lastUpdate">--</span></div>
         </header>
         <div class="farmer-card">
@@ -166,7 +165,7 @@
             </div>
         </div>
         <div class="lot-info-card hidden" id="lotInfoCard">
-            <div class="lot-info-title">🐥 Lot sélectionné (ID: <span id="lotIdDisplay">--</span>)</div>
+            <div class="lot-info-title">🐥 Lot sélectionné</div>
             <div class="lot-info-grid">
                 <div class="lot-info-item"><div class="lot-info-label">Code</div><div class="lot-info-value" id="lotCode">--</div></div>
                 <div class="lot-info-item"><div class="lot-info-label">Souche</div><div class="lot-info-value" id="lotSouche">--</div></div>
@@ -219,14 +218,8 @@
             </div>
         </div>
         <div class="chart-card" id="emptyBox"><div class="empty-box"><div class="empty-icon">📊</div><h3>Sélectionnez un lot</h3><p style="color:var(--text-secondary)">Éleveur → Site → Bâtiment → Lot</p></div></div>
-        
-        <!-- DEBUG PANEL -->
-        <div class="debug-box" id="debugBox">
-            <h4>🔍 PANNEAU DEBUG</h4>
-            <div id="debugLog">En attente...</div>
-        </div>
-        
-        <footer class="footer">v5.0 Debug</footer>
+        <div class="debug-box"><strong>Debug:</strong> <span id="debugLog">Prêt</span></div>
+        <footer class="footer">v6</footer>
     </div>
 </div>
 <script>
@@ -247,12 +240,12 @@
     function $(id) { return document.getElementById(id); }
     
     function log(m, type) {
-        var color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : type === 'warn' ? '#f59e0b' : '#94a3b8';
+        var color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#fbbf24';
         console.log('[APP]', m);
         var e = $('debugLog');
         if (e) {
             var time = new Date().toLocaleTimeString();
-            e.innerHTML = '<div style="color:' + color + ';margin-bottom:4px">[' + time + '] ' + m + '</div>' + e.innerHTML;
+            e.innerHTML = '<span style="color:' + color + '">[' + time + '] ' + m + '</span><br>' + e.innerHTML.substring(0, 3000);
         }
     }
     
@@ -275,7 +268,6 @@
     
     function saveCfg(url, key) {
         localStorage.setItem('avicole_cfg', JSON.stringify({url: url, key: key}));
-        log('Config sauvée dans localStorage', 'success');
     }
 
     function isSupabaseLoaded() {
@@ -284,115 +276,67 @@
 
     function initSupabase() {
         var cfg = loadCfg();
-        var statusEl = $('dbStatus');
-        var statusText = $('dbStatusText');
-        
         if (!isSupabaseLoaded()) {
-            log('SDK Supabase NON CHARGÉ!', 'error');
-            statusEl.className = 'status-box error';
-            statusText.textContent = 'SDK non chargé ❌';
+            $('dbStatus').className = 'status-box error';
+            $('dbStatusText').textContent = 'SDK non chargé';
             return false;
         }
-        
-        log('SDK Supabase chargé ✓', 'success');
-        
         if (cfg.url && cfg.key) {
             try {
                 supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
-                statusEl.className = 'status-box ok';
-                statusText.textContent = 'Configuré ✓';
-                log('Supabase initialisé: ' + cfg.url.substring(0, 40) + '...', 'success');
+                $('dbStatus').className = 'status-box ok';
+                $('dbStatusText').textContent = 'OK ✓';
+                log('Supabase initialisé', 'success');
                 return true;
             } catch (e) {
-                log('Erreur init Supabase: ' + e.message, 'error');
-                statusEl.className = 'status-box error';
-                statusText.textContent = 'Erreur';
+                log('Erreur init: ' + e.message, 'error');
             }
-        } else {
-            statusEl.className = 'status-box warning';
-            statusText.textContent = 'Non configuré';
-            log('Supabase non configuré - utilisez admin/admin2024!', 'warn');
         }
+        $('dbStatus').className = 'status-box warning';
+        $('dbStatusText').textContent = 'Non configuré';
         return false;
     }
 
     function testSupabase() {
         var url = $('cfgUrl').value.trim();
         var key = $('cfgKey').value.trim();
-        
-        if (!url || !key) {
-            showAlert('configAlert', 'error', '❌ Remplissez tous les champs');
-            return;
-        }
-        
-        if (!isSupabaseLoaded()) {
-            showAlert('configAlert', 'error', '❌ SDK Supabase non chargé');
-            return;
-        }
-        
-        showAlert('configAlert', 'info', '⏳ Test en cours...');
-        log('Test connexion: ' + url, 'info');
-        
+        if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
+        if (!isSupabaseLoaded()) { showAlert('configAlert', 'error', '❌ SDK non chargé'); return; }
+        showAlert('configAlert', 'info', '⏳ Test...');
         try {
             var testClient = window.supabase.createClient(url, key);
             testClient.from('eleveurs').select('id').limit(1).then(function(res) {
-                if (res.error) {
-                    log('Erreur test: ' + res.error.message, 'error');
-                    showAlert('configAlert', 'error', '❌ ' + res.error.message);
-                } else {
-                    log('Test connexion OK!', 'success');
-                    showAlert('configAlert', 'success', '✅ Connexion réussie!');
-                }
+                if (res.error) showAlert('configAlert', 'error', '❌ ' + res.error.message);
+                else showAlert('configAlert', 'success', '✅ OK!');
             });
-        } catch (e) {
-            log('Exception: ' + e.message, 'error');
-            showAlert('configAlert', 'error', '❌ ' + e.message);
-        }
+        } catch (e) { showAlert('configAlert', 'error', '❌ ' + e.message); }
     }
 
     function saveSupabaseCfg() {
         var url = $('cfgUrl').value.trim();
         var key = $('cfgKey').value.trim();
-        
-        if (!url || !key) {
-            showAlert('configAlert', 'error', '❌ Remplissez tous les champs');
-            return;
-        }
-        
+        if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
         saveCfg(url, key);
-        
-        if (initSupabase()) {
-            showAlert('configAlert', 'success', '✅ Configuration sauvegardée!');
-        }
+        if (initSupabase()) showAlert('configAlert', 'success', '✅ Sauvé!');
     }
 
     function doLogin() {
         var user = $('loginUser').value.trim();
         var pass = $('loginPass').value;
         var btn = $('loginBtn');
-        
         hideAlert('loginAlert');
-        
-        if (!user || !pass) {
-            showAlert('loginAlert', 'error', '❌ Remplissez tous les champs');
-            return;
-        }
-        
-        log('Tentative connexion: ' + user, 'info');
+        if (!user || !pass) { showAlert('loginAlert', 'error', '❌ Remplissez les champs'); return; }
         
         if (user === ADMIN.user && pass === ADMIN.pass) {
-            log('Admin local connecté', 'success');
             isLocalAdmin = true;
-            currentUser = {nom: 'Administrateur', prenom: 'Local', role: 'admin'};
+            currentUser = {nom: 'Admin', role: 'admin'};
             currentRole = 'config';
-            
             $('sessionUser').textContent = '👑 Admin';
             $('sessionRole').textContent = 'CONFIG';
             $('sessionRole').className = 'session-role config';
             $('btnConfig').classList.remove('hidden');
             $('sessionBar').style.display = 'flex';
-            
-            showAlert('loginAlert', 'success', '✅ Admin connecté!');
+            showAlert('loginAlert', 'success', '✅ Admin OK!');
             setTimeout(function() { showPage('pageConfig'); }, 300);
             return;
         }
@@ -404,110 +348,74 @@
         
         btn.disabled = true;
         btn.textContent = 'Connexion...';
-        showAlert('loginAlert', 'info', '⏳ Vérification...');
         
-        supabaseClient.from('users')
-            .select('*')
-            .eq('email', user)
-            .eq('is_active', true)
-            .single()
-            .then(function(res) {
-                if (res.error || !res.data) {
-                    throw new Error('Utilisateur non trouvé');
-                }
-                
-                log('Utilisateur trouvé: ' + res.data.email, 'success');
-                
-                var storedHash = res.data.password_hash || '';
-                if (storedHash !== pass && storedHash !== 'hash_' + pass) {
-                    throw new Error('Mot de passe incorrect');
-                }
-                
-                currentUser = res.data;
-                currentRole = res.data.role || 'eleveur';
-                isLocalAdmin = false;
-                
-                var name = res.data.prenom ? res.data.prenom + ' ' + res.data.nom : res.data.email;
-                $('sessionUser').textContent = '👤 ' + name;
-                $('sessionRole').textContent = currentRole.toUpperCase();
-                $('sessionRole').className = 'session-role ' + currentRole;
-                
-                if (currentRole === 'admin') {
-                    $('btnConfig').classList.remove('hidden');
-                }
-                
-                $('sessionBar').style.display = 'flex';
-                
-                log('Connecté: ' + name + ' (' + currentRole + ')', 'success');
-                showAlert('loginAlert', 'success', '✅ Bienvenue!');
-                
-                loadEleveurs();
-                setTimeout(function() { showPage('pageApp'); }, 300);
-            })
-            .catch(function(err) {
-                log('Erreur login: ' + err.message, 'error');
-                showAlert('loginAlert', 'error', '❌ ' + err.message);
-            })
-            .finally(function() {
-                btn.disabled = false;
-                btn.textContent = 'Se connecter';
-            });
+        supabaseClient.from('users').select('*').eq('email', user).eq('is_active', true).single()
+        .then(function(res) {
+            if (res.error || !res.data) throw new Error('Utilisateur non trouvé');
+            var storedHash = res.data.password_hash || '';
+            if (storedHash !== pass && storedHash !== 'hash_' + pass) throw new Error('Mot de passe incorrect');
+            
+            currentUser = res.data;
+            currentRole = res.data.role || 'eleveur';
+            isLocalAdmin = false;
+            
+            var name = res.data.prenom ? res.data.prenom + ' ' + res.data.nom : res.data.email;
+            $('sessionUser').textContent = '👤 ' + name;
+            $('sessionRole').textContent = currentRole.toUpperCase();
+            $('sessionRole').className = 'session-role ' + currentRole;
+            if (currentRole === 'admin') $('btnConfig').classList.remove('hidden');
+            $('sessionBar').style.display = 'flex';
+            
+            log('Connecté: ' + name, 'success');
+            loadEleveurs();
+            setTimeout(function() { showPage('pageApp'); }, 300);
+        })
+        .catch(function(err) {
+            log('Erreur: ' + err.message, 'error');
+            showAlert('loginAlert', 'error', '❌ ' + err.message);
+        })
+        .finally(function() {
+            btn.disabled = false;
+            btn.textContent = 'Se connecter';
+        });
     }
 
     function doLogout() {
-        log('Déconnexion', 'info');
         currentUser = null;
         isLocalAdmin = false;
-        currentRole = '';
         $('loginUser').value = '';
         $('loginPass').value = '';
         $('sessionBar').style.display = 'none';
         $('btnConfig').classList.add('hidden');
-        hideAlert('loginAlert');
         showPage('pageLogin');
     }
 
     function loadEleveurs() {
         if (!supabaseClient) return;
-        log('Chargement des éleveurs...', 'info');
+        log('Chargement éleveurs...', 'info');
         
-        supabaseClient.from('eleveurs')
-            .select('*')
-            .eq('is_active', true)
-            .order('nom')
-            .then(function(res) {
-                if (res.error) {
-                    log('Erreur éleveurs: ' + res.error.message, 'error');
-                    return;
-                }
-                
-                var sel = $('selEleveur');
-                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-                
-                var data = res.data || [];
-                log('Éleveurs chargés: ' + data.length, 'success');
-                
-                data.forEach(function(e) {
-                    var opt = document.createElement('option');
-                    opt.value = e.id;
-                    opt.setAttribute('data-json', JSON.stringify(e));
-                    opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
-                    sel.appendChild(opt);
-                });
-                
-                if (data.length === 1) {
-                    sel.value = data[0].id;
-                    onEleveurChange();
-                }
-                
-                $('lastUpdate').textContent = new Date().toLocaleString('fr-FR');
+        supabaseClient.from('eleveurs').select('*').eq('is_active', true).order('nom')
+        .then(function(res) {
+            if (res.error) { log('Erreur: ' + res.error.message, 'error'); return; }
+            var sel = $('selEleveur');
+            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+            var data = res.data || [];
+            log('Éleveurs: ' + data.length, 'success');
+            data.forEach(function(e) {
+                var opt = document.createElement('option');
+                opt.value = e.id;
+                opt.setAttribute('data-json', JSON.stringify(e));
+                opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
+                sel.appendChild(opt);
             });
+            if (data.length === 1) { sel.value = data[0].id; onEleveurChange(); }
+            $('lastUpdate').textContent = new Date().toLocaleString('fr-FR');
+        });
     }
 
     function onEleveurChange() {
         var id = $('selEleveur').value;
         var selSite = $('selSite');
-        
         selSite.innerHTML = '<option value="">-- Sélectionner --</option>';
         selSite.disabled = !id;
         $('selBatiment').innerHTML = '<option value="">-- Sélectionner --</option>';
@@ -515,9 +423,7 @@
         $('selLot').innerHTML = '<option value="">-- Sélectionner --</option>';
         $('selLot').disabled = true;
         hideDataCards();
-        
         if (!id) return;
-        log('Éleveur sélectionné: ' + id, 'info');
         
         var opt = document.querySelector('#selEleveur option[value="' + id + '"]');
         if (opt) {
@@ -529,42 +435,29 @@
             } catch (err) {}
         }
         
-        supabaseClient.from('sites')
-            .select('*')
-            .eq('eleveur_id', id)
-            .eq('is_active', true)
-            .order('nom')
-            .then(function(res) {
-                var data = res.data || [];
-                log('Sites chargés: ' + data.length, 'success');
-                
-                data.forEach(function(s) {
-                    var opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.setAttribute('data-json', JSON.stringify(s));
-                    opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
-                    selSite.appendChild(opt);
-                });
-                
-                if (data.length === 1) {
-                    selSite.value = data[0].id;
-                    onSiteChange();
-                }
+        supabaseClient.from('sites').select('*').eq('eleveur_id', id).eq('is_active', true).order('nom')
+        .then(function(res) {
+            var data = res.data || [];
+            data.forEach(function(s) {
+                var opt = document.createElement('option');
+                opt.value = s.id;
+                opt.setAttribute('data-json', JSON.stringify(s));
+                opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
+                selSite.appendChild(opt);
             });
+            if (data.length === 1) { selSite.value = data[0].id; onSiteChange(); }
+        });
     }
 
     function onSiteChange() {
         var id = $('selSite').value;
         var selBat = $('selBatiment');
-        
         selBat.innerHTML = '<option value="">-- Sélectionner --</option>';
         selBat.disabled = !id;
         $('selLot').innerHTML = '<option value="">-- Sélectionner --</option>';
         $('selLot').disabled = true;
         hideDataCards();
-        
         if (!id) return;
-        log('Site sélectionné: ' + id, 'info');
         
         var opt = document.querySelector('#selSite option[value="' + id + '"]');
         if (opt) {
@@ -574,177 +467,130 @@
             } catch (err) {}
         }
         
-        supabaseClient.from('batiments')
-            .select('*')
-            .eq('site_id', id)
-            .eq('is_active', true)
-            .order('nom')
-            .then(function(res) {
-                var data = res.data || [];
-                log('Bâtiments chargés: ' + data.length, 'success');
-                
-                data.forEach(function(b) {
-                    var opt = document.createElement('option');
-                    opt.value = b.id;
-                    opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ')' : '');
-                    selBat.appendChild(opt);
-                });
-                
-                if (data.length === 1) {
-                    selBat.value = data[0].id;
-                    onBatimentChange();
-                }
+        supabaseClient.from('batiments').select('*').eq('site_id', id).eq('is_active', true).order('nom')
+        .then(function(res) {
+            var data = res.data || [];
+            data.forEach(function(b) {
+                var opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ')' : '');
+                selBat.appendChild(opt);
             });
+            if (data.length === 1) { selBat.value = data[0].id; onBatimentChange(); }
+        });
     }
 
     function onBatimentChange() {
         var id = $('selBatiment').value;
         var selLot = $('selLot');
-        
         selLot.innerHTML = '<option value="">-- Sélectionner --</option>';
         selLot.disabled = !id;
         hideDataCards();
-        
         if (!id) return;
-        log('Bâtiment sélectionné: ' + id, 'info');
         
-        supabaseClient.from('lots')
-            .select('*, souches(nom)')
-            .eq('batiment_id', id)
-            .order('date_mise_place', {ascending: false})
-            .then(function(res) {
-                var data = res.data || [];
-                log('Lots chargés: ' + data.length, 'success');
-                
-                data.forEach(function(l) {
-                    var opt = document.createElement('option');
-                    opt.value = l.id;
-                    opt.setAttribute('data-json', JSON.stringify(l));
-                    var ico = l.statut === 'actif' ? '🟢' : '⚪';
-                    var sn = l.souches ? l.souches.nom : 'N/A';
-                    opt.textContent = ico + ' ' + l.code_lot + ' - ' + sn;
-                    selLot.appendChild(opt);
-                });
-                
-                var actif = data.find(function(x) { return x.statut === 'actif'; });
-                if (actif) {
-                    selLot.value = actif.id;
-                    onLotChange();
-                }
+        supabaseClient.from('lots').select('*, souches(nom)').eq('batiment_id', id).order('date_mise_place', {ascending: false})
+        .then(function(res) {
+            var data = res.data || [];
+            data.forEach(function(l) {
+                var opt = document.createElement('option');
+                opt.value = l.id;
+                opt.setAttribute('data-json', JSON.stringify(l));
+                var ico = l.statut === 'actif' ? '🟢' : '⚪';
+                var sn = l.souches ? l.souches.nom : 'N/A';
+                opt.textContent = ico + ' ' + l.code_lot + ' - ' + sn;
+                selLot.appendChild(opt);
             });
+            var actif = data.find(function(x) { return x.statut === 'actif'; });
+            if (actif) { selLot.value = actif.id; onLotChange(); }
+        });
     }
 
     function onLotChange() {
         var id = $('selLot').value;
-        
-        if (!id) {
-            hideDataCards();
-            return;
-        }
+        if (!id) { hideDataCards(); return; }
         
         currentLotId = id;
-        log('=== LOT SÉLECTIONNÉ ===', 'warn');
-        log('Lot ID: ' + id, 'info');
-        
-        $('lotIdDisplay').textContent = id;
+        log('LOT SÉLECTIONNÉ: ' + id, 'info');
         
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
         var lot = {};
         try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
         
-        log('Lot code: ' + lot.code_lot, 'info');
-        log('Souche ID: ' + (lot.souche_id || 'AUCUN'), lot.souche_id ? 'info' : 'warn');
-        
         $('lotCode').textContent = lot.code_lot || '--';
         $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '--';
         $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
-        
         if (lot.date_mise_place) {
             var age = Math.floor((new Date() - new Date(lot.date_mise_place)) / 86400000);
             $('lotAge').textContent = age + ' jours';
-        } else {
-            $('lotAge').textContent = '--';
-        }
-        
+        } else { $('lotAge').textContent = '--'; }
         $('lotStatut').textContent = lot.statut || '--';
         
-        log('=== CHARGEMENT DONNÉES ===', 'warn');
-        log('Requête donnees_poids WHERE lot_id = ' + id, 'info');
+        // CHARGEMENT DONNÉES SANS FILTRE lot_id D'ABORD POUR TESTER
+        log('Test: chargement TOUTES les données poids (sans filtre)...', 'info');
         
-        // Charger les données avec debug détaillé
-        Promise.all([
-            supabaseClient.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
-            supabaseClient.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
-            supabaseClient.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
-            supabaseClient.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age')
-        ]).then(function(results) {
-            // Debug détaillé
-            log('--- Résultats requêtes ---', 'warn');
-            
-            if (results[0].error) {
-                log('ERREUR donnees_poids: ' + results[0].error.message, 'error');
+        supabaseClient.from('donnees_poids').select('*').limit(10)
+        .then(function(testRes) {
+            if (testRes.error) {
+                log('ERREUR RLS donnees_poids: ' + testRes.error.message + ' | code: ' + testRes.error.code, 'error');
+                log('>>> SOLUTION: Désactivez RLS sur donnees_poids ou ajoutez une policy SELECT', 'error');
             } else {
-                lotData.poids = results[0].data || [];
-                log('donnees_poids: ' + lotData.poids.length + ' enregistrements', lotData.poids.length > 0 ? 'success' : 'warn');
-                if (lotData.poids.length > 0) {
-                    log('Premier: jour_age=' + lotData.poids[0].jour_age + ', poids_moyen=' + lotData.poids[0].poids_moyen, 'info');
+                log('Test SELECT sans filtre: ' + (testRes.data ? testRes.data.length : 0) + ' lignes', 'success');
+                if (testRes.data && testRes.data.length > 0) {
+                    log('Exemple lot_id en base: ' + testRes.data[0].lot_id, 'info');
+                    log('Lot_id recherché: ' + id, 'info');
+                    if (testRes.data[0].lot_id === id) {
+                        log('Les IDs correspondent!', 'success');
+                    }
                 }
             }
             
-            if (results[1].error) {
-                log('ERREUR donnees_mortalite: ' + results[1].error.message, 'error');
-            } else {
-                lotData.mortalite = results[1].data || [];
-                log('donnees_mortalite: ' + lotData.mortalite.length + ' enregistrements', lotData.mortalite.length > 0 ? 'success' : 'warn');
-            }
+            // Maintenant charger avec filtre
+            return loadLotData(id, lot.souche_id);
+        });
+    }
+    
+    function loadLotData(lotId, soucheId) {
+        log('Chargement données lot_id=' + lotId, 'info');
+        
+        Promise.all([
+            supabaseClient.from('donnees_poids').select('*').eq('lot_id', lotId).order('jour_age'),
+            supabaseClient.from('donnees_mortalite').select('*').eq('lot_id', lotId).order('jour_age'),
+            supabaseClient.from('donnees_aliment').select('*').eq('lot_id', lotId).order('jour_age'),
+            supabaseClient.from('donnees_oeufs').select('*').eq('lot_id', lotId).order('jour_age')
+        ]).then(function(results) {
+            // Vérifier erreurs RLS
+            if (results[0].error) log('ERR poids: ' + results[0].error.message, 'error');
+            if (results[1].error) log('ERR morta: ' + results[1].error.message, 'error');
+            if (results[2].error) log('ERR alim: ' + results[2].error.message, 'error');
+            if (results[3].error) log('ERR oeufs: ' + results[3].error.message, 'error');
             
-            if (results[2].error) {
-                log('ERREUR donnees_aliment: ' + results[2].error.message, 'error');
-            } else {
-                lotData.aliment = results[2].data || [];
-                log('donnees_aliment: ' + lotData.aliment.length + ' enregistrements', lotData.aliment.length > 0 ? 'success' : 'warn');
-            }
-            
-            if (results[3].error) {
-                log('ERREUR donnees_oeufs: ' + results[3].error.message, 'error');
-            } else {
-                lotData.oeufs = results[3].data || [];
-                log('donnees_oeufs: ' + lotData.oeufs.length + ' enregistrements', lotData.oeufs.length > 0 ? 'success' : 'warn');
-            }
+            lotData.poids = results[0].data || [];
+            lotData.mortalite = results[1].data || [];
+            lotData.aliment = results[2].data || [];
+            lotData.oeufs = results[3].data || [];
             
             var total = lotData.poids.length + lotData.mortalite.length + lotData.aliment.length + lotData.oeufs.length;
-            log('TOTAL: ' + total + ' enregistrements', total > 0 ? 'success' : 'error');
+            log('DONNÉES: Poids=' + lotData.poids.length + ' Morta=' + lotData.mortalite.length + ' Alim=' + lotData.aliment.length + ' Oeufs=' + lotData.oeufs.length, total > 0 ? 'success' : 'error');
             
-            if (total === 0) {
-                log('⚠️ AUCUNE DONNÉE TROUVÉE pour lot_id=' + id, 'error');
-                log('Vérifiez que vos tables donnees_* contiennent des données avec ce lot_id', 'warn');
-                
-                // Vérifier si des données existent du tout
-                supabaseClient.from('donnees_poids').select('lot_id').limit(5).then(function(checkRes) {
-                    if (checkRes.data && checkRes.data.length > 0) {
-                        log('Exemples de lot_id dans donnees_poids: ' + checkRes.data.map(function(r) { return r.lot_id; }).join(', '), 'info');
-                    } else {
-                        log('La table donnees_poids semble VIDE', 'error');
-                    }
-                });
+            if (lotData.poids.length > 0) {
+                log('Premier enregistrement poids: jour=' + lotData.poids[0].jour_age + ' poids=' + lotData.poids[0].poids_moyen, 'success');
             }
             
-            if (lot.souche_id) {
-                loadStandards(lot.souche_id);
+            if (soucheId) {
+                loadStandards(soucheId);
             } else {
-                log('Pas de souche_id, pas de standards', 'warn');
                 updateUI();
                 showDataCards();
             }
         }).catch(function(err) {
-            log('EXCEPTION lors du chargement: ' + err.message, 'error');
+            log('EXCEPTION: ' + err.message, 'error');
         });
     }
 
     function loadStandards(soucheId) {
-        log('Chargement standards souche: ' + soucheId, 'info');
+        log('Standards souche=' + soucheId, 'info');
         
         Promise.all([
             supabaseClient.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
@@ -752,16 +598,18 @@
             supabaseClient.from('standards_aliment').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabaseClient.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age')
         ]).then(function(results) {
+            if (results[0].error) log('ERR std poids: ' + results[0].error.message, 'error');
+            
             standardsData.poids = results[0].data || [];
             standardsData.mortalite = results[1].data || [];
             standardsData.aliment = results[2].data || [];
             standardsData.oeufs = results[3].data || [];
             
-            log('Standards poids: ' + standardsData.poids.length, standardsData.poids.length > 0 ? 'success' : 'warn');
+            log('Standards: ' + standardsData.poids.length + ' poids', standardsData.poids.length > 0 ? 'success' : 'info');
             updateUI();
             showDataCards();
         }).catch(function(err) {
-            log('Erreur standards: ' + err.message, 'error');
+            log('Err standards: ' + err.message, 'error');
             updateUI();
             showDataCards();
         });
@@ -794,7 +642,6 @@
             $('statsValue').textContent = '--';
             $('statsUnit').textContent = '';
             $('statsTrend').textContent = 'Pas de données';
-            $('statsTrend').className = 'trend-badge neu';
             $('statsGap').textContent = '--';
             $('statsGapStatus').textContent = '--';
             return;
@@ -803,33 +650,21 @@
         var last = data[data.length - 1];
         var val = 0, unit = '';
         
-        if (currentType === 'poids') {
-            val = parseFloat(last.poids_moyen) || 0;
-            unit = 'g';
-        } else if (currentType === 'mortalite') {
-            val = parseFloat(last.taux_mortalite_cumul) || 0;
-            unit = '%';
-        } else if (currentType === 'aliment') {
-            val = parseFloat(last.conso_par_animal) || parseFloat(last.consommation_kg) || 0;
-            unit = 'g';
-        } else if (currentType === 'oeufs') {
-            val = parseFloat(last.taux_ponte) || parseFloat(last.nombre_oeufs) || 0;
-            unit = '%';
-        }
+        if (currentType === 'poids') { val = parseFloat(last.poids_moyen) || 0; unit = 'g'; }
+        else if (currentType === 'mortalite') { val = parseFloat(last.taux_mortalite_cumul) || 0; unit = '%'; }
+        else if (currentType === 'aliment') { val = parseFloat(last.conso_par_animal) || parseFloat(last.consommation_kg) || 0; unit = 'g'; }
+        else if (currentType === 'oeufs') { val = parseFloat(last.taux_ponte) || parseFloat(last.nombre_oeufs) || 0; unit = '%'; }
         
-        var dec = (currentType === 'poids' || currentType === 'aliment') ? 0 : 2;
-        $('statsValue').textContent = val.toFixed(dec);
+        $('statsValue').textContent = val.toFixed(currentType === 'poids' || currentType === 'aliment' ? 0 : 2);
         $('statsUnit').textContent = unit;
         
         if (data.length > 1) {
             var prev = data[data.length - 2];
             var prevVal = 0;
-            
             if (currentType === 'poids') prevVal = parseFloat(prev.poids_moyen) || 0;
             else if (currentType === 'mortalite') prevVal = parseFloat(prev.taux_mortalite_cumul) || 0;
-            else if (currentType === 'aliment') prevVal = parseFloat(prev.conso_par_animal) || parseFloat(prev.consommation_kg) || 0;
-            else if (currentType === 'oeufs') prevVal = parseFloat(prev.taux_ponte) || parseFloat(prev.nombre_oeufs) || 0;
-            
+            else if (currentType === 'aliment') prevVal = parseFloat(prev.conso_par_animal) || 0;
+            else if (currentType === 'oeufs') prevVal = parseFloat(prev.taux_ponte) || 0;
             if (prevVal > 0) {
                 var diff = ((val - prevVal) / prevVal * 100).toFixed(1);
                 $('statsTrend').textContent = (diff >= 0 ? '+' : '') + diff + '%';
@@ -839,41 +674,33 @@
         
         var stds = standardsData[currentType] || [];
         var std = stds.find(function(s) { return s.jour_age === last.jour_age; });
-        
         if (std) {
             var stdVal = 0;
             if (currentType === 'poids') stdVal = parseFloat(std.poids_cible) || parseFloat(std.poids_max) || 0;
             else if (currentType === 'mortalite') stdVal = parseFloat(std.mortalite_cible) || parseFloat(std.mortalite_max) || 0;
             else if (currentType === 'aliment') stdVal = parseFloat(std.conso_cible) || parseFloat(std.conso_max) || 0;
             else if (currentType === 'oeufs') stdVal = parseFloat(std.taux_ponte_cible) || parseFloat(std.taux_ponte_max) || 0;
-            
             if (stdVal > 0) {
                 var gap = ((val - stdVal) / stdVal * 100).toFixed(1);
                 $('statsGap').textContent = (gap >= 0 ? '+' : '') + gap;
-                $('statsGapStatus').textContent = Math.abs(gap) < 5 ? 'Normal' : (gap > 0 ? 'Supérieur' : 'Inférieur');
+                $('statsGapStatus').textContent = Math.abs(gap) < 5 ? 'Normal' : (gap > 0 ? 'Sup' : 'Inf');
                 $('statsGapStatus').className = 'trend-badge ' + (Math.abs(gap) < 5 ? 'neu' : (gap > 0 ? 'pos' : 'neg'));
             }
-        } else {
-            $('statsGap').textContent = '--';
-            $('statsGapStatus').textContent = '--';
         }
     }
 
     function updateChart() {
         var ctx = $('mainChart');
         if (!ctx) return;
-        
         ctx = ctx.getContext('2d');
         if (mainChart) mainChart.destroy();
         
         var data = lotData[currentType] || [];
         var stds = standardsData[currentType] || [];
         
-        log('updateChart: ' + currentType + ' - ' + data.length + ' données', data.length > 0 ? 'info' : 'warn');
-        
         if (data.length === 0) {
             $('chartTitle').textContent = 'Aucune donnée';
-            $('chartSubtitle').textContent = 'Pas de données ' + currentType + ' pour ce lot';
+            $('chartSubtitle').textContent = 'Pas de données ' + currentType;
             return;
         }
         
@@ -881,9 +708,7 @@
         var title = '', unit = '', color = '#10b981';
         
         if (currentType === 'poids') {
-            title = 'Poids Moyen';
-            unit = 'g';
-            color = '#10b981';
+            title = 'Poids Moyen'; unit = 'g'; color = '#10b981';
             data.forEach(function(d) {
                 labels.push('J' + d.jour_age);
                 values.push(parseFloat(d.poids_moyen) || 0);
@@ -891,34 +716,28 @@
                 stdValues.push(s ? (parseFloat(s.poids_cible) || parseFloat(s.poids_max) || null) : null);
             });
         } else if (currentType === 'mortalite') {
-            title = 'Mortalité Cumulée';
-            unit = '%';
-            color = '#f59e0b';
+            title = 'Mortalité'; unit = '%'; color = '#f59e0b';
             data.forEach(function(d) {
                 labels.push('J' + d.jour_age);
                 values.push(parseFloat(d.taux_mortalite_cumul) || 0);
                 var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.mortalite_cible) || parseFloat(s.mortalite_max) || null) : null);
+                stdValues.push(s ? (parseFloat(s.mortalite_cible) || null) : null);
             });
         } else if (currentType === 'aliment') {
-            title = 'Consommation Aliment';
-            unit = 'g';
-            color = '#3b82f6';
+            title = 'Aliment'; unit = 'g'; color = '#3b82f6';
             data.forEach(function(d) {
                 labels.push('J' + d.jour_age);
                 values.push(parseFloat(d.conso_par_animal) || parseFloat(d.consommation_kg) || 0);
                 var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.conso_cible) || parseFloat(s.conso_max) || null) : null);
+                stdValues.push(s ? (parseFloat(s.conso_cible) || null) : null);
             });
         } else if (currentType === 'oeufs') {
-            title = 'Taux de Ponte';
-            unit = '%';
-            color = '#f59e0b';
+            title = 'Ponte'; unit = '%'; color = '#f59e0b';
             data.forEach(function(d) {
                 labels.push('J' + d.jour_age);
-                values.push(parseFloat(d.taux_ponte) || parseFloat(d.nombre_oeufs) || 0);
+                values.push(parseFloat(d.taux_ponte) || 0);
                 var s = stds.find(function(x) { return x.jour_age === d.jour_age; });
-                stdValues.push(s ? (parseFloat(s.taux_ponte_cible) || parseFloat(s.taux_ponte_max) || null) : null);
+                stdValues.push(s ? (parseFloat(s.taux_ponte_cible) || null) : null);
             });
         }
         
@@ -932,7 +751,9 @@
         }
         
         $('chartTitle').textContent = title;
-        $('chartSubtitle').textContent = (currentLotInfo ? currentLotInfo.code_lot : '--') + ' | ' + values.length + ' points';
+        $('chartSubtitle').textContent = (currentLotInfo ? currentLotInfo.code_lot : '--') + ' | ' + values.length + ' pts';
+        
+        log('GRAPHIQUE: ' + values.length + ' points', 'success');
         
         var datasets = [{
             label: 'Réel',
@@ -949,7 +770,7 @@
             datasets.push({
                 label: 'Standard',
                 data: stdValues,
-                borderColor: 'rgba(148, 163, 184, 0.6)',
+                borderColor: 'rgba(148,163,184,0.6)',
                 borderWidth: 2,
                 borderDash: [5, 5],
                 tension: 0.3,
@@ -965,53 +786,27 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(26, 34, 54, 0.95)',
-                        padding: 10,
-                        callbacks: {
-                            label: function(c) { return c.dataset.label + ': ' + c.parsed.y + ' ' + unit; }
-                        }
-                    }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
-                    y: {
-                        beginAtZero: currentType === 'mortalite',
-                        grid: { color: 'rgba(45, 58, 82, 0.4)' },
-                        ticks: {
-                            color: '#94a3b8',
-                            callback: function(v) { return v + ' ' + unit; }
-                        }
-                    },
-                    x: {
-                        grid: { color: 'rgba(45, 58, 82, 0.2)' },
-                        ticks: { color: '#94a3b8', maxTicksLimit: 12 }
-                    }
+                    y: { beginAtZero: currentType === 'mortalite', grid: { color: 'rgba(45,58,82,0.4)' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { color: 'rgba(45,58,82,0.2)' }, ticks: { color: '#94a3b8', maxTicksLimit: 12 } }
                 }
             }
         });
-        
-        log('Graphique créé: ' + values.length + ' points', 'success');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        log('=== APP v5 DEBUG DÉMARRÉE ===', 'warn');
-        
+        log('App v6 démarrée', 'success');
         var cfg = loadCfg();
         if (cfg.url) $('cfgUrl').value = cfg.url;
         if (cfg.key) $('cfgKey').value = cfg.key;
-        
         initSupabase();
         
         $('loginBtn').addEventListener('click', doLogin);
         $('loginPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
-        $('loginUser').addEventListener('keypress', function(e) { if (e.key === 'Enter') $('loginPass').focus(); });
-        
         $('btnTestSupa').addEventListener('click', testSupabase);
         $('btnSaveSupa').addEventListener('click', saveSupabaseCfg);
         $('btnBack').addEventListener('click', function() { showPage('pageLogin'); });
-        
         $('btnLogout').addEventListener('click', doLogout);
         $('btnConfig').addEventListener('click', function() { showPage('pageConfig'); });
         
@@ -1025,7 +820,7 @@
                 document.querySelectorAll('#typeBtns .type-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
                 currentType = this.getAttribute('data-type');
-                log('Type changé: ' + currentType, 'info');
+                log('Type: ' + currentType, 'info');
                 updateUI();
             });
         });
@@ -1035,7 +830,6 @@
                 document.querySelectorAll('#periodBtns .period-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
                 currentPeriod = this.getAttribute('data-period');
-                log('Période changée: ' + currentPeriod, 'info');
                 updateUI();
             });
         });
