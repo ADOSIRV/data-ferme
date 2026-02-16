@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐔 Avicole - Multi-Courbes v8</title>
+    <title>🐔 Avicole - Multi-Courbes v9</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,12 +27,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; }
         
-        /* Pages */
         .page { display: none; min-height: 100vh; }
         .page.active { display: flex; align-items: center; justify-content: center; }
         .page-app.active { display: block; }
         
-        /* Login */
         .login-box { width: 100%; max-width: 400px; padding: 2rem; }
         .login-header { text-align: center; margin-bottom: 2rem; }
         .login-icon { font-size: 4rem; margin-bottom: 1rem; }
@@ -43,8 +41,7 @@
         .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem; text-transform: uppercase; }
         .form-input { width: 100%; padding: 0.8rem 1rem; background: var(--bg-input); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; }
         .form-input:focus { outline: none; border-color: var(--blue); }
-        .btn { width: 100%; padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
-        .btn:active { transform: scale(0.98); }
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; }
         .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
         .btn-secondary { background: var(--bg-input); color: var(--text); border: 2px solid var(--border); }
         .alert { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
@@ -55,7 +52,6 @@
         .status-box.ok { background: var(--green-light); color: var(--green); }
         .status-box.warn { background: var(--orange-light); color: var(--orange); }
         
-        /* Config */
         .config-box { width: 100%; max-width: 480px; padding: 2rem; }
         .config-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
         .config-title { font-weight: 600; color: var(--blue); margin-bottom: 1rem; }
@@ -63,45 +59,47 @@
         .btn-row .btn { flex: 1; }
         .back-link { display: block; text-align: center; margin-top: 1rem; color: var(--blue); cursor: pointer; }
         
-        /* Session bar */
         .session-bar { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.8rem; z-index: 1000; }
         .session-user { font-weight: 500; }
-        .session-role { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; background: var(--green-light); color: var(--green); }
+        .session-role { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .session-role.eleveur { background: var(--green-light); color: var(--green); }
+        .session-role.admin { background: var(--orange-light); color: var(--orange); }
+        .session-role.technicien { background: var(--blue-light); color: var(--blue); }
         .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; }
         
-        /* App container */
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
         
-        /* Header */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
         .app-logo { display: flex; align-items: center; gap: 1rem; }
         .logo-icon { font-size: 2.5rem; }
         .app-title { font-size: 1.4rem; font-weight: 700; }
         .app-subtitle { color: var(--text-dim); font-size: 0.85rem; }
         
-        /* Selectors */
+        .eleveur-banner { background: linear-gradient(135deg, var(--green-light), var(--blue-light)); border: 1px solid var(--green); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; }
+        .eleveur-banner-icon { font-size: 2rem; }
+        .eleveur-banner-info { flex: 1; }
+        .eleveur-banner-name { font-size: 1.1rem; font-weight: 600; }
+        .eleveur-banner-detail { font-size: 0.85rem; color: var(--text-dim); }
+        
         .selectors-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
         .selectors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
         .selector-group label { display: block; font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.3rem; font-weight: 600; }
         .selector-select { width: 100%; padding: 0.7rem 1rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; cursor: pointer; }
         .selector-select:disabled { opacity: 0.5; }
         
-        /* Lot info */
         .lot-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
-        .lot-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+        .lot-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; }
         .lot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; }
         .lot-item { background: var(--bg-input); padding: 0.6rem; border-radius: 8px; }
         .lot-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; }
         .lot-value { font-size: 0.9rem; font-weight: 600; }
         .lot-value.highlight { color: var(--green); }
         
-        /* ===== CONTRÔLES MULTI-INDICATEURS ===== */
         .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
         .control-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); }
         .control-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.75rem; font-weight: 600; }
         .control-hint { font-weight: 400; font-style: italic; opacity: 0.7; }
         
-        /* Boutons indicateurs */
         .indicator-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; }
         .indicator-btn {
             display: flex; align-items: center; gap: 0.5rem;
@@ -125,24 +123,15 @@
             background: var(--bg-input);
             color: var(--text-dim);
             margin-left: 0.3rem;
+            min-width: 22px;
+            text-align: center;
         }
         
-        /* États actifs */
-        .indicator-btn.selected-y1 {
-            border-color: var(--green);
-            background: var(--green-light);
-            color: var(--green);
-        }
+        .indicator-btn.selected-y1 { border-color: var(--green); background: var(--green-light); color: var(--green); }
         .indicator-btn.selected-y1 .axis-tag { background: var(--green); color: white; }
-        
-        .indicator-btn.selected-y2 {
-            border-color: var(--orange);
-            background: var(--orange-light);
-            color: var(--orange);
-        }
+        .indicator-btn.selected-y2 { border-color: var(--orange); background: var(--orange-light); color: var(--orange); }
         .indicator-btn.selected-y2 .axis-tag { background: var(--orange); color: white; }
         
-        /* Périodes */
         .period-btns { display: flex; gap: 0.5rem; }
         .period-btn {
             flex: 1;
@@ -159,21 +148,18 @@
         .period-btn:hover { border-color: var(--text-dim); }
         .period-btn.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); font-weight: 600; }
         
-        /* ===== GRAPHIQUE ===== */
         .chart-card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1rem; }
         .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
         .chart-title { font-size: 1.3rem; font-weight: 700; }
         .chart-subtitle { color: var(--text-dim); font-size: 0.9rem; margin-top: 0.25rem; }
         
-        /* Légende */
         .chart-legend { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; }
         .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dim); }
         .legend-line { width: 28px; height: 3px; border-radius: 2px; }
-        .legend-area { width: 28px; height: 16px; border-radius: 4px; opacity: 0.4; }
+        .legend-area { width: 28px; height: 16px; border-radius: 4px; opacity: 0.5; }
         
         .chart-container { height: 420px; position: relative; }
         
-        /* Stats row */
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
         .stat-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); }
         .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
@@ -183,7 +169,6 @@
         .stat-unit { font-size: 1rem; color: var(--text-dim); margin-left: 0.25rem; }
         .stat-detail { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem; }
         
-        /* Empty state */
         .empty-state { text-align: center; padding: 4rem 2rem; }
         .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
         .empty-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
@@ -191,24 +176,24 @@
         
         .hidden { display: none !important; }
         
-        /* Debug */
         .debug-panel { background: var(--bg-input); border-radius: 8px; padding: 0.75rem; margin-top: 1rem; font-family: monospace; font-size: 0.7rem; color: var(--text-dim); max-height: 80px; overflow-y: auto; }
         
         @media (max-width: 800px) {
             .controls-grid { grid-template-columns: 1fr; }
             .chart-container { height: 300px; }
+            .indicator-btns { flex-direction: column; }
         }
     </style>
 </head>
 <body>
 
-<!-- ========== LOGIN ========== -->
+<!-- LOGIN -->
 <div class="page active" id="pageLogin">
     <div class="login-box">
         <div class="login-header">
             <div class="login-icon">🐔</div>
             <div class="login-title">Production Avicole</div>
-            <div class="login-subtitle">Multi-Courbes v8</div>
+            <div class="login-subtitle">Multi-Courbes v9</div>
         </div>
         <div class="card">
             <div class="alert" id="loginAlert"></div>
@@ -226,7 +211,7 @@
     </div>
 </div>
 
-<!-- ========== CONFIG ========== -->
+<!-- CONFIG -->
 <div class="page" id="pageConfig">
     <div class="config-box">
         <div class="login-header">
@@ -242,7 +227,7 @@
                     <input type="url" class="form-input" id="cfgUrl" placeholder="https://xxx.supabase.co">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Clé Anon (publique)</label>
+                    <label class="form-label">Clé Anon</label>
                     <input type="text" class="form-input" id="cfgKey" placeholder="eyJhbG...">
                 </div>
                 <div class="btn-row">
@@ -250,12 +235,12 @@
                     <button class="btn btn-primary" id="btnSaveSupa">💾 Sauvegarder</button>
                 </div>
             </div>
-            <span class="back-link" id="btnBack">← Retour à la connexion</span>
+            <span class="back-link" id="btnBack">← Retour</span>
         </div>
     </div>
 </div>
 
-<!-- ========== SESSION BAR ========== -->
+<!-- SESSION BAR -->
 <div class="session-bar" id="sessionBar">
     <span class="session-user" id="sessionUser">👤 Utilisateur</span>
     <span class="session-role" id="sessionRole">ROLE</span>
@@ -263,11 +248,10 @@
     <button class="session-btn" id="btnLogout">Déconnexion</button>
 </div>
 
-<!-- ========== APP ========== -->
+<!-- APP -->
 <div class="page page-app" id="pageApp">
     <div class="container">
         
-        <!-- Header -->
         <header class="app-header">
             <div class="app-logo">
                 <span class="logo-icon">🐔</span>
@@ -278,10 +262,19 @@
             </div>
         </header>
         
+        <!-- Bannière éleveur -->
+        <div class="eleveur-banner hidden" id="eleveurBanner">
+            <div class="eleveur-banner-icon">👨‍🌾</div>
+            <div class="eleveur-banner-info">
+                <div class="eleveur-banner-name" id="eleveurBannerName">--</div>
+                <div class="eleveur-banner-detail" id="eleveurBannerDetail">--</div>
+            </div>
+        </div>
+        
         <!-- Sélecteurs -->
-        <div class="selectors-card">
-            <div class="selectors-grid">
-                <div class="selector-group">
+        <div class="selectors-card" id="selectorsCard">
+            <div class="selectors-grid" id="selectorsGrid">
+                <div class="selector-group" id="selectorEleveurGroup">
                     <label>Éleveur</label>
                     <select class="selector-select" id="selEleveur"><option value="">-- Sélectionner --</option></select>
                 </div>
@@ -313,25 +306,22 @@
             </div>
         </div>
         
-        <!-- ===== CONTRÔLES INDICATEURS ===== -->
+        <!-- CONTRÔLES INDICATEURS -->
         <div class="controls-grid hidden" id="controlsGrid">
             <div class="control-card">
                 <div class="control-title">Type de données <span class="control-hint">(sélectionnez 1 ou 2 indicateurs)</span></div>
                 <div class="indicator-btns" id="indicatorBtns">
                     <button class="indicator-btn selected-y1" data-type="poids">
-                        <span class="icon">📈</span>
-                        Croissance en poids
-                        <span class="axis-tag">Y1</span>
+                        <span class="icon">📈</span>Croissance en poids<span class="axis-tag">Y1</span>
                     </button>
                     <button class="indicator-btn" data-type="mortalite">
-                        <span class="icon">⚠️</span>
-                        Mortalité
-                        <span class="axis-tag"></span>
+                        <span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span>
+                    </button>
+                    <button class="indicator-btn" data-type="aliment">
+                        <span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span>
                     </button>
                     <button class="indicator-btn" data-type="oeufs">
-                        <span class="icon">🥚</span>
-                        Nombre œufs pondus
-                        <span class="axis-tag"></span>
+                        <span class="icon">🥚</span>Nombre œufs pondus<span class="axis-tag"></span>
                     </button>
                 </div>
             </div>
@@ -346,18 +336,14 @@
             </div>
         </div>
         
-        <!-- ===== GRAPHIQUE ===== -->
+        <!-- GRAPHIQUE -->
         <div class="chart-card hidden" id="chartCard">
             <div class="chart-header">
                 <div>
                     <div class="chart-title" id="chartTitle">Croissance en poids vs Mortalité</div>
                     <div class="chart-subtitle" id="chartSubtitle">Comparaison sur deux axes</div>
                 </div>
-                <div class="chart-legend" id="chartLegend">
-                    <div class="legend-item"><span class="legend-line" style="background:#22c55e"></span>Croissance en poids</div>
-                    <div class="legend-item"><span class="legend-line" style="background:#f97316"></span>Mortalité</div>
-                    <div class="legend-item"><span class="legend-area" style="background:#22c55e"></span>Zone tolérance</div>
-                </div>
+                <div class="chart-legend" id="chartLegend"></div>
             </div>
             <div class="chart-container">
                 <canvas id="mainChart"></canvas>
@@ -368,13 +354,13 @@
         <div class="stats-row hidden" id="statsRow">
             <div class="stat-card" id="statCard1">
                 <div class="stat-header">
-                    <span class="stat-title" id="statTitle1">Croissance en poids</span>
+                    <span class="stat-title" id="statTitle1">Croissance</span>
                     <span class="stat-icon" id="statIcon1">📈</span>
                 </div>
                 <div class="stat-value"><span id="statValue1">--</span><span class="stat-unit" id="statUnit1">g</span></div>
                 <div class="stat-detail" id="statDetail1">Dernière mesure</div>
             </div>
-            <div class="stat-card" id="statCard2">
+            <div class="stat-card hidden" id="statCard2">
                 <div class="stat-header">
                     <span class="stat-title" id="statTitle2">Mortalité</span>
                     <span class="stat-icon" id="statIcon2">⚠️</span>
@@ -397,13 +383,11 @@
             <div class="empty-state">
                 <div class="empty-icon">📊</div>
                 <div class="empty-title">Sélectionnez un lot</div>
-                <div class="empty-text">Choisissez un éleveur, site, bâtiment puis un lot pour afficher les graphiques</div>
+                <div class="empty-text">Choisissez un site, bâtiment puis un lot pour afficher les graphiques</div>
             </div>
         </div>
         
-        <!-- Debug -->
         <div class="debug-panel">Debug: <span id="debugLog">Prêt</span></div>
-        
     </div>
 </div>
 
@@ -411,29 +395,25 @@
 (function() {
     'use strict';
     
-    // ============ CONFIG ============
     var ADMIN = { user: 'admin', pass: 'admin2024!' };
     var supabase = null;
     var currentUser = null;
+    var currentEleveurId = null;
     var mainChart = null;
     
-    // Données
     var lotData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
     
-    // Sélection multi-indicateurs
-    var selectedIndicators = ['poids']; // Y1 par défaut
+    var selectedIndicators = ['poids'];
     var currentPeriod = '56';
     var currentLotInfo = null;
     
-    // Configuration des indicateurs
     var INDICATORS = {
         poids: {
             label: 'Croissance en poids',
-            shortLabel: 'Poids',
             unit: 'g',
             color: '#22c55e',
-            colorLight: 'rgba(34,197,94,0.15)',
+            colorLight: 'rgba(34,197,94,0.20)',
             icon: '📈',
             dataField: 'poids_moyen',
             stdMinField: 'poids_min',
@@ -441,21 +421,29 @@
         },
         mortalite: {
             label: 'Mortalité',
-            shortLabel: 'Mortalité',
             unit: 'morts',
             color: '#f97316',
-            colorLight: 'rgba(249,115,22,0.15)',
+            colorLight: 'rgba(249,115,22,0.20)',
             icon: '⚠️',
             dataField: 'nombre_morts',
             stdMinField: 'mortalite_min',
             stdMaxField: 'mortalite_max'
         },
+        aliment: {
+            label: 'Consommation aliment',
+            unit: 'g',
+            color: '#3b82f6',
+            colorLight: 'rgba(59,130,246,0.20)',
+            icon: '🌾',
+            dataField: 'conso_par_animal',
+            stdMinField: 'conso_min',
+            stdMaxField: 'conso_max'
+        },
         oeufs: {
             label: 'Nombre œufs pondus',
-            shortLabel: 'Œufs',
             unit: 'œufs',
             color: '#a855f7',
-            colorLight: 'rgba(168,85,247,0.15)',
+            colorLight: 'rgba(168,85,247,0.20)',
             icon: '🥚',
             dataField: 'nombre_oeufs',
             stdMinField: 'taux_ponte_min',
@@ -463,32 +451,13 @@
         }
     };
     
-    // ============ HELPERS ============
     function $(id) { return document.getElementById(id); }
-    function log(msg) {
-        console.log('[APP]', msg);
-        var el = $('debugLog');
-        if (el) el.textContent = msg;
-    }
-    function showPage(id) {
-        document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-        $(id).classList.add('active');
-    }
-    function showAlert(id, type, msg) {
-        var el = $(id);
-        if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; }
-    }
+    function log(msg) { console.log('[APP]', msg); var el = $('debugLog'); if (el) el.textContent = msg; }
+    function showPage(id) { document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); }); $(id).classList.add('active'); }
+    function showAlert(id, type, msg) { var el = $(id); if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; } }
+    function loadConfig() { try { return JSON.parse(localStorage.getItem('avicole_cfg') || '{}'); } catch (e) { return {}; } }
+    function saveConfig(url, key) { localStorage.setItem('avicole_cfg', JSON.stringify({ url: url, key: key })); }
     
-    // ============ STORAGE ============
-    function loadConfig() {
-        try { return JSON.parse(localStorage.getItem('avicole_cfg') || '{}'); }
-        catch (e) { return {}; }
-    }
-    function saveConfig(url, key) {
-        localStorage.setItem('avicole_cfg', JSON.stringify({ url: url, key: key }));
-    }
-    
-    // ============ SUPABASE ============
     function initSupabase() {
         var cfg = loadConfig();
         if (typeof window.supabase === 'undefined') {
@@ -501,11 +470,8 @@
                 supabase = window.supabase.createClient(cfg.url, cfg.key);
                 $('dbStatus').className = 'status-box ok';
                 $('dbStatusText').textContent = 'Connecté ✓';
-                log('Supabase OK');
                 return true;
-            } catch (e) {
-                log('Erreur: ' + e.message);
-            }
+            } catch (e) { log('Erreur: ' + e.message); }
         }
         $('dbStatus').className = 'status-box warn';
         $('dbStatusText').textContent = 'Non configuré';
@@ -513,56 +479,42 @@
     }
     
     function testSupabase() {
-        var url = $('cfgUrl').value.trim();
-        var key = $('cfgKey').value.trim();
+        var url = $('cfgUrl').value.trim(), key = $('cfgKey').value.trim();
         if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
-        showAlert('configAlert', 'info', '⏳ Test en cours...');
+        showAlert('configAlert', 'info', '⏳ Test...');
         try {
             var client = window.supabase.createClient(url, key);
             client.from('eleveurs').select('id').limit(1).then(function(res) {
                 if (res.error) showAlert('configAlert', 'error', '❌ ' + res.error.message);
                 else showAlert('configAlert', 'success', '✅ Connexion réussie!');
             });
-        } catch (e) {
-            showAlert('configAlert', 'error', '❌ ' + e.message);
-        }
+        } catch (e) { showAlert('configAlert', 'error', '❌ ' + e.message); }
     }
     
     function saveSupabaseConfig() {
-        var url = $('cfgUrl').value.trim();
-        var key = $('cfgKey').value.trim();
+        var url = $('cfgUrl').value.trim(), key = $('cfgKey').value.trim();
         if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
         saveConfig(url, key);
-        if (initSupabase()) {
-            showAlert('configAlert', 'success', '✅ Configuration sauvegardée!');
-        }
+        if (initSupabase()) showAlert('configAlert', 'success', '✅ Sauvegardé!');
     }
     
-    // ============ AUTH ============
     function doLogin() {
-        var user = $('loginUser').value.trim();
-        var pass = $('loginPass').value;
+        var user = $('loginUser').value.trim(), pass = $('loginPass').value;
+        if (!user || !pass) { showAlert('loginAlert', 'error', '❌ Remplissez les champs'); return; }
         
-        if (!user || !pass) {
-            showAlert('loginAlert', 'error', '❌ Remplissez tous les champs');
-            return;
-        }
-        
-        // Admin local
         if (user === ADMIN.user && pass === ADMIN.pass) {
             currentUser = { nom: 'Admin', role: 'admin' };
+            currentEleveurId = null;
             $('sessionUser').textContent = '👑 Admin';
-            $('sessionRole').textContent = 'CONFIG';
+            $('sessionRole').textContent = 'ADMIN';
+            $('sessionRole').className = 'session-role admin';
             $('btnConfig').classList.remove('hidden');
             $('sessionBar').style.display = 'flex';
             showPage('pageConfig');
             return;
         }
         
-        if (!supabase) {
-            showAlert('loginAlert', 'error', '❌ Base non configurée. Admin: admin / admin2024!');
-            return;
-        }
+        if (!supabase) { showAlert('loginAlert', 'error', '❌ Base non configurée. Admin: admin / admin2024!'); return; }
         
         var btn = $('loginBtn');
         btn.disabled = true;
@@ -574,30 +526,68 @@
                 if (res.data.password_hash !== pass) throw new Error('Mot de passe incorrect');
                 
                 currentUser = res.data;
-                var name = (res.data.prenom || '') + ' ' + res.data.nom;
-                $('sessionUser').textContent = '👤 ' + name.trim();
-                $('sessionRole').textContent = (res.data.role || 'ELEVEUR').toUpperCase();
+                var name = ((res.data.prenom || '') + ' ' + res.data.nom).trim();
+                var role = res.data.role || 'eleveur';
+                
+                $('sessionUser').textContent = '👤 ' + name;
+                $('sessionRole').textContent = role.toUpperCase();
+                $('sessionRole').className = 'session-role ' + role;
+                
+                if (role === 'admin' || role === 'technicien') {
+                    $('btnConfig').classList.remove('hidden');
+                }
                 $('sessionBar').style.display = 'flex';
                 
-                loadEleveurs();
-                showPage('pageApp');
+                if (role === 'eleveur') {
+                    return findEleveurByUserId(res.data.id).then(function(eleveur) {
+                        if (eleveur) {
+                            currentEleveurId = eleveur.id;
+                            setupEleveurView(eleveur);
+                        } else {
+                            throw new Error('Aucun éleveur associé à ce compte');
+                        }
+                        showPage('pageApp');
+                    });
+                } else {
+                    currentEleveurId = null;
+                    loadEleveurs();
+                    showPage('pageApp');
+                }
             })
-            .catch(function(err) {
-                showAlert('loginAlert', 'error', '❌ ' + err.message);
-            })
-            .finally(function() {
-                btn.disabled = false;
-                btn.textContent = 'Se connecter';
+            .catch(function(err) { showAlert('loginAlert', 'error', '❌ ' + err.message); })
+            .finally(function() { btn.disabled = false; btn.textContent = 'Se connecter'; });
+    }
+    
+    function findEleveurByUserId(userId) {
+        return supabase.from('eleveurs').select('*').eq('user_id', userId).eq('is_active', true).single()
+            .then(function(res) {
+                if (res.error || !res.data) {
+                    return supabase.from('eleveurs').select('*').eq('email', currentUser.email).eq('is_active', true).single()
+                        .then(function(res2) { return res2.data || null; });
+                }
+                return res.data;
             });
+    }
+    
+    function setupEleveurView(eleveur) {
+        $('selectorEleveurGroup').classList.add('hidden');
+        $('eleveurBanner').classList.remove('hidden');
+        $('eleveurBannerName').textContent = eleveur.nom + ' ' + (eleveur.prenom || '');
+        $('eleveurBannerDetail').textContent = 'Code: ' + eleveur.code_eleveur + (eleveur.raison_sociale ? ' | ' + eleveur.raison_sociale : '');
+        loadSitesForEleveur(eleveur.id);
     }
     
     function doLogout() {
         currentUser = null;
+        currentEleveurId = null;
         $('sessionBar').style.display = 'none';
+        $('eleveurBanner').classList.add('hidden');
+        $('selectorEleveurGroup').classList.remove('hidden');
+        $('btnConfig').classList.add('hidden');
+        resetAllSelectors();
         showPage('pageLogin');
     }
     
-    // ============ CHARGEMENT DONNÉES ============
     function loadEleveurs() {
         if (!supabase) return;
         log('Chargement éleveurs...');
@@ -617,22 +607,35 @@
             });
     }
     
-    function onEleveurChange() {
-        var id = $('selEleveur').value;
-        resetSelectors('site');
-        if (!id) return;
+    function loadSitesForEleveur(eleveurId) {
+        if (!supabase || !eleveurId) return;
+        log('Chargement sites pour éleveur: ' + eleveurId);
         
-        supabase.from('sites').select('*').eq('eleveur_id', id).eq('is_active', true).order('nom')
+        supabase.from('sites').select('*').eq('eleveur_id', eleveurId).eq('is_active', true).order('nom')
             .then(function(res) {
                 var sel = $('selSite');
+                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
                 sel.disabled = false;
                 (res.data || []).forEach(function(s) {
                     var opt = document.createElement('option');
                     opt.value = s.id;
+                    opt.setAttribute('data-json', JSON.stringify(s));
                     opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
                     sel.appendChild(opt);
                 });
+                log('Sites: ' + (res.data || []).length);
+                if (res.data && res.data.length === 1) {
+                    sel.value = res.data[0].id;
+                    onSiteChange();
+                }
             });
+    }
+    
+    function onEleveurChange() {
+        var id = $('selEleveur').value;
+        resetSelectors('site');
+        if (!id) return;
+        loadSitesForEleveur(id);
     }
     
     function onSiteChange() {
@@ -650,6 +653,11 @@
                     opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ')' : '');
                     sel.appendChild(opt);
                 });
+                log('Bâtiments: ' + (res.data || []).length);
+                if (res.data && res.data.length === 1) {
+                    sel.value = res.data[0].id;
+                    onBatimentChange();
+                }
             });
     }
     
@@ -670,7 +678,7 @@
                     opt.textContent = icon + ' ' + l.code_lot + ' - ' + (l.souches ? l.souches.nom : 'N/A');
                     sel.appendChild(opt);
                 });
-                // Auto-sélectionner le lot actif
+                log('Lots: ' + (res.data || []).length);
                 var actif = (res.data || []).find(function(l) { return l.statut === 'actif'; });
                 if (actif) {
                     sel.value = actif.id;
@@ -681,17 +689,13 @@
     
     function onLotChange() {
         var id = $('selLot').value;
-        if (!id) {
-            hideDataPanels();
-            return;
-        }
+        if (!id) { hideDataPanels(); return; }
         
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
         var lot = {};
         try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
         
-        // Afficher infos lot
         $('lotCode').textContent = lot.code_lot || '--';
         $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '--';
@@ -701,19 +705,19 @@
         
         log('Chargement données lot ' + id);
         
-        // Charger toutes les données
         Promise.all([
             supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
+            supabase.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age')
         ]).then(function(results) {
             lotData.poids = results[0].data || [];
             lotData.mortalite = results[1].data || [];
-            lotData.oeufs = results[2].data || [];
+            lotData.aliment = results[2].data || [];
+            lotData.oeufs = results[3].data || [];
             
-            log('Données: P=' + lotData.poids.length + ' M=' + lotData.mortalite.length + ' O=' + lotData.oeufs.length);
+            log('Données: P=' + lotData.poids.length + ' M=' + lotData.mortalite.length + ' A=' + lotData.aliment.length + ' O=' + lotData.oeufs.length);
             
-            // Charger standards si souche définie
             if (lot.souche_id) {
                 loadStandards(lot.souche_id);
             } else {
@@ -727,12 +731,14 @@
         Promise.all([
             supabase.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabase.from('standards_mortalite').select('*').eq('souche_id', soucheId).order('jour_age'),
+            supabase.from('standards_aliment').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabase.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age')
         ]).then(function(results) {
             standardsData.poids = results[0].data || [];
             standardsData.mortalite = results[1].data || [];
-            standardsData.oeufs = results[2].data || [];
-            log('Standards: P=' + standardsData.poids.length);
+            standardsData.aliment = results[2].data || [];
+            standardsData.oeufs = results[3].data || [];
+            log('Standards: P=' + standardsData.poids.length + ' M=' + standardsData.mortalite.length + ' A=' + standardsData.aliment.length + ' O=' + standardsData.oeufs.length);
             showDataPanels();
             updateUI();
         });
@@ -747,6 +753,11 @@
             sel.disabled = true;
         }
         hideDataPanels();
+    }
+    
+    function resetAllSelectors() {
+        $('selEleveur').innerHTML = '<option value="">-- Sélectionner --</option>';
+        resetSelectors('site');
     }
     
     function showDataPanels() {
@@ -765,7 +776,6 @@
         $('emptyState').classList.remove('hidden');
     }
     
-    // ============ UI UPDATE ============
     function updateUI() {
         updateChart();
         updateStats();
@@ -776,20 +786,19 @@
         var ind1 = INDICATORS[selectedIndicators[0]];
         var data1 = lotData[selectedIndicators[0]] || [];
         
-        // Stat 1
         $('statTitle1').textContent = ind1.label;
         $('statIcon1').textContent = ind1.icon;
         $('statUnit1').textContent = ind1.unit;
         if (data1.length > 0) {
             var last1 = data1[data1.length - 1];
-            $('statValue1').textContent = Math.round(parseFloat(last1[ind1.dataField]) || 0);
+            var val1 = parseFloat(last1[ind1.dataField]) || 0;
+            $('statValue1').textContent = Math.round(val1);
             $('statDetail1').textContent = 'Jour ' + last1.jour_age;
         } else {
             $('statValue1').textContent = '--';
             $('statDetail1').textContent = 'Pas de données';
         }
         
-        // Stat 2
         if (selectedIndicators[1]) {
             var ind2 = INDICATORS[selectedIndicators[1]];
             var data2 = lotData[selectedIndicators[1]] || [];
@@ -799,7 +808,8 @@
             $('statUnit2').textContent = ind2.unit;
             if (data2.length > 0) {
                 var last2 = data2[data2.length - 1];
-                $('statValue2').textContent = Math.round(parseFloat(last2[ind2.dataField]) || 0);
+                var val2 = parseFloat(last2[ind2.dataField]) || 0;
+                $('statValue2').textContent = Math.round(val2);
                 $('statDetail2').textContent = 'Jour ' + last2.jour_age;
             } else {
                 $('statValue2').textContent = '--';
@@ -809,7 +819,6 @@
             $('statCard2').classList.add('hidden');
         }
         
-        // Total points
         var total = 0;
         selectedIndicators.forEach(function(t) { total += (lotData[t] || []).length; });
         $('dataCount').textContent = total;
@@ -818,11 +827,12 @@
     
     function updateLegend() {
         var html = '';
-        selectedIndicators.forEach(function(type) {
+        selectedIndicators.forEach(function(type, idx) {
             var ind = INDICATORS[type];
-            html += '<div class="legend-item"><span class="legend-line" style="background:' + ind.color + '"></span>' + ind.label + '</div>';
+            var axisLabel = idx === 0 ? ' (Y1)' : ' (Y2)';
+            html += '<div class="legend-item"><span class="legend-line" style="background:' + ind.color + '"></span>' + ind.label + axisLabel + '</div>';
+            html += '<div class="legend-item"><span class="legend-area" style="background:' + ind.color + '"></span>Zone tolérance' + axisLabel + '</div>';
         });
-        html += '<div class="legend-item"><span class="legend-area" style="background:' + INDICATORS[selectedIndicators[0]].color + '"></span>Zone tolérance</div>';
         $('chartLegend').innerHTML = html;
     }
     
@@ -844,11 +854,9 @@
             return;
         }
         
-        // Labels (jours)
         var labels = data1.map(function(d) { return 'J' + d.jour_age; });
         var jourAges = data1.map(function(d) { return d.jour_age; });
         
-        // Titre
         var title = ind1.label;
         if (type2) title += ' vs ' + INDICATORS[type2].label;
         $('chartTitle').textContent = title;
@@ -856,7 +864,7 @@
         
         var datasets = [];
         
-        // ===== ZONE DE TOLÉRANCE Y1 =====
+        // Zone de tolérance Y1
         var stdMin1 = [], stdMax1 = [];
         jourAges.forEach(function(ja) {
             var s = std1.find(function(x) { return x.jour_age === ja; });
@@ -864,48 +872,44 @@
             stdMax1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
         });
         
-        // Aire de tolérance (fill between)
         if (stdMax1.some(function(v) { return v !== null; })) {
-            // Max line (invisible, juste pour le fill)
             datasets.push({
-                label: 'Zone max',
+                label: '_zoneMax1',
                 data: stdMax1,
                 borderColor: 'transparent',
-                backgroundColor: ind1.color + '25',
+                backgroundColor: ind1.colorLight,
                 fill: '+1',
                 pointRadius: 0,
                 yAxisID: 'y1',
-                order: 10
+                order: 20
             });
-            // Min line (pointillés)
             datasets.push({
-                label: 'Zone min',
+                label: '_zoneMin1',
                 data: stdMin1,
-                borderColor: ind1.color + '50',
+                borderColor: ind1.color + '60',
                 borderWidth: 1,
-                borderDash: [5, 5],
+                borderDash: [4, 4],
                 backgroundColor: 'transparent',
                 fill: false,
                 pointRadius: 0,
                 yAxisID: 'y1',
-                order: 9
+                order: 19
             });
-            // Max line (pointillés)
             datasets.push({
-                label: 'Zone max ligne',
+                label: '_zoneMaxLine1',
                 data: stdMax1,
-                borderColor: ind1.color + '50',
+                borderColor: ind1.color + '60',
                 borderWidth: 1,
-                borderDash: [5, 5],
+                borderDash: [4, 4],
                 backgroundColor: 'transparent',
                 fill: false,
                 pointRadius: 0,
                 yAxisID: 'y1',
-                order: 9
+                order: 19
             });
         }
         
-        // ===== COURBE PRINCIPALE Y1 =====
+        // Courbe Y1
         var values1 = data1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
         datasets.push({
             label: ind1.label,
@@ -921,7 +925,6 @@
             order: 1
         });
         
-        // Scales
         var scales = {
             x: {
                 grid: { color: 'rgba(71,85,105,0.3)' },
@@ -937,12 +940,56 @@
             }
         };
         
-        // ===== COURBE Y2 =====
+        // Y2 avec zone de tolérance
         if (type2) {
             var ind2 = INDICATORS[type2];
             var data2 = filterByPeriod(lotData[type2] || []);
+            var std2 = standardsData[type2] || [];
             
-            // Mapper sur les mêmes jours
+            var stdMin2 = [], stdMax2 = [];
+            jourAges.forEach(function(ja) {
+                var s = std2.find(function(x) { return x.jour_age === ja; });
+                stdMin2.push(s ? (parseFloat(s[ind2.stdMinField]) || null) : null);
+                stdMax2.push(s ? (parseFloat(s[ind2.stdMaxField]) || null) : null);
+            });
+            
+            if (stdMax2.some(function(v) { return v !== null; })) {
+                datasets.push({
+                    label: '_zoneMax2',
+                    data: stdMax2,
+                    borderColor: 'transparent',
+                    backgroundColor: ind2.colorLight,
+                    fill: '+1',
+                    pointRadius: 0,
+                    yAxisID: 'y2',
+                    order: 18
+                });
+                datasets.push({
+                    label: '_zoneMin2',
+                    data: stdMin2,
+                    borderColor: ind2.color + '60',
+                    borderWidth: 1,
+                    borderDash: [4, 4],
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    pointRadius: 0,
+                    yAxisID: 'y2',
+                    order: 17
+                });
+                datasets.push({
+                    label: '_zoneMaxLine2',
+                    data: stdMax2,
+                    borderColor: ind2.color + '60',
+                    borderWidth: 1,
+                    borderDash: [4, 4],
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    pointRadius: 0,
+                    yAxisID: 'y2',
+                    order: 17
+                });
+            }
+            
             var values2 = jourAges.map(function(ja) {
                 var d = data2.find(function(x) { return x.jour_age === ja; });
                 return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
@@ -971,7 +1018,6 @@
             };
         }
         
-        // Créer le graphique
         mainChart = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: datasets },
@@ -987,11 +1033,8 @@
                         bodyColor: '#94a3b8',
                         padding: 12,
                         displayColors: true,
-                        callbacks: {
-                            label: function(ctx) {
-                                if (ctx.dataset.label.includes('Zone')) return null;
-                                return ctx.dataset.label + ': ' + ctx.parsed.y;
-                            }
+                        filter: function(item) {
+                            return !item.dataset.label.startsWith('_');
                         }
                     }
                 },
@@ -1006,28 +1049,21 @@
         return data.slice(-days);
     }
     
-    // ============ GESTION INDICATEURS ============
     function onIndicatorClick(e) {
         var btn = e.currentTarget;
         var type = btn.getAttribute('data-type');
-        
         var idx = selectedIndicators.indexOf(type);
         
         if (idx === 0) {
-            // Déjà Y1: le garder ou passer Y2 en Y1
             if (selectedIndicators.length > 1) {
                 selectedIndicators = [selectedIndicators[1]];
             }
-            // Si seul, ne rien faire
         } else if (idx === 1) {
-            // Déjà Y2: le retirer
             selectedIndicators = [selectedIndicators[0]];
         } else {
-            // Pas encore sélectionné
             if (selectedIndicators.length < 2) {
                 selectedIndicators.push(type);
             } else {
-                // Remplacer Y2
                 selectedIndicators[1] = type;
             }
         }
@@ -1040,7 +1076,6 @@
         document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
             var type = btn.getAttribute('data-type');
             var tag = btn.querySelector('.axis-tag');
-            
             btn.classList.remove('selected-y1', 'selected-y2');
             tag.textContent = '';
             
@@ -1054,41 +1089,31 @@
         });
     }
     
-    // ============ INIT ============
     document.addEventListener('DOMContentLoaded', function() {
-        log('App Multi-Courbes v8 démarrée');
+        log('App v9 démarrée');
         
-        // Charger config
         var cfg = loadConfig();
         if (cfg.url) $('cfgUrl').value = cfg.url;
         if (cfg.key) $('cfgKey').value = cfg.key;
         initSupabase();
         
-        // Events login
         $('loginBtn').addEventListener('click', doLogin);
         $('loginPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
-        
-        // Events config
         $('btnTestSupa').addEventListener('click', testSupabase);
         $('btnSaveSupa').addEventListener('click', saveSupabaseConfig);
         $('btnBack').addEventListener('click', function() { showPage('pageLogin'); });
-        
-        // Events session
         $('btnLogout').addEventListener('click', doLogout);
         $('btnConfig').addEventListener('click', function() { showPage('pageConfig'); });
         
-        // Events sélecteurs
         $('selEleveur').addEventListener('change', onEleveurChange);
         $('selSite').addEventListener('change', onSiteChange);
         $('selBatiment').addEventListener('change', onBatimentChange);
         $('selLot').addEventListener('change', onLotChange);
         
-        // Events indicateurs
         document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
             btn.addEventListener('click', onIndicatorClick);
         });
         
-        // Events période
         document.querySelectorAll('#periodBtns .period-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('#periodBtns .period-btn').forEach(function(b) { b.classList.remove('active'); });
