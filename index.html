@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord Avicole</title>
+    <title>Tableau de Bord Avicole - Debug</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -104,7 +104,8 @@
         .data-info-title{font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.3rem}
         .data-info-value{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--accent-blue)}
         .empty-box{text-align:center;padding:3rem 1.5rem}.empty-icon{font-size:3rem;margin-bottom:0.75rem}
-        .debug-box{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:0.75rem;margin-top:1rem;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted);max-height:120px;overflow-y:auto}
+        .debug-box{background:#1e293b;border:2px solid var(--accent-amber);border-radius:8px;padding:1rem;margin-top:1rem;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#fbbf24;max-height:300px;overflow-y:auto}
+        .debug-box h4{color:#f59e0b;margin-bottom:0.5rem}
         .footer{margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted)}
         .hidden{display:none !important}
         @media(max-width:1100px){.dashboard-grid{grid-template-columns:1fr}.side-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
@@ -114,7 +115,7 @@
 <body>
 <div class="page active" id="pageLogin">
     <div class="login-container">
-        <div class="login-logo"><div class="login-logo-icon">🐔</div><h1>Production Avicole</h1><p>Tableau de bord Supabase</p></div>
+        <div class="login-logo"><div class="login-logo-icon">🐔</div><h1>Production Avicole</h1><p>Version Debug</p></div>
         <div class="card">
             <div class="alert" id="loginAlert"></div>
             <div class="form-group"><label class="form-label">Email</label><input type="text" class="form-input" id="loginUser" placeholder="email@exemple.com"></div>
@@ -131,16 +132,11 @@
             <div class="alert" id="configAlert"></div>
             <div class="config-section">
                 <div class="config-title">🔌 Supabase</div>
-                <div class="form-group"><label class="form-label">URL du projet</label><input type="url" class="form-input" id="cfgUrl" placeholder="https://xxx.supabase.co"></div>
-                <div class="form-group"><label class="form-label">Clé Anon (publique)</label><input type="text" class="form-input" id="cfgKey" placeholder="eyJ..."></div>
+                <div class="form-group"><label class="form-label">URL</label><input type="url" class="form-input" id="cfgUrl" placeholder="https://xxx.supabase.co"></div>
+                <div class="form-group"><label class="form-label">Clé Anon</label><input type="text" class="form-input" id="cfgKey" placeholder="eyJ..."></div>
                 <div class="btn-group"><button class="btn btn-secondary" id="btnTestSupa">🔍 Tester</button><button class="btn btn-primary" id="btnSaveSupa">💾 Sauver</button></div>
             </div>
-            <div class="config-section">
-                <div class="config-title">🔑 API Tuffigo</div>
-                <div class="form-group"><label class="form-label">Clé API</label><input type="text" class="form-input" id="cfgTuffigo" placeholder="Clé API Tuffigo"></div>
-                <button class="btn btn-primary" id="btnSaveTuffigo">💾 Sauver dans Supabase</button>
-            </div>
-            <span class="back-link" id="btnBack">← Retour à la connexion</span>
+            <span class="back-link" id="btnBack">← Retour</span>
         </div>
     </div>
 </div>
@@ -153,7 +149,7 @@
 <div class="page page-app" id="pageApp">
     <div class="container">
         <header class="header">
-            <div class="header-left"><div class="logo">🐔</div><div><h1>Suivi Production</h1><p class="header-subtitle">Données Supabase</p></div></div>
+            <div class="header-left"><div class="logo">🐔</div><div><h1>Suivi Production</h1><p class="header-subtitle">Version Debug v5</p></div></div>
             <div class="last-update">MAJ: <span id="lastUpdate">--</span></div>
         </header>
         <div class="farmer-card">
@@ -170,7 +166,7 @@
             </div>
         </div>
         <div class="lot-info-card hidden" id="lotInfoCard">
-            <div class="lot-info-title">🐥 Lot sélectionné</div>
+            <div class="lot-info-title">🐥 Lot sélectionné (ID: <span id="lotIdDisplay">--</span>)</div>
             <div class="lot-info-grid">
                 <div class="lot-info-item"><div class="lot-info-label">Code</div><div class="lot-info-value" id="lotCode">--</div></div>
                 <div class="lot-info-item"><div class="lot-info-label">Souche</div><div class="lot-info-value" id="lotSouche">--</div></div>
@@ -223,13 +219,18 @@
             </div>
         </div>
         <div class="chart-card" id="emptyBox"><div class="empty-box"><div class="empty-icon">📊</div><h3>Sélectionnez un lot</h3><p style="color:var(--text-secondary)">Éleveur → Site → Bâtiment → Lot</p></div></div>
-        <div class="debug-box"><strong>Debug:</strong> <span id="debugLog">Prêt</span></div>
-        <footer class="footer">v4.0</footer>
+        
+        <!-- DEBUG PANEL -->
+        <div class="debug-box" id="debugBox">
+            <h4>🔍 PANNEAU DEBUG</h4>
+            <div id="debugLog">En attente...</div>
+        </div>
+        
+        <footer class="footer">v5.0 Debug</footer>
     </div>
 </div>
 <script>
 (function(){
-    // Variables globales
     var ADMIN = {user: 'admin', pass: 'admin2024!'};
     var supabaseClient = null;
     var currentUser = null;
@@ -241,14 +242,18 @@
     var currentType = 'poids';
     var currentPeriod = 'all';
     var currentLotInfo = null;
+    var currentLotId = null;
 
-    // Helpers
     function $(id) { return document.getElementById(id); }
     
-    function log(m) {
+    function log(m, type) {
+        var color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : type === 'warn' ? '#f59e0b' : '#94a3b8';
         console.log('[APP]', m);
         var e = $('debugLog');
-        if (e) e.innerHTML = m + ' | ' + e.innerHTML.substring(0, 400);
+        if (e) {
+            var time = new Date().toLocaleTimeString();
+            e.innerHTML = '<div style="color:' + color + ';margin-bottom:4px">[' + time + '] ' + m + '</div>' + e.innerHTML;
+        }
     }
     
     function showPage(id) {
@@ -263,7 +268,6 @@
     
     function hideAlert(id) { var e = $(id); if (e) e.classList.remove('show'); }
 
-    // Config localStorage
     function loadCfg() {
         try { return JSON.parse(localStorage.getItem('avicole_cfg') || '{}'); }
         catch (e) { return {}; }
@@ -271,47 +275,47 @@
     
     function saveCfg(url, key) {
         localStorage.setItem('avicole_cfg', JSON.stringify({url: url, key: key}));
-        log('Config sauvée');
+        log('Config sauvée dans localStorage', 'success');
     }
 
-    // Vérifier si Supabase SDK est chargé
     function isSupabaseLoaded() {
         return typeof window.supabase !== 'undefined' && window.supabase !== null && typeof window.supabase.createClient === 'function';
     }
 
-    // Initialiser Supabase
     function initSupabase() {
         var cfg = loadCfg();
         var statusEl = $('dbStatus');
         var statusText = $('dbStatusText');
         
         if (!isSupabaseLoaded()) {
-            log('SDK Supabase non chargé!');
+            log('SDK Supabase NON CHARGÉ!', 'error');
             statusEl.className = 'status-box error';
             statusText.textContent = 'SDK non chargé ❌';
             return false;
         }
+        
+        log('SDK Supabase chargé ✓', 'success');
         
         if (cfg.url && cfg.key) {
             try {
                 supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
                 statusEl.className = 'status-box ok';
                 statusText.textContent = 'Configuré ✓';
-                log('Supabase OK: ' + cfg.url.substring(0, 30) + '...');
+                log('Supabase initialisé: ' + cfg.url.substring(0, 40) + '...', 'success');
                 return true;
             } catch (e) {
-                log('Erreur init: ' + e.message);
+                log('Erreur init Supabase: ' + e.message, 'error');
                 statusEl.className = 'status-box error';
-                statusText.textContent = 'Erreur: ' + e.message;
+                statusText.textContent = 'Erreur';
             }
         } else {
             statusEl.className = 'status-box warning';
             statusText.textContent = 'Non configuré';
+            log('Supabase non configuré - utilisez admin/admin2024!', 'warn');
         }
         return false;
     }
 
-    // Test connexion Supabase
     function testSupabase() {
         var url = $('cfgUrl').value.trim();
         var key = $('cfgKey').value.trim();
@@ -322,34 +326,30 @@
         }
         
         if (!isSupabaseLoaded()) {
-            showAlert('configAlert', 'error', '❌ SDK Supabase non chargé. Rechargez la page.');
+            showAlert('configAlert', 'error', '❌ SDK Supabase non chargé');
             return;
         }
         
         showAlert('configAlert', 'info', '⏳ Test en cours...');
-        log('Test connexion: ' + url);
+        log('Test connexion: ' + url, 'info');
         
         try {
             var testClient = window.supabase.createClient(url, key);
             testClient.from('eleveurs').select('id').limit(1).then(function(res) {
                 if (res.error) {
-                    log('Erreur test: ' + res.error.message);
+                    log('Erreur test: ' + res.error.message, 'error');
                     showAlert('configAlert', 'error', '❌ ' + res.error.message);
                 } else {
-                    log('Test OK!');
+                    log('Test connexion OK!', 'success');
                     showAlert('configAlert', 'success', '✅ Connexion réussie!');
                 }
-            }).catch(function(err) {
-                log('Exception: ' + err.message);
-                showAlert('configAlert', 'error', '❌ ' + err.message);
             });
         } catch (e) {
-            log('Exception createClient: ' + e.message);
+            log('Exception: ' + e.message, 'error');
             showAlert('configAlert', 'error', '❌ ' + e.message);
         }
     }
 
-    // Sauvegarder config Supabase
     function saveSupabaseCfg() {
         var url = $('cfgUrl').value.trim();
         var key = $('cfgKey').value.trim();
@@ -363,57 +363,9 @@
         
         if (initSupabase()) {
             showAlert('configAlert', 'success', '✅ Configuration sauvegardée!');
-        } else {
-            showAlert('configAlert', 'error', '❌ Erreur lors de l\'initialisation');
         }
     }
 
-    // Charger config Tuffigo
-    function loadTuffigoCfg() {
-        if (!supabaseClient) return;
-        supabaseClient.from('api_config').select('*').limit(1).then(function(res) {
-            if (res.data && res.data.length > 0) {
-                $('cfgTuffigo').value = res.data[0].api_key || '';
-                log('Tuffigo chargé');
-            }
-        }).catch(function() { log('Pas de config Tuffigo'); });
-    }
-
-    // Sauvegarder config Tuffigo
-    function saveTuffigoCfg() {
-        if (!supabaseClient) {
-            showAlert('configAlert', 'error', '❌ Supabase non configuré');
-            return;
-        }
-        
-        var apiKey = $('cfgTuffigo').value.trim();
-        log('Sauvegarde Tuffigo...');
-        
-        supabaseClient.from('api_config').select('id').limit(1).then(function(res) {
-            var data = {
-                api_key: apiKey,
-                base_url: 'https://api.mytuffigorapidex.com',
-                is_active: true,
-                updated_at: new Date().toISOString()
-            };
-            
-            if (res.data && res.data.length > 0) {
-                return supabaseClient.from('api_config').update(data).eq('id', res.data[0].id);
-            } else {
-                return supabaseClient.from('api_config').insert(data);
-            }
-        }).then(function(r) {
-            if (r && r.error) {
-                showAlert('configAlert', 'error', '❌ ' + r.error.message);
-            } else {
-                showAlert('configAlert', 'success', '✅ Tuffigo sauvegardé!');
-            }
-        }).catch(function(err) {
-            showAlert('configAlert', 'error', '❌ ' + err.message);
-        });
-    }
-
-    // Login
     function doLogin() {
         var user = $('loginUser').value.trim();
         var pass = $('loginPass').value;
@@ -426,11 +378,10 @@
             return;
         }
         
-        log('Login: ' + user);
+        log('Tentative connexion: ' + user, 'info');
         
-        // Admin local
         if (user === ADMIN.user && pass === ADMIN.pass) {
-            log('Admin local connecté');
+            log('Admin local connecté', 'success');
             isLocalAdmin = true;
             currentUser = {nom: 'Administrateur', prenom: 'Local', role: 'admin'};
             currentRole = 'config';
@@ -442,14 +393,12 @@
             $('sessionBar').style.display = 'flex';
             
             showAlert('loginAlert', 'success', '✅ Admin connecté!');
-            if (supabaseClient) loadTuffigoCfg();
             setTimeout(function() { showPage('pageConfig'); }, 300);
             return;
         }
         
-        // Connexion Supabase
         if (!supabaseClient) {
-            showAlert('loginAlert', 'error', '❌ Base non configurée.<br>Utilisez admin: <b>admin / admin2024!</b>');
+            showAlert('loginAlert', 'error', '❌ Base non configurée.<br>Admin: <b>admin / admin2024!</b>');
             return;
         }
         
@@ -467,7 +416,8 @@
                     throw new Error('Utilisateur non trouvé');
                 }
                 
-                // Vérifier mot de passe
+                log('Utilisateur trouvé: ' + res.data.email, 'success');
+                
                 var storedHash = res.data.password_hash || '';
                 if (storedHash !== pass && storedHash !== 'hash_' + pass) {
                     throw new Error('Mot de passe incorrect');
@@ -488,14 +438,14 @@
                 
                 $('sessionBar').style.display = 'flex';
                 
-                log('Connecté: ' + name + ' (' + currentRole + ')');
-                showAlert('loginAlert', 'success', '✅ Bienvenue ' + name + '!');
+                log('Connecté: ' + name + ' (' + currentRole + ')', 'success');
+                showAlert('loginAlert', 'success', '✅ Bienvenue!');
                 
                 loadEleveurs();
                 setTimeout(function() { showPage('pageApp'); }, 300);
             })
             .catch(function(err) {
-                log('Erreur login: ' + err.message);
+                log('Erreur login: ' + err.message, 'error');
                 showAlert('loginAlert', 'error', '❌ ' + err.message);
             })
             .finally(function() {
@@ -504,9 +454,8 @@
             });
     }
 
-    // Logout
     function doLogout() {
-        log('Déconnexion');
+        log('Déconnexion', 'info');
         currentUser = null;
         isLocalAdmin = false;
         currentRole = '';
@@ -518,10 +467,9 @@
         showPage('pageLogin');
     }
 
-    // Charger éleveurs
     function loadEleveurs() {
         if (!supabaseClient) return;
-        log('Chargement éleveurs...');
+        log('Chargement des éleveurs...', 'info');
         
         supabaseClient.from('eleveurs')
             .select('*')
@@ -529,7 +477,7 @@
             .order('nom')
             .then(function(res) {
                 if (res.error) {
-                    log('Erreur éleveurs: ' + res.error.message);
+                    log('Erreur éleveurs: ' + res.error.message, 'error');
                     return;
                 }
                 
@@ -537,7 +485,7 @@
                 sel.innerHTML = '<option value="">-- Sélectionner --</option>';
                 
                 var data = res.data || [];
-                log('Éleveurs: ' + data.length);
+                log('Éleveurs chargés: ' + data.length, 'success');
                 
                 data.forEach(function(e) {
                     var opt = document.createElement('option');
@@ -556,7 +504,6 @@
             });
     }
 
-    // Changement éleveur
     function onEleveurChange() {
         var id = $('selEleveur').value;
         var selSite = $('selSite');
@@ -570,7 +517,7 @@
         hideDataCards();
         
         if (!id) return;
-        log('Éleveur: ' + id);
+        log('Éleveur sélectionné: ' + id, 'info');
         
         var opt = document.querySelector('#selEleveur option[value="' + id + '"]');
         if (opt) {
@@ -589,7 +536,7 @@
             .order('nom')
             .then(function(res) {
                 var data = res.data || [];
-                log('Sites: ' + data.length);
+                log('Sites chargés: ' + data.length, 'success');
                 
                 data.forEach(function(s) {
                     var opt = document.createElement('option');
@@ -606,7 +553,6 @@
             });
     }
 
-    // Changement site
     function onSiteChange() {
         var id = $('selSite').value;
         var selBat = $('selBatiment');
@@ -618,7 +564,7 @@
         hideDataCards();
         
         if (!id) return;
-        log('Site: ' + id);
+        log('Site sélectionné: ' + id, 'info');
         
         var opt = document.querySelector('#selSite option[value="' + id + '"]');
         if (opt) {
@@ -635,7 +581,7 @@
             .order('nom')
             .then(function(res) {
                 var data = res.data || [];
-                log('Bâtiments: ' + data.length);
+                log('Bâtiments chargés: ' + data.length, 'success');
                 
                 data.forEach(function(b) {
                     var opt = document.createElement('option');
@@ -651,7 +597,6 @@
             });
     }
 
-    // Changement bâtiment
     function onBatimentChange() {
         var id = $('selBatiment').value;
         var selLot = $('selLot');
@@ -661,7 +606,7 @@
         hideDataCards();
         
         if (!id) return;
-        log('Bâtiment: ' + id);
+        log('Bâtiment sélectionné: ' + id, 'info');
         
         supabaseClient.from('lots')
             .select('*, souches(nom)')
@@ -669,7 +614,7 @@
             .order('date_mise_place', {ascending: false})
             .then(function(res) {
                 var data = res.data || [];
-                log('Lots: ' + data.length);
+                log('Lots chargés: ' + data.length, 'success');
                 
                 data.forEach(function(l) {
                     var opt = document.createElement('option');
@@ -689,7 +634,6 @@
             });
     }
 
-    // Changement lot
     function onLotChange() {
         var id = $('selLot').value;
         
@@ -698,12 +642,19 @@
             return;
         }
         
-        log('Lot: ' + id);
+        currentLotId = id;
+        log('=== LOT SÉLECTIONNÉ ===', 'warn');
+        log('Lot ID: ' + id, 'info');
+        
+        $('lotIdDisplay').textContent = id;
         
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
         var lot = {};
         try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
+        
+        log('Lot code: ' + lot.code_lot, 'info');
+        log('Souche ID: ' + (lot.souche_id || 'AUCUN'), lot.souche_id ? 'info' : 'warn');
         
         $('lotCode').textContent = lot.code_lot || '--';
         $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
@@ -719,36 +670,81 @@
         
         $('lotStatut').textContent = lot.statut || '--';
         
-        log('Chargement données du lot...');
+        log('=== CHARGEMENT DONNÉES ===', 'warn');
+        log('Requête donnees_poids WHERE lot_id = ' + id, 'info');
         
+        // Charger les données avec debug détaillé
         Promise.all([
             supabaseClient.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
             supabaseClient.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
             supabaseClient.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabaseClient.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age')
         ]).then(function(results) {
-            lotData.poids = results[0].data || [];
-            lotData.mortalite = results[1].data || [];
-            lotData.aliment = results[2].data || [];
-            lotData.oeufs = results[3].data || [];
+            // Debug détaillé
+            log('--- Résultats requêtes ---', 'warn');
             
-            log('Données: P=' + lotData.poids.length + ' M=' + lotData.mortalite.length + ' A=' + lotData.aliment.length + ' O=' + lotData.oeufs.length);
+            if (results[0].error) {
+                log('ERREUR donnees_poids: ' + results[0].error.message, 'error');
+            } else {
+                lotData.poids = results[0].data || [];
+                log('donnees_poids: ' + lotData.poids.length + ' enregistrements', lotData.poids.length > 0 ? 'success' : 'warn');
+                if (lotData.poids.length > 0) {
+                    log('Premier: jour_age=' + lotData.poids[0].jour_age + ', poids_moyen=' + lotData.poids[0].poids_moyen, 'info');
+                }
+            }
+            
+            if (results[1].error) {
+                log('ERREUR donnees_mortalite: ' + results[1].error.message, 'error');
+            } else {
+                lotData.mortalite = results[1].data || [];
+                log('donnees_mortalite: ' + lotData.mortalite.length + ' enregistrements', lotData.mortalite.length > 0 ? 'success' : 'warn');
+            }
+            
+            if (results[2].error) {
+                log('ERREUR donnees_aliment: ' + results[2].error.message, 'error');
+            } else {
+                lotData.aliment = results[2].data || [];
+                log('donnees_aliment: ' + lotData.aliment.length + ' enregistrements', lotData.aliment.length > 0 ? 'success' : 'warn');
+            }
+            
+            if (results[3].error) {
+                log('ERREUR donnees_oeufs: ' + results[3].error.message, 'error');
+            } else {
+                lotData.oeufs = results[3].data || [];
+                log('donnees_oeufs: ' + lotData.oeufs.length + ' enregistrements', lotData.oeufs.length > 0 ? 'success' : 'warn');
+            }
+            
+            var total = lotData.poids.length + lotData.mortalite.length + lotData.aliment.length + lotData.oeufs.length;
+            log('TOTAL: ' + total + ' enregistrements', total > 0 ? 'success' : 'error');
+            
+            if (total === 0) {
+                log('⚠️ AUCUNE DONNÉE TROUVÉE pour lot_id=' + id, 'error');
+                log('Vérifiez que vos tables donnees_* contiennent des données avec ce lot_id', 'warn');
+                
+                // Vérifier si des données existent du tout
+                supabaseClient.from('donnees_poids').select('lot_id').limit(5).then(function(checkRes) {
+                    if (checkRes.data && checkRes.data.length > 0) {
+                        log('Exemples de lot_id dans donnees_poids: ' + checkRes.data.map(function(r) { return r.lot_id; }).join(', '), 'info');
+                    } else {
+                        log('La table donnees_poids semble VIDE', 'error');
+                    }
+                });
+            }
             
             if (lot.souche_id) {
                 loadStandards(lot.souche_id);
             } else {
-                log('Pas de souche_id');
+                log('Pas de souche_id, pas de standards', 'warn');
                 updateUI();
                 showDataCards();
             }
         }).catch(function(err) {
-            log('Erreur données: ' + err.message);
+            log('EXCEPTION lors du chargement: ' + err.message, 'error');
         });
     }
 
-    // Charger standards
     function loadStandards(soucheId) {
-        log('Standards souche: ' + soucheId);
+        log('Chargement standards souche: ' + soucheId, 'info');
         
         Promise.all([
             supabaseClient.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
@@ -761,11 +757,11 @@
             standardsData.aliment = results[2].data || [];
             standardsData.oeufs = results[3].data || [];
             
-            log('Standards: P=' + standardsData.poids.length);
+            log('Standards poids: ' + standardsData.poids.length, standardsData.poids.length > 0 ? 'success' : 'warn');
             updateUI();
             showDataCards();
         }).catch(function(err) {
-            log('Erreur standards: ' + err.message);
+            log('Erreur standards: ' + err.message, 'error');
             updateUI();
             showDataCards();
         });
@@ -785,7 +781,6 @@
         $('emptyBox').classList.remove('hidden');
     }
 
-    // Mise à jour UI
     function updateUI() {
         updateStats();
         updateChart();
@@ -802,7 +797,6 @@
             $('statsTrend').className = 'trend-badge neu';
             $('statsGap').textContent = '--';
             $('statsGapStatus').textContent = '--';
-            $('statsGapStatus').className = 'trend-badge neu';
             return;
         }
         
@@ -827,7 +821,6 @@
         $('statsValue').textContent = val.toFixed(dec);
         $('statsUnit').textContent = unit;
         
-        // Tendance
         if (data.length > 1) {
             var prev = data[data.length - 2];
             var prevVal = 0;
@@ -844,7 +837,6 @@
             }
         }
         
-        // Écart standard
         var stds = standardsData[currentType] || [];
         var std = stds.find(function(s) { return s.jour_age === last.jour_age; });
         
@@ -860,13 +852,10 @@
                 $('statsGap').textContent = (gap >= 0 ? '+' : '') + gap;
                 $('statsGapStatus').textContent = Math.abs(gap) < 5 ? 'Normal' : (gap > 0 ? 'Supérieur' : 'Inférieur');
                 $('statsGapStatus').className = 'trend-badge ' + (Math.abs(gap) < 5 ? 'neu' : (gap > 0 ? 'pos' : 'neg'));
-            } else {
-                $('statsGap').textContent = '--';
-                $('statsGapStatus').textContent = '--';
             }
         } else {
             $('statsGap').textContent = '--';
-            $('statsGapStatus').textContent = 'Pas de std';
+            $('statsGapStatus').textContent = '--';
         }
     }
 
@@ -880,10 +869,11 @@
         var data = lotData[currentType] || [];
         var stds = standardsData[currentType] || [];
         
+        log('updateChart: ' + currentType + ' - ' + data.length + ' données', data.length > 0 ? 'info' : 'warn');
+        
         if (data.length === 0) {
             $('chartTitle').textContent = 'Aucune donnée';
-            $('chartSubtitle').textContent = 'Pas de données pour ce type';
-            log('Pas de données pour le graphique');
+            $('chartSubtitle').textContent = 'Pas de données ' + currentType + ' pour ce lot';
             return;
         }
         
@@ -932,7 +922,6 @@
             });
         }
         
-        // Filtre période
         if (currentPeriod !== 'all') {
             var days = parseInt(currentPeriod);
             if (labels.length > days) {
@@ -944,8 +933,6 @@
         
         $('chartTitle').textContent = title;
         $('chartSubtitle').textContent = (currentLotInfo ? currentLotInfo.code_lot : '--') + ' | ' + values.length + ' points';
-        
-        log('Graphique: ' + values.length + ' points');
         
         var datasets = [{
             label: 'Réel',
@@ -1004,69 +991,51 @@
                 }
             }
         });
+        
+        log('Graphique créé: ' + values.length + ' points', 'success');
     }
 
-    // Init
     document.addEventListener('DOMContentLoaded', function() {
-        log('App v4 démarrée');
+        log('=== APP v5 DEBUG DÉMARRÉE ===', 'warn');
         
-        // Charger config
         var cfg = loadCfg();
         if (cfg.url) $('cfgUrl').value = cfg.url;
         if (cfg.key) $('cfgKey').value = cfg.key;
         
-        // Vérifier SDK et init
-        if (isSupabaseLoaded()) {
-            log('SDK Supabase chargé ✓');
-            initSupabase();
-        } else {
-            log('SDK Supabase non disponible');
-            $('dbStatus').className = 'status-box error';
-            $('dbStatusText').textContent = 'SDK non chargé ❌';
-        }
+        initSupabase();
         
-        // Events login
         $('loginBtn').addEventListener('click', doLogin);
         $('loginPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
         $('loginUser').addEventListener('keypress', function(e) { if (e.key === 'Enter') $('loginPass').focus(); });
         
-        // Events config
         $('btnTestSupa').addEventListener('click', testSupabase);
         $('btnSaveSupa').addEventListener('click', saveSupabaseCfg);
-        $('btnSaveTuffigo').addEventListener('click', saveTuffigoCfg);
         $('btnBack').addEventListener('click', function() { showPage('pageLogin'); });
         
-        // Events session
         $('btnLogout').addEventListener('click', doLogout);
-        $('btnConfig').addEventListener('click', function() {
-            if (supabaseClient) loadTuffigoCfg();
-            showPage('pageConfig');
-        });
+        $('btnConfig').addEventListener('click', function() { showPage('pageConfig'); });
         
-        // Events sélecteurs
         $('selEleveur').addEventListener('change', onEleveurChange);
         $('selSite').addEventListener('change', onSiteChange);
         $('selBatiment').addEventListener('change', onBatimentChange);
         $('selLot').addEventListener('change', onLotChange);
         
-        // Events type
         document.querySelectorAll('#typeBtns .type-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('#typeBtns .type-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
                 currentType = this.getAttribute('data-type');
-                log('Type: ' + currentType);
+                log('Type changé: ' + currentType, 'info');
                 updateUI();
             });
         });
         
-        // Events période
         document.querySelectorAll('#periodBtns .period-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('#periodBtns .period-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
                 currentPeriod = this.getAttribute('data-period');
-                log('Période: ' + currentPeriod);
+                log('Période changée: ' + currentPeriod, 'info');
                 updateUI();
             });
         });
