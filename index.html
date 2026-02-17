@@ -327,9 +327,7 @@
 <div class="page active" id="pageLogin">
     <div class="login-box">
         <div class="login-header">
-            <img src="Logo_Dataferme.png" alt="Dataferme" style="width: 180px; height: auto; margin-bottom: 1rem;">
-            <div class="login-title">Production Avicole</div>
-            <div class="login-subtitle">Tableau de bord</div>
+            <img src="Logo_Dataferme.png" alt="Dataferme" style="width: 280px; height: auto; margin-bottom: 1.5rem;">
         </div>
         <div class="card">
             <div class="alert" id="loginAlert"></div>
@@ -376,11 +374,7 @@
     <div class="container">
         <header class="app-header">
             <div class="app-logo">
-                <img src="Logo_Dataferme.png" alt="Dataferme" style="height: 50px; width: auto;">
-                <div>
-                    <div class="app-title">Dataferme</div>
-                    <div class="app-subtitle">Production Avicole - Analyse multi-indicateurs</div>
-                </div>
+                <img src="Logo_Dataferme.png" alt="Dataferme" style="height: 60px; width: auto;">
             </div>
         </header>
         
@@ -593,7 +587,7 @@
             </div>
         </div>
         
-        <div class="footer">Dataferme v14.1 - ADOSI</div>
+        <div class="footer">Dataferme v14.2 - ADOSI</div>
     </div>
 </div>
 
@@ -1428,67 +1422,73 @@
                 doc.setFillColor(15, 23, 42);
                 doc.rect(0, 0, pageWidth, pageHeight, 'F');
                 
-                // Logo et titre
+                // Logo plus grand et bien visible
                 var titleStartX = margin;
                 if (logoBase64) {
                     try {
-                        doc.addImage(logoBase64, 'PNG', margin, 8, 30, 15);
-                        titleStartX = margin + 35;
+                        // Logo plus grand : 50mm de large
+                        doc.addImage(logoBase64, 'PNG', margin, 5, 50, 25);
+                        titleStartX = margin + 55;
                     } catch(e) { console.log('Erreur logo PDF:', e); }
                 }
                 
                 doc.setTextColor(248, 250, 252);
-                doc.setFontSize(20);
-                doc.text('Dataferme - Rapport de Suivi', titleStartX, 18);
+                doc.setFontSize(22);
+                doc.text('Rapport de Suivi', titleStartX, 15);
                 
-                doc.setFontSize(10);
+                doc.setFontSize(12);
                 doc.setTextColor(148, 163, 184);
                 var now = new Date();
-                doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), titleStartX, 25);
+                doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), titleStartX, 24);
+                
+                // Ajuster la position des blocs d'info (plus bas pour laisser place au logo)
+                var infoY = 38;
                 
                 doc.setFillColor(30, 41, 59);
-                doc.roundedRect(margin, 35, 80, 30, 3, 3, 'F');
+                doc.roundedRect(margin, infoY, 80, 28, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
                 doc.setFontSize(8);
-                doc.text('INFORMATIONS ÉLEVEUR', margin + 5, 42);
+                doc.text('INFORMATIONS ÉLEVEUR', margin + 5, infoY + 7);
                 doc.setTextColor(248, 250, 252);
                 doc.setFontSize(11);
                 var eleveurNom = currentEleveur ? (currentEleveur.nom + ' ' + (currentEleveur.prenom || '')) : '--';
-                doc.text(eleveurNom, margin + 5, 50);
+                doc.text(eleveurNom, margin + 5, infoY + 15);
                 doc.setFontSize(9);
                 doc.setTextColor(34, 197, 94);
                 var eleveurCode = currentEleveur ? ('Code: ' + currentEleveur.code_eleveur) : '';
-                doc.text(eleveurCode, margin + 5, 57);
+                doc.text(eleveurCode, margin + 5, infoY + 22);
                 
                 doc.setFillColor(30, 41, 59);
-                doc.roundedRect(margin + 85, 35, 80, 30, 3, 3, 'F');
+                doc.roundedRect(margin + 85, infoY, 80, 28, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
                 doc.setFontSize(8);
-                doc.text('INFORMATIONS DU LOT', margin + 90, 42);
+                doc.text('INFORMATIONS DU LOT', margin + 90, infoY + 7);
                 doc.setTextColor(248, 250, 252);
                 doc.setFontSize(11);
                 var lotInfo = currentLotInfo ? (currentLotInfo.code_lot + ' - ' + (currentBatiment ? currentBatiment.nom : '')) : '--';
-                doc.text(lotInfo, margin + 90, 50);
+                doc.text(lotInfo, margin + 90, infoY + 15);
                 doc.setFontSize(9);
                 doc.setTextColor(148, 163, 184);
                 var soucheNamePDF = currentLotInfo && currentLotInfo.souche_nom ? currentLotInfo.souche_nom : '--';
                 var lotDetails = 'Effectif: ' + (currentLotInfo && currentLotInfo.effectif_depart ? currentLotInfo.effectif_depart.toLocaleString('fr-FR') : '--');
                 lotDetails += ' | Souche: ' + soucheNamePDF;
-                doc.text(lotDetails, margin + 90, 57);
+                doc.text(lotDetails, margin + 90, infoY + 22);
                 
                 doc.setFillColor(30, 41, 59);
-                doc.roundedRect(margin + 170, 35, 80, 30, 3, 3, 'F');
+                doc.roundedRect(margin + 170, infoY, 55, 28, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
                 doc.setFontSize(8);
-                doc.text('INDICATEURS ANALYSÉS', margin + 175, 42);
+                doc.text('INDICATEURS', margin + 175, infoY + 7);
                 doc.setTextColor(59, 130, 246);
-                doc.setFontSize(11);
+                doc.setFontSize(10);
                 var indicateursText = selectedIndicators.map(function(t) { return INDICATORS[t].label; }).join(', ');
-                doc.text(indicateursText, margin + 175, 50);
+                // Tronquer si trop long
+                if (indicateursText.length > 25) indicateursText = indicateursText.substring(0, 22) + '...';
+                doc.text(indicateursText, margin + 175, infoY + 15);
                 doc.setFontSize(9);
                 doc.setTextColor(148, 163, 184);
-                var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Cycle complet' : currentPeriod + ' jours');
-                doc.text(periodeText, margin + 175, 57);
+                var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Tout' : currentPeriod + ' jours');
+                doc.text(periodeText, margin + 175, infoY + 22);
                 
                 var t1 = selectedIndicators[0];
                 var ind1 = INDICATORS[t1];
@@ -1496,28 +1496,30 @@
                 var lastVal = d1.length > 0 ? Math.round(parseFloat(d1[d1.length - 1][ind1.dataField]) || 0) : '--';
                 
                 doc.setFillColor(30, 41, 59);
-                doc.roundedRect(pageWidth - margin - 50, 35, 50, 30, 3, 3, 'F');
+                doc.roundedRect(margin + 230, infoY, 47, 28, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
                 doc.setFontSize(8);
-                doc.text('VALEUR ACTUELLE', pageWidth - margin - 45, 42);
+                doc.text('VALEUR ACTUELLE', margin + 235, infoY + 7);
                 doc.setTextColor(34, 197, 94);
                 doc.setFontSize(18);
-                doc.text(lastVal + ' ' + ind1.unit, pageWidth - margin - 45, 55);
+                doc.text(lastVal + ' ' + ind1.unit, margin + 235, infoY + 20);
                 
+                // Graphique - ajuster la position
+                var chartY = infoY + 33;
                 var chartCanvas = $('mainChart');
                 if (chartCanvas) {
                     var chartImage = chartCanvas.toDataURL('image/png', 1.0);
                     doc.setFillColor(30, 41, 59);
-                    doc.roundedRect(margin, 70, pageWidth - 2*margin, pageHeight - 85, 3, 3, 'F');
+                    doc.roundedRect(margin, chartY, pageWidth - 2*margin, pageHeight - chartY - 15, 3, 3, 'F');
                     doc.setTextColor(248, 250, 252);
                     doc.setFontSize(14);
-                    doc.text($('chartTitle').textContent, margin + 10, 82);
-                    doc.addImage(chartImage, 'PNG', margin + 5, 88, pageWidth - 2*margin - 10, pageHeight - 105);
+                    doc.text($('chartTitle').textContent, margin + 10, chartY + 12);
+                    doc.addImage(chartImage, 'PNG', margin + 5, chartY + 18, pageWidth - 2*margin - 10, pageHeight - chartY - 38);
                 }
                 
                 doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
-                doc.text('Dataferme v14.1 - ADOSI', margin, pageHeight - 5);
+                doc.text('Dataferme v14.2 - ADOSI', margin, pageHeight - 5);
                 doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
                 
                 var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
