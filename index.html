@@ -6,7 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>🐔 Avicole v14.1</title>
+    <title>Dataferme - Production Avicole</title>
+    <link rel="icon" type="image/png" href="Logo_Dataferme.png">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -326,7 +327,7 @@
 <div class="page active" id="pageLogin">
     <div class="login-box">
         <div class="login-header">
-            <div class="login-icon">🐔</div>
+            <img src="Logo_Dataferme.png" alt="Dataferme" style="width: 180px; height: auto; margin-bottom: 1rem;">
             <div class="login-title">Production Avicole</div>
             <div class="login-subtitle">Tableau de bord</div>
         </div>
@@ -375,10 +376,10 @@
     <div class="container">
         <header class="app-header">
             <div class="app-logo">
-                <span class="logo-icon">🐔</span>
+                <img src="Logo_Dataferme.png" alt="Dataferme" style="height: 50px; width: auto;">
                 <div>
-                    <div class="app-title">Tableau de Bord Avicole</div>
-                    <div class="app-subtitle">Analyse multi-indicateurs</div>
+                    <div class="app-title">Dataferme</div>
+                    <div class="app-subtitle">Production Avicole - Analyse multi-indicateurs</div>
                 </div>
             </div>
         </header>
@@ -592,7 +593,7 @@
             </div>
         </div>
         
-        <div class="footer">Production Avicole v14.1 - ADOSI</div>
+        <div class="footer">Dataferme v14.1 - ADOSI</div>
     </div>
 </div>
 
@@ -1395,6 +1396,27 @@
     // =====================================================
     function exportPDF() {
         showLoading('Génération du PDF...');
+        
+        // Charger le logo en base64
+        var logoImg = new Image();
+        logoImg.crossOrigin = 'Anonymous';
+        logoImg.onload = function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = logoImg.width;
+            canvas.height = logoImg.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(logoImg, 0, 0);
+            var logoBase64 = canvas.toDataURL('image/png');
+            generatePDFWithLogo(logoBase64);
+        };
+        logoImg.onerror = function() {
+            // Si le logo ne charge pas, générer sans logo
+            generatePDFWithLogo(null);
+        };
+        logoImg.src = 'Logo_Dataferme.png';
+    }
+    
+    function generatePDFWithLogo(logoBase64) {
         setTimeout(function() {
             try {
                 var jsPDF = window.jspdf.jsPDF;
@@ -1406,14 +1428,23 @@
                 doc.setFillColor(15, 23, 42);
                 doc.rect(0, 0, pageWidth, pageHeight, 'F');
                 
+                // Logo et titre
+                var titleStartX = margin;
+                if (logoBase64) {
+                    try {
+                        doc.addImage(logoBase64, 'PNG', margin, 8, 30, 15);
+                        titleStartX = margin + 35;
+                    } catch(e) { console.log('Erreur logo PDF:', e); }
+                }
+                
                 doc.setTextColor(248, 250, 252);
-                doc.setFontSize(24);
-                doc.text('Rapport de Suivi Production Avicole', margin, 20);
+                doc.setFontSize(20);
+                doc.text('Dataferme - Rapport de Suivi', titleStartX, 18);
                 
                 doc.setFontSize(10);
                 doc.setTextColor(148, 163, 184);
                 var now = new Date();
-                doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, 28);
+                doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), titleStartX, 25);
                 
                 doc.setFillColor(30, 41, 59);
                 doc.roundedRect(margin, 35, 80, 30, 3, 3, 'F');
@@ -1486,10 +1517,10 @@
                 
                 doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
-                doc.text('Production Avicole v14 - ADOSI', margin, pageHeight - 5);
+                doc.text('Dataferme v14.1 - ADOSI', margin, pageHeight - 5);
                 doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
                 
-                var filename = 'Rapport_Avicole_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
+                var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
                 doc.save(filename);
                 hideLoading();
             } catch (e) {
@@ -1511,7 +1542,7 @@
                 var soucheNameExcel = currentLotInfo && currentLotInfo.souche_nom ? currentLotInfo.souche_nom : '--';
                 
                 var infoData = [
-                    ['Rapport de Suivi Production Avicole'],
+                    ['Dataferme - Rapport de Suivi Production Avicole'],
                     [''],
                     ['Généré le', new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR')],
                     [''],
@@ -1560,7 +1591,7 @@
                     }
                 });
                 
-                var filename = 'Donnees_Avicole_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+                var filename = 'Dataferme_Donnees_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
                 XLSX.writeFile(wb, filename);
                 hideLoading();
             } catch (e) {
