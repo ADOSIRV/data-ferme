@@ -6,10 +6,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>🐔 Avicole v13.5</title>
+    <title>🐔 Avicole v14</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-    <!-- Librairies pour export PDF et Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -31,6 +30,8 @@
             --purple: #a855f7;
             --purple-light: rgba(168,85,247,0.15);
             --purple-area: rgba(168,85,247,0.3);
+            --red: #ef4444;
+            --red-light: rgba(239,68,68,0.15);
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #475569;
@@ -52,18 +53,25 @@
         .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem; text-transform: uppercase; }
         .form-input { width: 100%; padding: 0.8rem 1rem; background: var(--bg-input); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; font-family: inherit; }
         .form-input:focus { outline: none; border-color: var(--blue); }
-        .btn { padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .form-input:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
         .btn-full { width: 100%; }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
         .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
         .btn-secondary { background: var(--bg-input); color: var(--text); border: 2px solid var(--border); }
+        .btn-danger { background: var(--red); color: white; }
+        .btn-warning { background: var(--orange); color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .alert { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
         .alert.show { display: block; }
-        .alert-error { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #ef4444; }
+        .alert-error { background: var(--red-light); border: 1px solid var(--red); color: var(--red); }
         .alert-success { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+        .alert-info { background: var(--blue-light); border: 1px solid var(--blue); color: var(--blue); }
         .status-box { text-align: center; margin-top: 1rem; padding: 0.7rem; background: var(--bg-input); border-radius: 8px; font-size: 0.85rem; }
         .status-box.ok { background: var(--green-light); color: var(--green); }
-        .status-box.error { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .status-box.error { background: var(--red-light); color: var(--red); }
         
+        /* Session bar */
         .session-bar { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.8rem; z-index: 1000; }
         .session-user { font-weight: 500; }
         .session-role { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
@@ -71,6 +79,35 @@
         .session-role.admin { background: var(--orange-light); color: var(--orange); }
         .session-role.technicien { background: var(--blue-light); color: var(--blue); }
         .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; font-family: inherit; }
+        .session-btn:hover { background: var(--border); }
+        
+        /* Admin Menu Bar */
+        .admin-menu-bar { 
+            background: linear-gradient(135deg, var(--orange-light), var(--purple-light)); 
+            border-bottom: 2px solid var(--orange);
+            padding: 0.75rem 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+        }
+        .admin-menu-bar.show { display: flex; }
+        .admin-menu-label { font-size: 0.75rem; text-transform: uppercase; color: var(--orange); font-weight: 700; }
+        .admin-menu-buttons { display: flex; gap: 0.5rem; flex: 1; }
+        .admin-menu-btn {
+            display: flex; align-items: center; gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .admin-menu-btn:hover { background: var(--bg-input); border-color: var(--orange); }
+        .admin-menu-btn.active { background: var(--orange); color: white; border-color: var(--orange); }
+        .admin-menu-btn .menu-icon { font-size: 1rem; }
         
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
         
@@ -126,24 +163,14 @@
         }
         .indicator-btn:hover { border-color: var(--text-dim); background: var(--bg-input); }
         .indicator-btn .icon { font-size: 1rem; }
-        .indicator-btn .axis-tag {
-            font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.4rem;
-            border-radius: 4px; background: var(--bg-input); color: var(--text-dim);
-            min-width: 24px; text-align: center;
-        }
+        .indicator-btn .axis-tag { font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; background: var(--bg-input); color: var(--text-dim); min-width: 24px; text-align: center; }
         .indicator-btn.selected-y1 { border-color: var(--green); background: var(--green-light); color: var(--green); }
         .indicator-btn.selected-y1 .axis-tag { background: var(--green); color: white; }
         .indicator-btn.selected-y2 { border-color: var(--orange); background: var(--orange-light); color: var(--orange); }
         .indicator-btn.selected-y2 .axis-tag { background: var(--orange); color: white; }
         
         .period-btns { display: flex; gap: 0.5rem; }
-        .period-btn {
-            flex: 1; padding: 0.7rem;
-            border: 1px solid var(--border);
-            background: transparent; border-radius: 8px;
-            cursor: pointer; font-family: inherit;
-            font-size: 0.85rem; color: var(--text-dim);
-        }
+        .period-btn { flex: 1; padding: 0.7rem; border: 1px solid var(--border); background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.85rem; color: var(--text-dim); }
         .period-btn.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); font-weight: 600; }
         
         .chart-card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1rem; display: none; }
@@ -173,54 +200,64 @@
         .empty-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
         .empty-text { color: var(--text-dim); }
         
-        /* Export buttons */
         .export-section { display: none; margin-bottom: 2rem; }
         .export-section.show { display: block; }
         .export-buttons { display: flex; gap: 1rem; justify-content: center; }
-        .export-btn {
-            display: flex; align-items: center; gap: 0.5rem;
-            padding: 0.8rem 1.5rem;
-            border: 2px solid var(--border);
-            background: var(--bg-card);
-            border-radius: 10px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.9rem;
-            color: var(--text);
-            transition: all 0.2s ease;
-        }
+        .export-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.5rem; border: 2px solid var(--border); background: var(--bg-card); border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 0.9rem; color: var(--text); transition: all 0.2s ease; }
         .export-btn:hover { border-color: var(--blue); background: var(--blue-light); }
         .export-btn .export-icon { font-size: 1.2rem; }
-        .export-btn.pdf:hover { border-color: #ef4444; background: rgba(239,68,68,0.15); }
+        .export-btn.pdf:hover { border-color: var(--red); background: var(--red-light); }
         .export-btn.excel:hover { border-color: var(--green); background: var(--green-light); }
+        
+        /* Admin Panels */
+        .admin-panel { display: none; }
+        .admin-panel.show { display: block; }
+        .admin-panel-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .admin-panel-icon { font-size: 2rem; }
+        .admin-panel-title { font-size: 1.3rem; font-weight: 700; }
+        .admin-panel-subtitle { color: var(--text-dim); font-size: 0.85rem; }
+        
+        .config-section { margin-bottom: 1.5rem; padding: 1.25rem; background: var(--bg-input); border-radius: 12px; }
+        .config-section-title { font-size: 0.85rem; font-weight: 600; color: var(--blue); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .config-row { display: flex; gap: 1rem; margin-top: 1rem; }
+        .config-row .btn { flex: 1; }
+        
+        /* Users Table */
+        .users-table-container { overflow-x: auto; margin-top: 1rem; }
+        .users-table { width: 100%; border-collapse: collapse; }
+        .users-table th, .users-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .users-table th { background: var(--bg-input); font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
+        .users-table tr:hover { background: var(--bg-input); }
+        .users-table .status-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .users-table .status-active { background: var(--green-light); color: var(--green); }
+        .users-table .status-expired { background: var(--red-light); color: var(--red); }
+        .users-table .status-inactive { background: var(--bg-input); color: var(--text-dim); }
+        .users-table .action-btns { display: flex; gap: 0.5rem; }
+        .users-table .action-btn { padding: 0.3rem 0.6rem; border: 1px solid var(--border); background: transparent; border-radius: 4px; cursor: pointer; font-size: 0.75rem; color: var(--text-dim); }
+        .users-table .action-btn:hover { background: var(--bg-input); }
+        .users-table .action-btn.delete:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+        
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: var(--bg-card); border-radius: 16px; padding: 2rem; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-title { font-size: 1.2rem; font-weight: 700; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-dim); }
+        .modal-close:hover { color: var(--text); }
+        .modal-footer { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .modal-footer .btn { flex: 1; }
         
         .footer { text-align: center; padding: 1rem; color: var(--text-dim); font-size: 0.75rem; }
         
-        /* Loading overlay */
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15,23,42,0.9);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            gap: 1rem;
-        }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; gap: 1rem; }
         .loading-overlay.show { display: flex; }
-        .loading-spinner {
-            width: 50px; height: 50px;
-            border: 4px solid var(--border);
-            border-top-color: var(--green);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        .loading-spinner { width: 50px; height: 50px; border: 4px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-text { color: var(--text); font-size: 1rem; }
         
-        @media (max-width: 900px) { .controls-grid.show { grid-template-columns: 1fr; } .chart-container { height: 320px; } }
-        @media (max-width: 600px) { .indicator-btns { flex-direction: column; } .export-buttons { flex-direction: column; } }
+        @media (max-width: 900px) { .controls-grid.show { grid-template-columns: 1fr; } .chart-container { height: 320px; } .admin-menu-bar { flex-wrap: wrap; } }
+        @media (max-width: 600px) { .indicator-btns { flex-direction: column; } .export-buttons { flex-direction: column; } .config-row { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -228,7 +265,61 @@
 <!-- Loading overlay -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
-    <div class="loading-text" id="loadingText">Génération en cours...</div>
+    <div class="loading-text" id="loadingText">Chargement...</div>
+</div>
+
+<!-- Modal pour création/édition utilisateur -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title" id="userModalTitle">Nouvel utilisateur</span>
+            <button class="modal-close" id="closeUserModal">&times;</button>
+        </div>
+        <div class="alert" id="userModalAlert"></div>
+        <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" class="form-input" id="userEmail" placeholder="email@exemple.com">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Mot de passe *</label>
+            <input type="password" class="form-input" id="userPassword" placeholder="Mot de passe">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" class="form-input" id="userNom" placeholder="DUPONT">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input type="text" class="form-input" id="userPrenom" placeholder="Jean">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Rôle *</label>
+            <select class="form-input" id="userRole">
+                <option value="eleveur">Éleveur</option>
+                <option value="technicien">Technicien</option>
+                <option value="admin">Administrateur</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Éleveur associé (pour rôle Éleveur)</label>
+            <select class="form-input" id="userEleveurId">
+                <option value="">-- Aucun --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Date d'expiration</label>
+            <input type="date" class="form-input" id="userExpiration">
+        </div>
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" id="userIsActive" checked> Compte actif
+            </label>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelUserModal">Annuler</button>
+            <button class="btn btn-primary" id="saveUserModal">Enregistrer</button>
+        </div>
+    </div>
 </div>
 
 <!-- PAGE LOGIN -->
@@ -264,6 +355,23 @@
 
 <!-- PAGE APP -->
 <div class="page page-app" id="pageApp">
+    
+    <!-- Admin Menu Bar -->
+    <div class="admin-menu-bar" id="adminMenuBar">
+        <span class="admin-menu-label">⚙️ Administration</span>
+        <div class="admin-menu-buttons">
+            <button class="admin-menu-btn" id="menuDashboard" data-panel="dashboard">
+                <span class="menu-icon">📊</span> Tableau de bord
+            </button>
+            <button class="admin-menu-btn" id="menuApiConfig" data-panel="apiConfig">
+                <span class="menu-icon">🔌</span> Config API Tuffigo
+            </button>
+            <button class="admin-menu-btn" id="menuUsers" data-panel="users">
+                <span class="menu-icon">👥</span> Gestion utilisateurs
+            </button>
+        </div>
+    </div>
+    
     <div class="container">
         <header class="app-header">
             <div class="app-logo">
@@ -275,128 +383,216 @@
             </div>
         </header>
         
-        <!-- Bannière éleveur -->
-        <div class="eleveur-banner" id="eleveurBanner">
-            <div class="eleveur-banner-icon">👨‍🌾</div>
-            <div class="eleveur-banner-info">
-                <div class="eleveur-banner-label">Votre exploitation</div>
-                <div class="eleveur-banner-name" id="eleveurBannerName">--</div>
-                <div class="eleveur-banner-detail" id="eleveurBannerDetail">--</div>
+        <!-- PANEL: Dashboard (default) -->
+        <div class="admin-panel show" id="panelDashboard">
+            
+            <!-- Bannière éleveur -->
+            <div class="eleveur-banner" id="eleveurBanner">
+                <div class="eleveur-banner-icon">👨‍🌾</div>
+                <div class="eleveur-banner-info">
+                    <div class="eleveur-banner-label">Votre exploitation</div>
+                    <div class="eleveur-banner-name" id="eleveurBannerName">--</div>
+                    <div class="eleveur-banner-detail" id="eleveurBannerDetail">--</div>
+                </div>
             </div>
+            
+            <!-- Sélecteurs -->
+            <div class="selectors-card">
+                <div class="selectors-grid">
+                    <div class="selector-group" id="groupEleveur">
+                        <label>Éleveur</label>
+                        <select class="selector-select" id="selEleveur"><option value="">-- Sélectionner --</option></select>
+                    </div>
+                    <div class="selector-group">
+                        <label>Site</label>
+                        <select class="selector-select" id="selSite" disabled><option value="">-- Sélectionner --</option></select>
+                    </div>
+                    <div class="selector-group">
+                        <label>Bâtiment</label>
+                        <select class="selector-select" id="selBatiment" disabled><option value="">-- Sélectionner --</option></select>
+                    </div>
+                    <div class="selector-group">
+                        <label>Lot</label>
+                        <select class="selector-select" id="selLot" disabled><option value="">-- Sélectionner --</option></select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lot info -->
+            <div class="lot-card" id="lotCard">
+                <div class="lot-title">🐥 Lot sélectionné</div>
+                <div class="lot-grid">
+                    <div class="lot-item"><div class="lot-label">Code</div><div class="lot-value" id="lotCode">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Souche</div><div class="lot-value" id="lotSouche">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Effectif</div><div class="lot-value highlight" id="lotEffectif">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Mise en place</div><div class="lot-value" id="lotDate">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Âge</div><div class="lot-value highlight" id="lotAge">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Statut</div><div class="lot-value" id="lotStatut">--</div></div>
+                </div>
+            </div>
+            
+            <!-- Contrôles -->
+            <div class="controls-grid" id="controlsGrid">
+                <div class="control-card">
+                    <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
+                    <div class="indicator-btns" id="indicatorBtns">
+                        <button class="indicator-btn selected-y1" data-type="poids"><span class="icon">📈</span>Croissance en poids<span class="axis-tag">Y1</span></button>
+                        <button class="indicator-btn" data-type="mortalite"><span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span></button>
+                        <button class="indicator-btn" data-type="aliment"><span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span></button>
+                        <button class="indicator-btn" data-type="oeufs"><span class="icon">🥚</span>Œufs pondus<span class="axis-tag"></span></button>
+                    </div>
+                </div>
+                <div class="control-card">
+                    <div class="control-title">Période d'analyse</div>
+                    <div class="period-btns" id="periodBtns">
+                        <button class="period-btn" data-period="7">1 sem.</button>
+                        <button class="period-btn" data-period="28">4 sem.</button>
+                        <button class="period-btn active" data-period="56">8 sem.</button>
+                        <button class="period-btn" data-period="all">Tout</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Graphique -->
+            <div class="chart-card" id="chartCard">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title" id="chartTitle">Évolution</div>
+                        <div class="chart-subtitle" id="chartSubtitle">--</div>
+                    </div>
+                    <div class="chart-legend" id="chartLegend"></div>
+                </div>
+                <div class="chart-container"><canvas id="mainChart"></canvas></div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card" id="statCard1">
+                    <div class="stat-header"><span class="stat-title" id="statTitle1">--</span><span class="stat-icon" id="statIcon1">📈</span></div>
+                    <div class="stat-value"><span id="statValue1">--</span><span class="stat-unit" id="statUnit1"></span></div>
+                    <div class="stat-detail" id="statDetail1">--</div>
+                </div>
+                <div class="stat-card" id="statCard2">
+                    <div class="stat-header"><span class="stat-title" id="statTitle2">--</span><span class="stat-icon" id="statIcon2">⚠️</span></div>
+                    <div class="stat-value"><span id="statValue2">--</span><span class="stat-unit" id="statUnit2"></span></div>
+                    <div class="stat-detail" id="statDetail2">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">Points</span><span class="stat-icon">📊</span></div>
+                    <div class="stat-value"><span id="dataCount">0</span></div>
+                    <div class="stat-detail" id="dataPeriod">--</div>
+                </div>
+            </div>
+            
+            <!-- Export buttons -->
+            <div class="export-section" id="exportSection">
+                <div class="export-buttons">
+                    <button class="export-btn pdf" id="btnExportPDF">
+                        <span class="export-icon">📄</span> Export PDF
+                    </button>
+                    <button class="export-btn excel" id="btnExportExcel">
+                        <span class="export-icon">📊</span> Export Excel
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Empty -->
+            <div class="chart-card show" id="emptyState">
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <div class="empty-title">Sélectionnez un lot</div>
+                    <div class="empty-text">Choisissez un site → bâtiment → lot</div>
+                </div>
+            </div>
+            
         </div>
         
-        <!-- Sélecteurs -->
-        <div class="selectors-card">
-            <div class="selectors-grid">
-                <div class="selector-group" id="groupEleveur">
-                    <label>Éleveur</label>
-                    <select class="selector-select" id="selEleveur"><option value="">-- Sélectionner --</option></select>
-                </div>
-                <div class="selector-group">
-                    <label>Site</label>
-                    <select class="selector-select" id="selSite" disabled><option value="">-- Sélectionner --</option></select>
-                </div>
-                <div class="selector-group">
-                    <label>Bâtiment</label>
-                    <select class="selector-select" id="selBatiment" disabled><option value="">-- Sélectionner --</option></select>
-                </div>
-                <div class="selector-group">
-                    <label>Lot</label>
-                    <select class="selector-select" id="selLot" disabled><option value="">-- Sélectionner --</option></select>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Lot info -->
-        <div class="lot-card" id="lotCard">
-            <div class="lot-title">🐥 Lot sélectionné</div>
-            <div class="lot-grid">
-                <div class="lot-item"><div class="lot-label">Code</div><div class="lot-value" id="lotCode">--</div></div>
-                <div class="lot-item"><div class="lot-label">Souche</div><div class="lot-value" id="lotSouche">--</div></div>
-                <div class="lot-item"><div class="lot-label">Effectif</div><div class="lot-value highlight" id="lotEffectif">--</div></div>
-                <div class="lot-item"><div class="lot-label">Mise en place</div><div class="lot-value" id="lotDate">--</div></div>
-                <div class="lot-item"><div class="lot-label">Âge</div><div class="lot-value highlight" id="lotAge">--</div></div>
-                <div class="lot-item"><div class="lot-label">Statut</div><div class="lot-value" id="lotStatut">--</div></div>
-            </div>
-        </div>
-        
-        <!-- Contrôles -->
-        <div class="controls-grid" id="controlsGrid">
-            <div class="control-card">
-                <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
-                <div class="indicator-btns" id="indicatorBtns">
-                    <button class="indicator-btn selected-y1" data-type="poids"><span class="icon">📈</span>Croissance en poids<span class="axis-tag">Y1</span></button>
-                    <button class="indicator-btn" data-type="mortalite"><span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span></button>
-                    <button class="indicator-btn" data-type="aliment"><span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span></button>
-                    <button class="indicator-btn" data-type="oeufs"><span class="icon">🥚</span>Œufs pondus<span class="axis-tag"></span></button>
-                </div>
-            </div>
-            <div class="control-card">
-                <div class="control-title">Période d'analyse</div>
-                <div class="period-btns" id="periodBtns">
-                    <button class="period-btn" data-period="7">1 sem.</button>
-                    <button class="period-btn" data-period="28">4 sem.</button>
-                    <button class="period-btn active" data-period="56">8 sem.</button>
-                    <button class="period-btn" data-period="all">Tout</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Graphique -->
-        <div class="chart-card" id="chartCard">
-            <div class="chart-header">
+        <!-- PANEL: API Config -->
+        <div class="admin-panel" id="panelApiConfig">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🔌</span>
                 <div>
-                    <div class="chart-title" id="chartTitle">Évolution</div>
-                    <div class="chart-subtitle" id="chartSubtitle">--</div>
+                    <div class="admin-panel-title">Configuration API Tuffigo</div>
+                    <div class="admin-panel-subtitle">Gérer la connexion à l'API Tuffigo Rapidex</div>
                 </div>
-                <div class="chart-legend" id="chartLegend"></div>
             </div>
-            <div class="chart-container"><canvas id="mainChart"></canvas></div>
-        </div>
-        
-        <!-- Stats -->
-        <div class="stats-row" id="statsRow">
-            <div class="stat-card" id="statCard1">
-                <div class="stat-header"><span class="stat-title" id="statTitle1">--</span><span class="stat-icon" id="statIcon1">📈</span></div>
-                <div class="stat-value"><span id="statValue1">--</span><span class="stat-unit" id="statUnit1"></span></div>
-                <div class="stat-detail" id="statDetail1">--</div>
-            </div>
-            <div class="stat-card" id="statCard2">
-                <div class="stat-header"><span class="stat-title" id="statTitle2">--</span><span class="stat-icon" id="statIcon2">⚠️</span></div>
-                <div class="stat-value"><span id="statValue2">--</span><span class="stat-unit" id="statUnit2"></span></div>
-                <div class="stat-detail" id="statDetail2">--</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-header"><span class="stat-title">Points</span><span class="stat-icon">📊</span></div>
-                <div class="stat-value"><span id="dataCount">0</span></div>
-                <div class="stat-detail" id="dataPeriod">--</div>
-            </div>
-        </div>
-        
-        <!-- Export buttons -->
-        <div class="export-section" id="exportSection">
-            <div class="export-buttons">
-                <button class="export-btn pdf" id="btnExportPDF">
-                    <span class="export-icon">📄</span>
-                    Export PDF
-                </button>
-                <button class="export-btn excel" id="btnExportExcel">
-                    <span class="export-icon">📊</span>
-                    Export Excel
-                </button>
-            </div>
-        </div>
-        
-        <!-- Empty -->
-        <div class="chart-card show" id="emptyState">
-            <div class="empty-state">
-                <div class="empty-icon">📊</div>
-                <div class="empty-title">Sélectionnez un lot</div>
-                <div class="empty-text">Choisissez un site → bâtiment → lot</div>
+            
+            <div class="card">
+                <div class="alert" id="apiConfigAlert"></div>
+                
+                <div class="config-section">
+                    <div class="config-section-title">🔑 Clé API Tuffigo</div>
+                    <div class="form-group">
+                        <label class="form-label">Clé API</label>
+                        <input type="password" class="form-input" id="tuffigoApiKey" placeholder="Entrez la clé API Tuffigo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL de base (optionnel)</label>
+                        <input type="url" class="form-input" id="tuffigoBaseUrl" placeholder="https://api.tuffigo.com">
+                    </div>
+                    <div class="config-row">
+                        <button class="btn btn-secondary" id="btnShowApiKey">👁️ Afficher</button>
+                        <button class="btn btn-primary" id="btnSaveApiConfig">💾 Enregistrer</button>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <div class="config-section-title">📊 Statut de la configuration</div>
+                    <div id="apiConfigStatus">
+                        <p style="color: var(--text-dim);">Chargement...</p>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <div class="config-section-title">🔄 Dernière synchronisation</div>
+                    <div id="lastSyncInfo">
+                        <p style="color: var(--text-dim);">Aucune synchronisation</p>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div class="footer">Production Avicole v13.5 - ADOSI</div>
+        <!-- PANEL: Users Management -->
+        <div class="admin-panel" id="panelUsers">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">👥</span>
+                <div>
+                    <div class="admin-panel-title">Gestion des utilisateurs</div>
+                    <div class="admin-panel-subtitle">Créer et gérer les comptes utilisateurs</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="alert" id="usersAlert"></div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div>
+                        <span id="usersCount" style="color: var(--text-dim);">0 utilisateurs</span>
+                    </div>
+                    <button class="btn btn-primary" id="btnNewUser">➕ Nouvel utilisateur</button>
+                </div>
+                
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Rôle</th>
+                                <th>Éleveur</th>
+                                <th>Expiration</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-dim);">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">Production Avicole v14 - ADOSI</div>
     </div>
 </div>
 
@@ -411,12 +607,14 @@
     var currentSite = null;
     var currentBatiment = null;
     var mainChart = null;
+    var editingUserId = null;
     
     var lotData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
     var selectedIndicators = ['poids'];
     var currentPeriod = '56';
     var currentLotInfo = null;
+    var allEleveursList = [];
     
     var INDICATORS = {
         poids: { label: 'Croissance en poids', unit: 'g', color: '#22c55e', colorArea: 'rgba(34,197,94,0.3)', colorBorder: 'rgba(34,197,94,0.6)', icon: '📈', dataField: 'poids_moyen', stdMinField: 'poids_min', stdMaxField: 'poids_max' },
@@ -429,13 +627,13 @@
     function showPage(id) { document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); }); $(id).classList.add('active'); }
     function showAlert(id, type, msg) { var el = $(id); if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; } }
     function hideAlert(id) { var el = $(id); if (el) el.classList.remove('show'); }
-    function showLoading(text) { $('loadingText').textContent = text || 'Génération en cours...'; $('loadingOverlay').classList.add('show'); }
+    function showLoading(text) { $('loadingText').textContent = text || 'Chargement...'; $('loadingOverlay').classList.add('show'); }
     function hideLoading() { $('loadingOverlay').classList.remove('show'); }
     
-    // Config
+    // =====================================================
+    // CONFIG
+    // =====================================================
     function loadConfig() {
-        $('dbStatus').className = 'status-box';
-        $('dbStatusText').textContent = 'Chargement configuration...';
         fetch('config.json')
             .then(function(r) { if (!r.ok) throw new Error('config.json non trouvé'); return r.json(); })
             .then(function(data) {
@@ -457,7 +655,9 @@
         } catch (e) { $('dbStatus').className = 'status-box error'; $('dbStatusText').textContent = '❌ ' + e.message; }
     }
     
-    // Auth
+    // =====================================================
+    // AUTH
+    // =====================================================
     function doLogin() {
         var user = $('loginUser').value.trim(), pass = $('loginPass').value;
         hideAlert('loginAlert');
@@ -470,6 +670,15 @@
         supabase.from('users').select('*').eq('email', user).eq('is_active', true).single()
             .then(function(res) {
                 if (res.error || !res.data) throw new Error('Utilisateur non trouvé');
+                
+                // Vérifier expiration
+                if (res.data.expiration_date) {
+                    var expDate = new Date(res.data.expiration_date);
+                    if (expDate < new Date()) {
+                        throw new Error('Compte expiré. Contactez l\'administrateur.');
+                    }
+                }
+                
                 var storedPass = res.data.password_hash || '';
                 if (storedPass !== pass && storedPass !== ('hash_' + pass)) throw new Error('Mot de passe incorrect');
                 
@@ -482,18 +691,20 @@
                 $('sessionRole').className = 'session-role ' + role;
                 $('sessionBar').style.display = 'flex';
                 
+                // Afficher menu admin si admin
+                if (role === 'admin') {
+                    $('adminMenuBar').classList.add('show');
+                    switchAdminPanel('dashboard');
+                }
+                
                 if (role === 'eleveur') {
                     return findEleveurForUser(res.data).then(function(eleveur) {
-                        if (eleveur) { 
-                            currentEleveur = eleveur; 
-                            setupEleveurMode(eleveur); 
-                        } else {
+                        if (eleveur) { currentEleveur = eleveur; setupEleveurMode(eleveur); }
+                        else {
                             return supabase.from('eleveurs').select('*').ilike('nom', '%' + res.data.nom + '%').eq('is_active', true).maybeSingle()
                                 .then(function(r2) {
-                                    if (r2 && r2.data) { 
-                                        currentEleveur = r2.data; 
-                                        setupEleveurMode(r2.data); 
-                                    } else {
+                                    if (r2 && r2.data) { currentEleveur = r2.data; setupEleveurMode(r2.data); }
+                                    else {
                                         $('groupEleveur').classList.add('hidden');
                                         $('eleveurBanner').classList.add('show');
                                         $('eleveurBannerName').textContent = name;
@@ -501,22 +712,14 @@
                                     }
                                 });
                         }
-                    }).then(function() {
-                        // Toujours afficher la page app après le traitement éleveur
-                        console.log('Navigation vers pageApp');
-                        showPage('pageApp');
-                    });
+                    }).then(function() { showPage('pageApp'); });
                 } else { 
                     currentEleveur = null; 
                     setupAdminMode(); 
-                    console.log('Navigation vers pageApp (admin)');
                     showPage('pageApp'); 
                 }
             })
-            .catch(function(e) { 
-                console.error('Erreur login:', e);
-                showAlert('loginAlert', 'error', '❌ ' + e.message); 
-            })
+            .catch(function(e) { showAlert('loginAlert', 'error', '❌ ' + e.message); })
             .finally(function() { btn.disabled = false; btn.textContent = 'Se connecter'; });
     }
     
@@ -547,13 +750,308 @@
     function doLogout() {
         currentUser = null; currentEleveur = null;
         $('sessionBar').style.display = 'none';
+        $('adminMenuBar').classList.remove('show');
         $('loginUser').value = ''; $('loginPass').value = '';
         hideAlert('loginAlert');
         resetAllSelectors(); hideDataPanels();
         showPage('pageLogin');
     }
     
-    // Data loading
+    // =====================================================
+    // ADMIN PANEL SWITCHING
+    // =====================================================
+    function switchAdminPanel(panelName) {
+        // Hide all panels
+        document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.remove('show'); });
+        // Show selected panel
+        var panel = $('panel' + panelName.charAt(0).toUpperCase() + panelName.slice(1));
+        if (panel) panel.classList.add('show');
+        
+        // Update menu buttons
+        document.querySelectorAll('.admin-menu-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-panel') === panelName) btn.classList.add('active');
+        });
+        
+        // Load panel data
+        if (panelName === 'apiConfig') loadApiConfig();
+        if (panelName === 'users') loadUsers();
+    }
+    
+    // =====================================================
+    // API CONFIG MANAGEMENT
+    // =====================================================
+    function loadApiConfig() {
+        supabase.from('api_config').select('*').eq('is_active', true).maybeSingle()
+            .then(function(res) {
+                if (res.data) {
+                    $('tuffigoApiKey').value = res.data.api_key || '';
+                    $('tuffigoBaseUrl').value = res.data.base_url || '';
+                    $('apiConfigStatus').innerHTML = '<p style="color: var(--green);">✓ Configuration trouvée</p>';
+                    if (res.data.last_sync) {
+                        $('lastSyncInfo').innerHTML = '<p>Dernière sync: ' + new Date(res.data.last_sync).toLocaleString('fr-FR') + '</p>';
+                    }
+                } else {
+                    $('apiConfigStatus').innerHTML = '<p style="color: var(--orange);">⚠️ Aucune configuration</p>';
+                }
+            })
+            .catch(function(err) {
+                $('apiConfigStatus').innerHTML = '<p style="color: var(--red);">❌ Erreur: ' + err.message + '</p>';
+            });
+    }
+    
+    function saveApiConfig() {
+        var apiKey = $('tuffigoApiKey').value.trim();
+        var baseUrl = $('tuffigoBaseUrl').value.trim();
+        
+        if (!apiKey) {
+            showAlert('apiConfigAlert', 'error', '❌ La clé API est requise');
+            return;
+        }
+        
+        showLoading('Enregistrement...');
+        
+        // Check if config exists
+        supabase.from('api_config').select('id').eq('is_active', true).maybeSingle()
+            .then(function(res) {
+                var data = {
+                    api_key: apiKey,
+                    base_url: baseUrl || null,
+                    is_active: true,
+                    updated_at: new Date().toISOString()
+                };
+                
+                if (res.data) {
+                    return supabase.from('api_config').update(data).eq('id', res.data.id);
+                } else {
+                    data.created_at = new Date().toISOString();
+                    return supabase.from('api_config').insert(data);
+                }
+            })
+            .then(function(res) {
+                if (res.error) throw res.error;
+                showAlert('apiConfigAlert', 'success', '✓ Configuration enregistrée');
+                loadApiConfig();
+            })
+            .catch(function(err) {
+                showAlert('apiConfigAlert', 'error', '❌ Erreur: ' + err.message);
+            })
+            .finally(function() { hideLoading(); });
+    }
+    
+    function toggleApiKeyVisibility() {
+        var input = $('tuffigoApiKey');
+        var btn = $('btnShowApiKey');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈 Masquer';
+        } else {
+            input.type = 'password';
+            btn.textContent = '👁️ Afficher';
+        }
+    }
+    
+    // =====================================================
+    // USERS MANAGEMENT
+    // =====================================================
+    function loadUsers() {
+        supabase.from('users').select('*').order('nom')
+            .then(function(res) {
+                var users = res.data || [];
+                $('usersCount').textContent = users.length + ' utilisateur(s)';
+                
+                var tbody = $('usersTableBody');
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim);">Aucun utilisateur</td></tr>';
+                    return;
+                }
+                
+                // Load eleveurs for mapping
+                return supabase.from('eleveurs').select('id, nom, prenom, code_eleveur').eq('is_active', true)
+                    .then(function(elevRes) {
+                        var eleveurs = elevRes.data || [];
+                        allEleveursList = eleveurs;
+                        
+                        var html = '';
+                        users.forEach(function(u) {
+                            var eleveur = eleveurs.find(function(e) { return e.id === u.eleveur_id; });
+                            var eleveurName = eleveur ? (eleveur.nom + ' ' + (eleveur.prenom || '')) : '-';
+                            
+                            var statusClass = 'status-inactive';
+                            var statusText = 'Inactif';
+                            if (u.is_active) {
+                                if (u.expiration_date && new Date(u.expiration_date) < new Date()) {
+                                    statusClass = 'status-expired';
+                                    statusText = 'Expiré';
+                                } else {
+                                    statusClass = 'status-active';
+                                    statusText = 'Actif';
+                                }
+                            }
+                            
+                            var expDate = u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('fr-FR') : '-';
+                            
+                            html += '<tr data-id="' + u.id + '">';
+                            html += '<td><strong>' + u.nom + '</strong> ' + (u.prenom || '') + '<br><small style="color:var(--text-dim)">' + u.email + '</small></td>';
+                            html += '<td><span class="session-role ' + u.role + '">' + (u.role || 'eleveur').toUpperCase() + '</span></td>';
+                            html += '<td>' + eleveurName + '</td>';
+                            html += '<td>' + expDate + '</td>';
+                            html += '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>';
+                            html += '<td><div class="action-btns">';
+                            html += '<button class="action-btn edit-user" data-id="' + u.id + '">✏️</button>';
+                            html += '<button class="action-btn delete delete-user" data-id="' + u.id + '">🗑️</button>';
+                            html += '</div></td>';
+                            html += '</tr>';
+                        });
+                        
+                        tbody.innerHTML = html;
+                        
+                        // Attach event listeners
+                        document.querySelectorAll('.edit-user').forEach(function(btn) {
+                            btn.addEventListener('click', function() { editUser(this.getAttribute('data-id')); });
+                        });
+                        document.querySelectorAll('.delete-user').forEach(function(btn) {
+                            btn.addEventListener('click', function() { deleteUser(this.getAttribute('data-id')); });
+                        });
+                    });
+            })
+            .catch(function(err) {
+                showAlert('usersAlert', 'error', '❌ Erreur: ' + err.message);
+            });
+    }
+    
+    function openUserModal(userId) {
+        editingUserId = userId || null;
+        $('userModalTitle').textContent = userId ? 'Modifier utilisateur' : 'Nouvel utilisateur';
+        hideAlert('userModalAlert');
+        
+        // Populate eleveurs dropdown
+        var eleveurSelect = $('userEleveurId');
+        eleveurSelect.innerHTML = '<option value="">-- Aucun --</option>';
+        allEleveursList.forEach(function(e) {
+            var opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = e.nom + ' ' + (e.prenom || '') + ' (' + e.code_eleveur + ')';
+            eleveurSelect.appendChild(opt);
+        });
+        
+        if (userId) {
+            // Load user data
+            supabase.from('users').select('*').eq('id', userId).single()
+                .then(function(res) {
+                    if (res.data) {
+                        $('userEmail').value = res.data.email || '';
+                        $('userPassword').value = '';
+                        $('userPassword').placeholder = '(inchangé si vide)';
+                        $('userNom').value = res.data.nom || '';
+                        $('userPrenom').value = res.data.prenom || '';
+                        $('userRole').value = res.data.role || 'eleveur';
+                        $('userEleveurId').value = res.data.eleveur_id || '';
+                        $('userExpiration').value = res.data.expiration_date ? res.data.expiration_date.split('T')[0] : '';
+                        $('userIsActive').checked = res.data.is_active !== false;
+                    }
+                });
+        } else {
+            // Reset form
+            $('userEmail').value = '';
+            $('userPassword').value = '';
+            $('userPassword').placeholder = 'Mot de passe';
+            $('userNom').value = '';
+            $('userPrenom').value = '';
+            $('userRole').value = 'eleveur';
+            $('userEleveurId').value = '';
+            $('userExpiration').value = '';
+            $('userIsActive').checked = true;
+        }
+        
+        $('userModal').classList.add('show');
+    }
+    
+    function closeUserModal() {
+        $('userModal').classList.remove('show');
+        editingUserId = null;
+    }
+    
+    function saveUser() {
+        var email = $('userEmail').value.trim();
+        var password = $('userPassword').value;
+        var nom = $('userNom').value.trim();
+        var prenom = $('userPrenom').value.trim();
+        var role = $('userRole').value;
+        var eleveurId = $('userEleveurId').value || null;
+        var expiration = $('userExpiration').value || null;
+        var isActive = $('userIsActive').checked;
+        
+        if (!email || !nom) {
+            showAlert('userModalAlert', 'error', '❌ Email et nom sont requis');
+            return;
+        }
+        if (!editingUserId && !password) {
+            showAlert('userModalAlert', 'error', '❌ Mot de passe requis pour un nouveau compte');
+            return;
+        }
+        
+        showLoading('Enregistrement...');
+        
+        var data = {
+            email: email,
+            nom: nom,
+            prenom: prenom || null,
+            role: role,
+            eleveur_id: eleveurId,
+            expiration_date: expiration,
+            is_active: isActive,
+            updated_at: new Date().toISOString()
+        };
+        
+        if (password) {
+            data.password_hash = password; // In production, hash this!
+        }
+        
+        var promise;
+        if (editingUserId) {
+            promise = supabase.from('users').update(data).eq('id', editingUserId);
+        } else {
+            data.created_at = new Date().toISOString();
+            promise = supabase.from('users').insert(data);
+        }
+        
+        promise
+            .then(function(res) {
+                if (res.error) throw res.error;
+                showAlert('usersAlert', 'success', '✓ Utilisateur enregistré');
+                closeUserModal();
+                loadUsers();
+            })
+            .catch(function(err) {
+                showAlert('userModalAlert', 'error', '❌ Erreur: ' + err.message);
+            })
+            .finally(function() { hideLoading(); });
+    }
+    
+    function editUser(userId) {
+        openUserModal(userId);
+    }
+    
+    function deleteUser(userId) {
+        if (!confirm('Voulez-vous vraiment supprimer cet utilisateur ?')) return;
+        
+        showLoading('Suppression...');
+        supabase.from('users').delete().eq('id', userId)
+            .then(function(res) {
+                if (res.error) throw res.error;
+                showAlert('usersAlert', 'success', '✓ Utilisateur supprimé');
+                loadUsers();
+            })
+            .catch(function(err) {
+                showAlert('usersAlert', 'error', '❌ Erreur: ' + err.message);
+            })
+            .finally(function() { hideLoading(); });
+    }
+    
+    // =====================================================
+    // DATA LOADING (Dashboard)
+    // =====================================================
     function loadAllEleveurs() {
         if (!supabase) return;
         supabase.from('eleveurs').select('*').eq('is_active', true).order('nom').then(function(r) {
@@ -627,31 +1125,20 @@
         resetSelectors('lot');
         if (!sel.value) return;
         
-        // Charger les lots simplement (sans jointure)
-        supabase.from('lots')
-            .select('*')
-            .eq('batiment_id', sel.value)
-            .order('date_mise_place', { ascending: false })
+        supabase.from('lots').select('*').eq('batiment_id', sel.value).order('date_mise_place', { ascending: false })
             .then(function(r) {
-                console.log('Lots chargés:', r.data);
                 var s = $('selLot');
                 s.innerHTML = '<option value="">-- Sélectionner --</option>';
                 s.disabled = false;
                 var lots = r.data || [];
-                
                 lots.forEach(function(l) {
                     var opt = document.createElement('option');
-                    opt.value = l.id; 
-                    opt.setAttribute('data-json', JSON.stringify(l));
+                    opt.value = l.id; opt.setAttribute('data-json', JSON.stringify(l));
                     opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot;
                     s.appendChild(opt);
                 });
-                
                 var actif = lots.find(function(l) { return l.statut === 'actif'; });
                 if (actif) { s.value = actif.id; onLotChange(); }
-            })
-            .catch(function(err) {
-                console.error('Erreur chargement lots:', err);
             });
     }
     
@@ -659,11 +1146,8 @@
         var id = $('selLot').value;
         if (!id) { hideDataPanels(); return; }
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
-        var lot = {}; 
-        try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
+        var lot = {}; try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
-        
-        console.log('Lot sélectionné:', lot);
         
         $('lotCode').textContent = lot.code_lot || '--';
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
@@ -671,30 +1155,18 @@
         $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
         $('lotStatut').textContent = lot.statut || '--';
         
-        // Charger la souche séparément si souche_id existe
+        // Load souche
         if (lot.souche_id) {
-            supabase.from('souches')
-                .select('id, nom, type')
-                .eq('id', lot.souche_id)
-                .single()
+            supabase.from('souches').select('id, nom, type').eq('id', lot.souche_id).single()
                 .then(function(soucheRes) {
-                    console.log('Souche chargée:', soucheRes.data);
                     if (soucheRes.data && soucheRes.data.nom) {
                         currentLotInfo.souche_nom = soucheRes.data.nom;
                         $('lotSouche').textContent = soucheRes.data.nom;
-                    } else {
-                        $('lotSouche').textContent = '--';
-                    }
+                    } else { $('lotSouche').textContent = '--'; }
                 })
-                .catch(function(err) {
-                    console.error('Erreur chargement souche:', err);
-                    $('lotSouche').textContent = '--';
-                });
-        } else {
-            $('lotSouche').textContent = '--';
-        }
+                .catch(function() { $('lotSouche').textContent = '--'; });
+        } else { $('lotSouche').textContent = '--'; }
         
-        // Charger les données du lot
         Promise.all([
             supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
@@ -759,7 +1231,9 @@
         $('emptyState').classList.add('show');
     }
     
-    // UI
+    // =====================================================
+    // UI UPDATE
+    // =====================================================
     function updateUI() { updateChart(); updateStats(); updateLegend(); }
     
     function updateStats() {
@@ -912,7 +1386,6 @@
     // =====================================================
     function exportPDF() {
         showLoading('Génération du PDF...');
-        
         setTimeout(function() {
             try {
                 var jsPDF = window.jspdf.jsPDF;
@@ -921,22 +1394,18 @@
                 var pageHeight = doc.internal.pageSize.getHeight();
                 var margin = 15;
                 
-                // Fond sombre
                 doc.setFillColor(15, 23, 42);
                 doc.rect(0, 0, pageWidth, pageHeight, 'F');
                 
-                // Titre
                 doc.setTextColor(248, 250, 252);
                 doc.setFontSize(24);
                 doc.text('Rapport de Suivi Production Avicole', margin, 20);
                 
-                // Date
                 doc.setFontSize(10);
                 doc.setTextColor(148, 163, 184);
                 var now = new Date();
                 doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, 28);
                 
-                // Informations éleveur
                 doc.setFillColor(30, 41, 59);
                 doc.roundedRect(margin, 35, 80, 30, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
@@ -951,7 +1420,6 @@
                 var eleveurCode = currentEleveur ? ('Code: ' + currentEleveur.code_eleveur) : '';
                 doc.text(eleveurCode, margin + 5, 57);
                 
-                // Informations lot
                 doc.setFillColor(30, 41, 59);
                 doc.roundedRect(margin + 85, 35, 80, 30, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
@@ -963,16 +1431,11 @@
                 doc.text(lotInfo, margin + 90, 50);
                 doc.setFontSize(9);
                 doc.setTextColor(148, 163, 184);
-                var soucheNamePDF = '--';
-                if (currentLotInfo) {
-                    if (currentLotInfo.souche_nom) soucheNamePDF = currentLotInfo.souche_nom;
-                    else if (currentLotInfo.souches && currentLotInfo.souches.nom) soucheNamePDF = currentLotInfo.souches.nom;
-                }
+                var soucheNamePDF = currentLotInfo && currentLotInfo.souche_nom ? currentLotInfo.souche_nom : '--';
                 var lotDetails = 'Effectif: ' + (currentLotInfo && currentLotInfo.effectif_depart ? currentLotInfo.effectif_depart.toLocaleString('fr-FR') : '--');
                 lotDetails += ' | Souche: ' + soucheNamePDF;
                 doc.text(lotDetails, margin + 90, 57);
                 
-                // Indicateurs analysés
                 doc.setFillColor(30, 41, 59);
                 doc.roundedRect(margin + 170, 35, 80, 30, 3, 3, 'F');
                 doc.setTextColor(148, 163, 184);
@@ -987,7 +1450,6 @@
                 var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Cycle complet' : currentPeriod + ' jours');
                 doc.text(periodeText, margin + 175, 57);
                 
-                // Valeurs actuelles
                 var t1 = selectedIndicators[0];
                 var ind1 = INDICATORS[t1];
                 var d1 = lotData[t1] || [];
@@ -1002,34 +1464,24 @@
                 doc.setFontSize(18);
                 doc.text(lastVal + ' ' + ind1.unit, pageWidth - margin - 45, 55);
                 
-                // Graphique
                 var chartCanvas = $('mainChart');
                 if (chartCanvas) {
                     var chartImage = chartCanvas.toDataURL('image/png', 1.0);
-                    
-                    // Fond pour le graphique
                     doc.setFillColor(30, 41, 59);
                     doc.roundedRect(margin, 70, pageWidth - 2*margin, pageHeight - 85, 3, 3, 'F');
-                    
-                    // Titre graphique
                     doc.setTextColor(248, 250, 252);
                     doc.setFontSize(14);
                     doc.text($('chartTitle').textContent, margin + 10, 82);
-                    
-                    // Image du graphique
                     doc.addImage(chartImage, 'PNG', margin + 5, 88, pageWidth - 2*margin - 10, pageHeight - 105);
                 }
                 
-                // Pied de page
                 doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
-                doc.text('Production Avicole v13 - ADOSI', margin, pageHeight - 5);
+                doc.text('Production Avicole v14 - ADOSI', margin, pageHeight - 5);
                 doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
                 
-                // Télécharger
                 var filename = 'Rapport_Avicole_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
                 doc.save(filename);
-                
                 hideLoading();
             } catch (e) {
                 console.error('Erreur PDF:', e);
@@ -1044,17 +1496,10 @@
     // =====================================================
     function exportExcel() {
         showLoading('Génération du fichier Excel...');
-        
         setTimeout(function() {
             try {
                 var wb = XLSX.utils.book_new();
-                
-                // Feuille 1: Informations générales
-                var soucheNameExcel = '--';
-                if (currentLotInfo) {
-                    if (currentLotInfo.souche_nom) soucheNameExcel = currentLotInfo.souche_nom;
-                    else if (currentLotInfo.souches && currentLotInfo.souches.nom) soucheNameExcel = currentLotInfo.souches.nom;
-                }
+                var soucheNameExcel = currentLotInfo && currentLotInfo.souche_nom ? currentLotInfo.souche_nom : '--';
                 
                 var infoData = [
                     ['Rapport de Suivi Production Avicole'],
@@ -1078,8 +1523,7 @@
                 var wsInfo = XLSX.utils.aoa_to_sheet(infoData);
                 XLSX.utils.book_append_sheet(wb, wsInfo, 'Informations');
                 
-                // Feuille 2: Données du graphique
-                selectedIndicators.forEach(function(type, idx) {
+                selectedIndicators.forEach(function(type) {
                     var ind = INDICATORS[type];
                     var data = filterByPeriod(lotData[type] || []);
                     var std = standardsData[type] || [];
@@ -1099,7 +1543,6 @@
                             var stdMax = stdRow ? (parseFloat(stdRow[ind.stdMaxField]) || '') : '';
                             var cible = stdRow ? ((parseFloat(stdRow[ind.stdMinField]) + parseFloat(stdRow[ind.stdMaxField])) / 2) : null;
                             var ecart = cible ? (((val - cible) / cible) * 100).toFixed(1) + '%' : '';
-                            
                             sheetData.push([jour, val, stdMin, stdMax, ecart]);
                         });
                         
@@ -1108,10 +1551,8 @@
                     }
                 });
                 
-                // Télécharger
                 var filename = 'Donnees_Avicole_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
                 XLSX.writeFile(wb, filename);
-                
                 hideLoading();
             } catch (e) {
                 console.error('Erreur Excel:', e);
@@ -1121,19 +1562,41 @@
         }, 100);
     }
     
-    // Init
+    // =====================================================
+    // INIT
+    // =====================================================
     document.addEventListener('DOMContentLoaded', function() {
         loadConfig();
         
+        // Login
         $('loginBtn').addEventListener('click', doLogin);
         $('loginPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
         $('btnLogout').addEventListener('click', doLogout);
         
+        // Admin menu
+        document.querySelectorAll('.admin-menu-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                switchAdminPanel(this.getAttribute('data-panel'));
+            });
+        });
+        
+        // API Config
+        $('btnSaveApiConfig').addEventListener('click', saveApiConfig);
+        $('btnShowApiKey').addEventListener('click', toggleApiKeyVisibility);
+        
+        // Users
+        $('btnNewUser').addEventListener('click', function() { openUserModal(null); });
+        $('closeUserModal').addEventListener('click', closeUserModal);
+        $('cancelUserModal').addEventListener('click', closeUserModal);
+        $('saveUserModal').addEventListener('click', saveUser);
+        
+        // Data selectors
         $('selEleveur').addEventListener('change', onEleveurChange);
         $('selSite').addEventListener('change', onSiteChange);
         $('selBatiment').addEventListener('change', onBatimentChange);
         $('selLot').addEventListener('change', onLotChange);
         
+        // Indicators
         document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) { btn.addEventListener('click', onIndicatorClick); });
         document.querySelectorAll('#periodBtns .period-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
@@ -1144,7 +1607,7 @@
             });
         });
         
-        // Export buttons
+        // Exports
         $('btnExportPDF').addEventListener('click', exportPDF);
         $('btnExportExcel').addEventListener('click', exportExcel);
     });
