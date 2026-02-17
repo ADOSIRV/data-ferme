@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>🐔 Avicole v14</title>
+    <title>🐔 Avicole v14.1</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -592,7 +592,7 @@
             </div>
         </div>
         
-        <div class="footer">Production Avicole v14 - ADOSI</div>
+        <div class="footer">Production Avicole v14.1 - ADOSI</div>
     </div>
 </div>
 
@@ -691,13 +691,12 @@
                 $('sessionRole').className = 'session-role ' + role;
                 $('sessionBar').style.display = 'flex';
                 
-                // Afficher menu admin si admin
-                if (role === 'admin') {
-                    $('adminMenuBar').classList.add('show');
-                    switchAdminPanel('dashboard');
-                }
-                
                 if (role === 'eleveur') {
+                    // Masquer le menu admin pour les éleveurs
+                    $('adminMenuBar').classList.remove('show');
+                    // S'assurer que le dashboard est visible
+                    switchAdminPanel('dashboard');
+                    
                     return findEleveurForUser(res.data).then(function(eleveur) {
                         if (eleveur) { currentEleveur = eleveur; setupEleveurMode(eleveur); }
                         else {
@@ -713,7 +712,17 @@
                                 });
                         }
                     }).then(function() { showPage('pageApp'); });
-                } else { 
+                } else if (role === 'admin') {
+                    // Afficher menu admin uniquement pour les admins
+                    $('adminMenuBar').classList.add('show');
+                    switchAdminPanel('dashboard');
+                    currentEleveur = null; 
+                    setupAdminMode(); 
+                    showPage('pageApp');
+                } else {
+                    // Technicien : pas de menu admin, mais accès à tous les éleveurs
+                    $('adminMenuBar').classList.remove('show');
+                    switchAdminPanel('dashboard');
                     currentEleveur = null; 
                     setupAdminMode(); 
                     showPage('pageApp'); 
