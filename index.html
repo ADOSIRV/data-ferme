@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐔 Avicole v13</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>🐔 Avicole v13.1</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <!-- Librairies pour export PDF et Excel -->
@@ -393,7 +396,7 @@
             </div>
         </div>
         
-        <div class="footer">Production Avicole v13 - ADOSI</div>
+        <div class="footer">Production Avicole v13.1 - ADOSI</div>
     </div>
 </div>
 
@@ -481,13 +484,16 @@
                 
                 if (role === 'eleveur') {
                     return findEleveurForUser(res.data).then(function(eleveur) {
-                        if (eleveur) { currentEleveur = eleveur; setupEleveurMode(eleveur); }
-                        else {
+                        if (eleveur) { 
+                            currentEleveur = eleveur; 
+                            setupEleveurMode(eleveur); 
+                        } else {
                             return supabase.from('eleveurs').select('*').ilike('nom', '%' + res.data.nom + '%').eq('is_active', true).maybeSingle()
                                 .then(function(r2) {
-                                    if (r2 && r2.data) { currentEleveur = r2.data; setupEleveurMode(r2.data); }
-                                    else {
-                                        showAlert('loginAlert', 'error', '⚠️ Aucun éleveur associé');
+                                    if (r2 && r2.data) { 
+                                        currentEleveur = r2.data; 
+                                        setupEleveurMode(r2.data); 
+                                    } else {
                                         $('groupEleveur').classList.add('hidden');
                                         $('eleveurBanner').classList.add('show');
                                         $('eleveurBannerName').textContent = name;
@@ -495,11 +501,22 @@
                                     }
                                 });
                         }
+                    }).then(function() {
+                        // Toujours afficher la page app après le traitement éleveur
+                        console.log('Navigation vers pageApp');
                         showPage('pageApp');
                     });
-                } else { currentEleveur = null; setupAdminMode(); showPage('pageApp'); }
+                } else { 
+                    currentEleveur = null; 
+                    setupAdminMode(); 
+                    console.log('Navigation vers pageApp (admin)');
+                    showPage('pageApp'); 
+                }
             })
-            .catch(function(e) { showAlert('loginAlert', 'error', '❌ ' + e.message); })
+            .catch(function(e) { 
+                console.error('Erreur login:', e);
+                showAlert('loginAlert', 'error', '❌ ' + e.message); 
+            })
             .finally(function() { btn.disabled = false; btn.textContent = 'Se connecter'; });
     }
     
