@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐔 Avicole - Multi-Courbes v9</title>
+    <title>🐔 Avicole v12</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,12 +14,16 @@
             --bg-input: #334155;
             --green: #22c55e;
             --green-light: rgba(34,197,94,0.15);
+            --green-area: rgba(34,197,94,0.3);
             --orange: #f97316;
             --orange-light: rgba(249,115,22,0.15);
+            --orange-area: rgba(249,115,22,0.3);
             --blue: #3b82f6;
             --blue-light: rgba(59,130,246,0.15);
+            --blue-area: rgba(59,130,246,0.3);
             --purple: #a855f7;
             --purple-light: rgba(168,85,247,0.15);
+            --purple-area: rgba(168,85,247,0.3);
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #475569;
@@ -39,25 +43,20 @@
         .card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); }
         .form-group { margin-bottom: 1rem; }
         .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem; text-transform: uppercase; }
-        .form-input { width: 100%; padding: 0.8rem 1rem; background: var(--bg-input); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; }
+        .form-input { width: 100%; padding: 0.8rem 1rem; background: var(--bg-input); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; font-family: inherit; }
         .form-input:focus { outline: none; border-color: var(--blue); }
-        .btn { width: 100%; padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
         .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
         .btn-secondary { background: var(--bg-input); color: var(--text); border: 2px solid var(--border); }
         .alert { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
         .alert.show { display: block; }
         .alert-error { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #ef4444; }
         .alert-success { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+        .alert-info { background: var(--blue-light); border: 1px solid var(--blue); color: var(--blue); }
         .status-box { text-align: center; margin-top: 1rem; padding: 0.7rem; background: var(--bg-input); border-radius: 8px; font-size: 0.85rem; }
         .status-box.ok { background: var(--green-light); color: var(--green); }
         .status-box.warn { background: var(--orange-light); color: var(--orange); }
-        
-        .config-box { width: 100%; max-width: 480px; padding: 2rem; }
-        .config-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-        .config-title { font-weight: 600; color: var(--blue); margin-bottom: 1rem; }
-        .btn-row { display: flex; gap: 0.75rem; margin-top: 1rem; }
-        .btn-row .btn { flex: 1; }
-        .back-link { display: block; text-align: center; margin-top: 1rem; color: var(--blue); cursor: pointer; }
+        .status-box.error { background: rgba(239,68,68,0.15); color: #ef4444; }
         
         .session-bar { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.8rem; z-index: 1000; }
         .session-user { font-weight: 500; }
@@ -65,7 +64,7 @@
         .session-role.eleveur { background: var(--green-light); color: var(--green); }
         .session-role.admin { background: var(--orange-light); color: var(--orange); }
         .session-role.technicien { background: var(--blue-light); color: var(--blue); }
-        .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; }
+        .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; font-family: inherit; }
         
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
         
@@ -75,19 +74,24 @@
         .app-title { font-size: 1.4rem; font-weight: 700; }
         .app-subtitle { color: var(--text-dim); font-size: 0.85rem; }
         
-        .eleveur-banner { background: linear-gradient(135deg, var(--green-light), var(--blue-light)); border: 1px solid var(--green); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; }
-        .eleveur-banner-icon { font-size: 2rem; }
+        .eleveur-banner { background: linear-gradient(135deg, var(--green-light), var(--blue-light)); border: 2px solid var(--green); border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1rem; display: none; align-items: center; gap: 1rem; }
+        .eleveur-banner.show { display: flex; }
+        .eleveur-banner-icon { font-size: 2.5rem; }
         .eleveur-banner-info { flex: 1; }
-        .eleveur-banner-name { font-size: 1.1rem; font-weight: 600; }
+        .eleveur-banner-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); }
+        .eleveur-banner-name { font-size: 1.2rem; font-weight: 700; color: var(--green); }
         .eleveur-banner-detail { font-size: 0.85rem; color: var(--text-dim); }
         
         .selectors-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
         .selectors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .selector-group { display: block; }
+        .selector-group.hidden { display: none; }
         .selector-group label { display: block; font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.3rem; font-weight: 600; }
-        .selector-select { width: 100%; padding: 0.7rem 1rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; cursor: pointer; }
-        .selector-select:disabled { opacity: 0.5; }
+        .selector-select { width: 100%; padding: 0.7rem 1rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; cursor: pointer; font-family: inherit; }
+        .selector-select:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        .lot-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .lot-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); margin-bottom: 1rem; display: none; }
+        .lot-card.show { display: block; }
         .lot-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; }
         .lot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; }
         .lot-item { background: var(--bg-input); padding: 0.6rem; border-radius: 8px; }
@@ -95,7 +99,8 @@
         .lot-value { font-size: 0.9rem; font-weight: 600; }
         .lot-value.highlight { color: var(--green); }
         
-        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .controls-grid { display: none; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .controls-grid.show { display: grid; }
         .control-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); }
         .control-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.75rem; font-weight: 600; }
         .control-hint { font-weight: 400; font-style: italic; opacity: 0.7; }
@@ -103,27 +108,26 @@
         .indicator-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; }
         .indicator-btn {
             display: flex; align-items: center; gap: 0.5rem;
-            padding: 0.7rem 1.2rem;
+            padding: 0.7rem 1.1rem;
             border: 2px solid var(--border);
             background: transparent;
             border-radius: 30px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-dim);
             transition: all 0.2s ease;
         }
         .indicator-btn:hover { border-color: var(--text-dim); background: var(--bg-input); }
-        .indicator-btn .icon { font-size: 1.1rem; }
+        .indicator-btn .icon { font-size: 1rem; }
         .indicator-btn .axis-tag {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             font-weight: 700;
             padding: 0.15rem 0.4rem;
             border-radius: 4px;
             background: var(--bg-input);
             color: var(--text-dim);
-            margin-left: 0.3rem;
-            min-width: 22px;
+            min-width: 24px;
             text-align: center;
         }
         
@@ -134,34 +138,29 @@
         
         .period-btns { display: flex; gap: 0.5rem; }
         .period-btn {
-            flex: 1;
-            padding: 0.7rem;
+            flex: 1; padding: 0.7rem;
             border: 1px solid var(--border);
-            background: transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            transition: all 0.2s;
+            background: transparent; border-radius: 8px;
+            cursor: pointer; font-family: inherit;
+            font-size: 0.85rem; color: var(--text-dim);
         }
-        .period-btn:hover { border-color: var(--text-dim); }
         .period-btn.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); font-weight: 600; }
         
-        .chart-card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .chart-card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1rem; display: none; }
+        .chart-card.show { display: block; }
         .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
         .chart-title { font-size: 1.3rem; font-weight: 700; }
         .chart-subtitle { color: var(--text-dim); font-size: 0.9rem; margin-top: 0.25rem; }
-        
-        .chart-legend { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; }
-        .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-dim); }
-        .legend-line { width: 28px; height: 3px; border-radius: 2px; }
-        .legend-area { width: 28px; height: 16px; border-radius: 4px; opacity: 0.5; }
-        
+        .chart-legend { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+        .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-dim); }
+        .legend-line { width: 24px; height: 3px; border-radius: 2px; }
+        .legend-area { width: 24px; height: 14px; border-radius: 3px; }
         .chart-container { height: 420px; position: relative; }
         
-        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .stats-row { display: none; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .stats-row.show { display: grid; }
         .stat-card { background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid var(--border); }
+        .stat-card.hidden { display: none; }
         .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .stat-title { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
         .stat-icon { font-size: 1.2rem; }
@@ -174,26 +173,21 @@
         .empty-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
         .empty-text { color: var(--text-dim); }
         
-        .hidden { display: none !important; }
+        .footer { text-align: center; padding: 1rem; color: var(--text-dim); font-size: 0.75rem; }
         
-        .debug-panel { background: var(--bg-input); border-radius: 8px; padding: 0.75rem; margin-top: 1rem; font-family: monospace; font-size: 0.7rem; color: var(--text-dim); max-height: 80px; overflow-y: auto; }
-        
-        @media (max-width: 800px) {
-            .controls-grid { grid-template-columns: 1fr; }
-            .chart-container { height: 300px; }
-            .indicator-btns { flex-direction: column; }
-        }
+        @media (max-width: 900px) { .controls-grid.show { grid-template-columns: 1fr; } .chart-container { height: 320px; } }
+        @media (max-width: 600px) { .indicator-btns { flex-direction: column; } }
     </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- PAGE LOGIN -->
 <div class="page active" id="pageLogin">
     <div class="login-box">
         <div class="login-header">
             <div class="login-icon">🐔</div>
             <div class="login-title">Production Avicole</div>
-            <div class="login-subtitle">Multi-Courbes v9</div>
+            <div class="login-subtitle">Tableau de bord</div>
         </div>
         <div class="card">
             <div class="alert" id="loginAlert"></div>
@@ -206,52 +200,21 @@
                 <input type="password" class="form-input" id="loginPass" placeholder="••••••••">
             </div>
             <button class="btn btn-primary" id="loginBtn">Se connecter</button>
-            <div class="status-box" id="dbStatus"><span id="dbStatusText">Vérification...</span></div>
-        </div>
-    </div>
-</div>
-
-<!-- CONFIG -->
-<div class="page" id="pageConfig">
-    <div class="config-box">
-        <div class="login-header">
-            <div class="login-icon">⚙️</div>
-            <div class="login-title">Configuration</div>
-        </div>
-        <div class="card">
-            <div class="alert" id="configAlert"></div>
-            <div class="config-section">
-                <div class="config-title">🔌 Connexion Supabase</div>
-                <div class="form-group">
-                    <label class="form-label">URL du projet</label>
-                    <input type="url" class="form-input" id="cfgUrl" placeholder="https://xxx.supabase.co">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Clé Anon</label>
-                    <input type="text" class="form-input" id="cfgKey" placeholder="eyJhbG...">
-                </div>
-                <div class="btn-row">
-                    <button class="btn btn-secondary" id="btnTestSupa">🔍 Tester</button>
-                    <button class="btn btn-primary" id="btnSaveSupa">💾 Sauvegarder</button>
-                </div>
-            </div>
-            <span class="back-link" id="btnBack">← Retour</span>
+            <div class="status-box" id="dbStatus"><span id="dbStatusText">Chargement configuration...</span></div>
         </div>
     </div>
 </div>
 
 <!-- SESSION BAR -->
 <div class="session-bar" id="sessionBar">
-    <span class="session-user" id="sessionUser">👤 Utilisateur</span>
-    <span class="session-role" id="sessionRole">ROLE</span>
-    <button class="session-btn hidden" id="btnConfig">⚙️</button>
+    <span class="session-user" id="sessionUser">👤</span>
+    <span class="session-role" id="sessionRole">-</span>
     <button class="session-btn" id="btnLogout">Déconnexion</button>
 </div>
 
-<!-- APP -->
+<!-- PAGE APP -->
 <div class="page page-app" id="pageApp">
     <div class="container">
-        
         <header class="app-header">
             <div class="app-logo">
                 <span class="logo-icon">🐔</span>
@@ -263,18 +226,19 @@
         </header>
         
         <!-- Bannière éleveur -->
-        <div class="eleveur-banner hidden" id="eleveurBanner">
+        <div class="eleveur-banner" id="eleveurBanner">
             <div class="eleveur-banner-icon">👨‍🌾</div>
             <div class="eleveur-banner-info">
+                <div class="eleveur-banner-label">Votre exploitation</div>
                 <div class="eleveur-banner-name" id="eleveurBannerName">--</div>
                 <div class="eleveur-banner-detail" id="eleveurBannerDetail">--</div>
             </div>
         </div>
         
         <!-- Sélecteurs -->
-        <div class="selectors-card" id="selectorsCard">
-            <div class="selectors-grid" id="selectorsGrid">
-                <div class="selector-group" id="selectorEleveurGroup">
+        <div class="selectors-card">
+            <div class="selectors-grid">
+                <div class="selector-group" id="groupEleveur">
                     <label>Éleveur</label>
                     <select class="selector-select" id="selEleveur"><option value="">-- Sélectionner --</option></select>
                 </div>
@@ -293,8 +257,8 @@
             </div>
         </div>
         
-        <!-- Info lot -->
-        <div class="lot-card hidden" id="lotCard">
+        <!-- Lot info -->
+        <div class="lot-card" id="lotCard">
             <div class="lot-title">🐥 Lot sélectionné</div>
             <div class="lot-grid">
                 <div class="lot-item"><div class="lot-label">Code</div><div class="lot-value" id="lotCode">--</div></div>
@@ -306,23 +270,15 @@
             </div>
         </div>
         
-        <!-- CONTRÔLES INDICATEURS -->
-        <div class="controls-grid hidden" id="controlsGrid">
+        <!-- Contrôles -->
+        <div class="controls-grid" id="controlsGrid">
             <div class="control-card">
-                <div class="control-title">Type de données <span class="control-hint">(sélectionnez 1 ou 2 indicateurs)</span></div>
+                <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
                 <div class="indicator-btns" id="indicatorBtns">
-                    <button class="indicator-btn selected-y1" data-type="poids">
-                        <span class="icon">📈</span>Croissance en poids<span class="axis-tag">Y1</span>
-                    </button>
-                    <button class="indicator-btn" data-type="mortalite">
-                        <span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span>
-                    </button>
-                    <button class="indicator-btn" data-type="aliment">
-                        <span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span>
-                    </button>
-                    <button class="indicator-btn" data-type="oeufs">
-                        <span class="icon">🥚</span>Nombre œufs pondus<span class="axis-tag"></span>
-                    </button>
+                    <button class="indicator-btn selected-y1" data-type="poids"><span class="icon">📈</span>Croissance en poids<span class="axis-tag">Y1</span></button>
+                    <button class="indicator-btn" data-type="mortalite"><span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span></button>
+                    <button class="indicator-btn" data-type="aliment"><span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span></button>
+                    <button class="indicator-btn" data-type="oeufs"><span class="icon">🥚</span>Œufs pondus<span class="axis-tag"></span></button>
                 </div>
             </div>
             <div class="control-card">
@@ -331,63 +287,52 @@
                     <button class="period-btn" data-period="7">1 sem.</button>
                     <button class="period-btn" data-period="28">4 sem.</button>
                     <button class="period-btn active" data-period="56">8 sem.</button>
-                    <button class="period-btn" data-period="all">Cycle complet</button>
+                    <button class="period-btn" data-period="all">Tout</button>
                 </div>
             </div>
         </div>
         
-        <!-- GRAPHIQUE -->
-        <div class="chart-card hidden" id="chartCard">
+        <!-- Graphique -->
+        <div class="chart-card" id="chartCard">
             <div class="chart-header">
                 <div>
-                    <div class="chart-title" id="chartTitle">Croissance en poids vs Mortalité</div>
-                    <div class="chart-subtitle" id="chartSubtitle">Comparaison sur deux axes</div>
+                    <div class="chart-title" id="chartTitle">Évolution</div>
+                    <div class="chart-subtitle" id="chartSubtitle">--</div>
                 </div>
                 <div class="chart-legend" id="chartLegend"></div>
             </div>
-            <div class="chart-container">
-                <canvas id="mainChart"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="mainChart"></canvas></div>
         </div>
         
         <!-- Stats -->
-        <div class="stats-row hidden" id="statsRow">
+        <div class="stats-row" id="statsRow">
             <div class="stat-card" id="statCard1">
-                <div class="stat-header">
-                    <span class="stat-title" id="statTitle1">Croissance</span>
-                    <span class="stat-icon" id="statIcon1">📈</span>
-                </div>
-                <div class="stat-value"><span id="statValue1">--</span><span class="stat-unit" id="statUnit1">g</span></div>
-                <div class="stat-detail" id="statDetail1">Dernière mesure</div>
+                <div class="stat-header"><span class="stat-title" id="statTitle1">--</span><span class="stat-icon" id="statIcon1">📈</span></div>
+                <div class="stat-value"><span id="statValue1">--</span><span class="stat-unit" id="statUnit1"></span></div>
+                <div class="stat-detail" id="statDetail1">--</div>
             </div>
-            <div class="stat-card hidden" id="statCard2">
-                <div class="stat-header">
-                    <span class="stat-title" id="statTitle2">Mortalité</span>
-                    <span class="stat-icon" id="statIcon2">⚠️</span>
-                </div>
-                <div class="stat-value"><span id="statValue2">--</span><span class="stat-unit" id="statUnit2">morts</span></div>
-                <div class="stat-detail" id="statDetail2">Dernière mesure</div>
+            <div class="stat-card" id="statCard2">
+                <div class="stat-header"><span class="stat-title" id="statTitle2">--</span><span class="stat-icon" id="statIcon2">⚠️</span></div>
+                <div class="stat-value"><span id="statValue2">--</span><span class="stat-unit" id="statUnit2"></span></div>
+                <div class="stat-detail" id="statDetail2">--</div>
             </div>
             <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Points de données</span>
-                    <span class="stat-icon">📊</span>
-                </div>
+                <div class="stat-header"><span class="stat-title">Points</span><span class="stat-icon">📊</span></div>
                 <div class="stat-value"><span id="dataCount">0</span></div>
                 <div class="stat-detail" id="dataPeriod">--</div>
             </div>
         </div>
         
-        <!-- Empty state -->
-        <div class="chart-card" id="emptyState">
+        <!-- Empty -->
+        <div class="chart-card show" id="emptyState">
             <div class="empty-state">
                 <div class="empty-icon">📊</div>
                 <div class="empty-title">Sélectionnez un lot</div>
-                <div class="empty-text">Choisissez un site, bâtiment puis un lot pour afficher les graphiques</div>
+                <div class="empty-text">Choisissez un site → bâtiment → lot</div>
             </div>
         </div>
         
-        <div class="debug-panel">Debug: <span id="debugLog">Prêt</span></div>
+        <div class="footer">Production Avicole v12 - ADOSI</div>
     </div>
 </div>
 
@@ -395,126 +340,99 @@
 (function() {
     'use strict';
     
-    var ADMIN = { user: 'admin', pass: 'admin2024!' };
+    // =====================================================
+    // CONFIGURATION - Chargée depuis config.json
+    // =====================================================
+    var CONFIG = {
+        supabase_url: null,
+        supabase_anon_key: null
+    };
+    
     var supabase = null;
     var currentUser = null;
-    var currentEleveurId = null;
+    var currentEleveur = null;
     var mainChart = null;
     
     var lotData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
-    
     var selectedIndicators = ['poids'];
     var currentPeriod = '56';
     var currentLotInfo = null;
     
     var INDICATORS = {
-        poids: {
-            label: 'Croissance en poids',
-            unit: 'g',
-            color: '#22c55e',
-            colorLight: 'rgba(34,197,94,0.20)',
-            icon: '📈',
-            dataField: 'poids_moyen',
-            stdMinField: 'poids_min',
-            stdMaxField: 'poids_max'
-        },
-        mortalite: {
-            label: 'Mortalité',
-            unit: 'morts',
-            color: '#f97316',
-            colorLight: 'rgba(249,115,22,0.20)',
-            icon: '⚠️',
-            dataField: 'nombre_morts',
-            stdMinField: 'mortalite_min',
-            stdMaxField: 'mortalite_max'
-        },
-        aliment: {
-            label: 'Consommation aliment',
-            unit: 'g',
-            color: '#3b82f6',
-            colorLight: 'rgba(59,130,246,0.20)',
-            icon: '🌾',
-            dataField: 'conso_par_animal',
-            stdMinField: 'conso_min',
-            stdMaxField: 'conso_max'
-        },
-        oeufs: {
-            label: 'Nombre œufs pondus',
-            unit: 'œufs',
-            color: '#a855f7',
-            colorLight: 'rgba(168,85,247,0.20)',
-            icon: '🥚',
-            dataField: 'nombre_oeufs',
-            stdMinField: 'taux_ponte_min',
-            stdMaxField: 'taux_ponte_max'
-        }
+        poids: { label: 'Croissance en poids', unit: 'g', color: '#22c55e', colorArea: 'rgba(34,197,94,0.3)', colorBorder: 'rgba(34,197,94,0.6)', icon: '📈', dataField: 'poids_moyen', stdMinField: 'poids_min', stdMaxField: 'poids_max' },
+        mortalite: { label: 'Mortalité', unit: 'morts', color: '#f97316', colorArea: 'rgba(249,115,22,0.3)', colorBorder: 'rgba(249,115,22,0.6)', icon: '⚠️', dataField: 'nombre_morts', stdMinField: 'mortalite_min', stdMaxField: 'mortalite_max' },
+        aliment: { label: 'Conso. aliment', unit: 'g/j', color: '#3b82f6', colorArea: 'rgba(59,130,246,0.3)', colorBorder: 'rgba(59,130,246,0.6)', icon: '🌾', dataField: 'conso_par_animal', stdMinField: 'conso_min', stdMaxField: 'conso_max' },
+        oeufs: { label: 'Œufs pondus', unit: 'œufs', color: '#a855f7', colorArea: 'rgba(168,85,247,0.3)', colorBorder: 'rgba(168,85,247,0.6)', icon: '🥚', dataField: 'nombre_oeufs', stdMinField: 'taux_ponte_min', stdMaxField: 'taux_ponte_max' }
     };
     
     function $(id) { return document.getElementById(id); }
-    function log(msg) { console.log('[APP]', msg); var el = $('debugLog'); if (el) el.textContent = msg; }
     function showPage(id) { document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); }); $(id).classList.add('active'); }
     function showAlert(id, type, msg) { var el = $(id); if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; } }
-    function loadConfig() { try { return JSON.parse(localStorage.getItem('avicole_cfg') || '{}'); } catch (e) { return {}; } }
-    function saveConfig(url, key) { localStorage.setItem('avicole_cfg', JSON.stringify({ url: url, key: key })); }
+    function hideAlert(id) { var el = $(id); if (el) el.classList.remove('show'); }
+    
+    // =====================================================
+    // CHARGEMENT CONFIGURATION DEPUIS LE SERVEUR
+    // =====================================================
+    function loadConfig() {
+        $('dbStatus').className = 'status-box';
+        $('dbStatusText').textContent = 'Chargement configuration...';
+        
+        // Charger config.json depuis le même dossier que le fichier HTML
+        fetch('config.json')
+            .then(function(response) {
+                if (!response.ok) throw new Error('Fichier config.json non trouvé');
+                return response.json();
+            })
+            .then(function(data) {
+                if (!data.supabase_url || !data.supabase_anon_key) {
+                    throw new Error('Configuration incomplète');
+                }
+                if (data.supabase_anon_key === 'VOTRE_CLE_ANON_ICI') {
+                    throw new Error('Clé Supabase non configurée');
+                }
+                
+                CONFIG.supabase_url = data.supabase_url;
+                CONFIG.supabase_anon_key = data.supabase_anon_key;
+                
+                initSupabase();
+            })
+            .catch(function(err) {
+                console.error('Erreur config:', err);
+                $('dbStatus').className = 'status-box error';
+                $('dbStatusText').textContent = '❌ ' + err.message;
+            });
+    }
     
     function initSupabase() {
-        var cfg = loadConfig();
-        if (typeof window.supabase === 'undefined') {
-            $('dbStatus').className = 'status-box warn';
-            $('dbStatusText').textContent = 'SDK non chargé';
-            return false;
-        }
-        if (cfg.url && cfg.key) {
-            try {
-                supabase = window.supabase.createClient(cfg.url, cfg.key);
-                $('dbStatus').className = 'status-box ok';
-                $('dbStatusText').textContent = 'Connecté ✓';
-                return true;
-            } catch (e) { log('Erreur: ' + e.message); }
-        }
-        $('dbStatus').className = 'status-box warn';
-        $('dbStatusText').textContent = 'Non configuré';
-        return false;
-    }
-    
-    function testSupabase() {
-        var url = $('cfgUrl').value.trim(), key = $('cfgKey').value.trim();
-        if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
-        showAlert('configAlert', 'info', '⏳ Test...');
         try {
-            var client = window.supabase.createClient(url, key);
-            client.from('eleveurs').select('id').limit(1).then(function(res) {
-                if (res.error) showAlert('configAlert', 'error', '❌ ' + res.error.message);
-                else showAlert('configAlert', 'success', '✅ Connexion réussie!');
+            supabase = window.supabase.createClient(CONFIG.supabase_url, CONFIG.supabase_anon_key);
+            
+            // Test de connexion
+            supabase.from('users').select('id').limit(1).then(function(res) {
+                if (res.error) {
+                    $('dbStatus').className = 'status-box error';
+                    $('dbStatusText').textContent = '❌ Erreur connexion';
+                } else {
+                    $('dbStatus').className = 'status-box ok';
+                    $('dbStatusText').textContent = '✓ Connecté';
+                }
             });
-        } catch (e) { showAlert('configAlert', 'error', '❌ ' + e.message); }
+        } catch (e) {
+            $('dbStatus').className = 'status-box error';
+            $('dbStatusText').textContent = '❌ Erreur: ' + e.message;
+        }
     }
     
-    function saveSupabaseConfig() {
-        var url = $('cfgUrl').value.trim(), key = $('cfgKey').value.trim();
-        if (!url || !key) { showAlert('configAlert', 'error', '❌ Remplissez les champs'); return; }
-        saveConfig(url, key);
-        if (initSupabase()) showAlert('configAlert', 'success', '✅ Sauvegardé!');
-    }
-    
+    // =====================================================
+    // AUTHENTIFICATION
+    // =====================================================
     function doLogin() {
         var user = $('loginUser').value.trim(), pass = $('loginPass').value;
+        hideAlert('loginAlert');
+        
         if (!user || !pass) { showAlert('loginAlert', 'error', '❌ Remplissez les champs'); return; }
-        
-        if (user === ADMIN.user && pass === ADMIN.pass) {
-            currentUser = { nom: 'Admin', role: 'admin' };
-            currentEleveurId = null;
-            $('sessionUser').textContent = '👑 Admin';
-            $('sessionRole').textContent = 'ADMIN';
-            $('sessionRole').className = 'session-role admin';
-            $('btnConfig').classList.remove('hidden');
-            $('sessionBar').style.display = 'flex';
-            showPage('pageConfig');
-            return;
-        }
-        
-        if (!supabase) { showAlert('loginAlert', 'error', '❌ Base non configurée. Admin: admin / admin2024!'); return; }
+        if (!supabase) { showAlert('loginAlert', 'error', '❌ Base de données non connectée'); return; }
         
         var btn = $('loginBtn');
         btn.disabled = true;
@@ -523,34 +441,38 @@
         supabase.from('users').select('*').eq('email', user).eq('is_active', true).single()
             .then(function(res) {
                 if (res.error || !res.data) throw new Error('Utilisateur non trouvé');
-                if (res.data.password_hash !== pass) throw new Error('Mot de passe incorrect');
+                
+                var storedPass = res.data.password_hash || '';
+                if (storedPass !== pass && storedPass !== ('hash_' + pass)) {
+                    throw new Error('Mot de passe incorrect');
+                }
                 
                 currentUser = res.data;
-                var name = ((res.data.prenom || '') + ' ' + res.data.nom).trim();
                 var role = res.data.role || 'eleveur';
+                var name = ((res.data.prenom || '') + ' ' + res.data.nom).trim();
                 
                 $('sessionUser').textContent = '👤 ' + name;
                 $('sessionRole').textContent = role.toUpperCase();
                 $('sessionRole').className = 'session-role ' + role;
-                
-                if (role === 'admin' || role === 'technicien') {
-                    $('btnConfig').classList.remove('hidden');
-                }
                 $('sessionBar').style.display = 'flex';
                 
                 if (role === 'eleveur') {
-                    return findEleveurByUserId(res.data.id).then(function(eleveur) {
+                    return findEleveurForUser(res.data).then(function(eleveur) {
                         if (eleveur) {
-                            currentEleveurId = eleveur.id;
-                            setupEleveurView(eleveur);
+                            currentEleveur = eleveur;
+                            setupEleveurMode(eleveur);
                         } else {
-                            throw new Error('Aucun éleveur associé à ce compte');
+                            showAlert('loginAlert', 'error', '⚠️ Aucun éleveur associé à ce compte');
+                            $('groupEleveur').classList.add('hidden');
+                            $('eleveurBanner').classList.add('show');
+                            $('eleveurBannerName').textContent = name;
+                            $('eleveurBannerDetail').textContent = '⚠️ Compte non lié';
                         }
                         showPage('pageApp');
                     });
                 } else {
-                    currentEleveurId = null;
-                    loadEleveurs();
+                    currentEleveur = null;
+                    setupAdminMode();
                     showPage('pageApp');
                 }
             })
@@ -558,172 +480,150 @@
             .finally(function() { btn.disabled = false; btn.textContent = 'Se connecter'; });
     }
     
-    function findEleveurByUserId(userId) {
-        return supabase.from('eleveurs').select('*').eq('user_id', userId).eq('is_active', true).single()
+    function findEleveurForUser(user) {
+        return supabase.from('eleveurs').select('*').eq('user_id', user.id).eq('is_active', true).maybeSingle()
             .then(function(res) {
-                if (res.error || !res.data) {
-                    return supabase.from('eleveurs').select('*').eq('email', currentUser.email).eq('is_active', true).single()
-                        .then(function(res2) { return res2.data || null; });
-                }
-                return res.data;
-            });
+                if (res.data) return res.data;
+                return supabase.from('eleveurs').select('*').eq('email', user.email).eq('is_active', true).maybeSingle();
+            })
+            .then(function(res) { return (res && res.data) ? res.data : null; })
+            .catch(function() { return null; });
     }
     
-    function setupEleveurView(eleveur) {
-        $('selectorEleveurGroup').classList.add('hidden');
-        $('eleveurBanner').classList.remove('hidden');
+    function setupEleveurMode(eleveur) {
+        $('groupEleveur').classList.add('hidden');
+        $('eleveurBanner').classList.add('show');
         $('eleveurBannerName').textContent = eleveur.nom + ' ' + (eleveur.prenom || '');
         $('eleveurBannerDetail').textContent = 'Code: ' + eleveur.code_eleveur + (eleveur.raison_sociale ? ' | ' + eleveur.raison_sociale : '');
         loadSitesForEleveur(eleveur.id);
     }
     
+    function setupAdminMode() {
+        $('groupEleveur').classList.remove('hidden');
+        $('eleveurBanner').classList.remove('show');
+        loadAllEleveurs();
+    }
+    
     function doLogout() {
         currentUser = null;
-        currentEleveurId = null;
+        currentEleveur = null;
         $('sessionBar').style.display = 'none';
-        $('eleveurBanner').classList.add('hidden');
-        $('selectorEleveurGroup').classList.remove('hidden');
-        $('btnConfig').classList.add('hidden');
+        $('loginUser').value = '';
+        $('loginPass').value = '';
+        hideAlert('loginAlert');
         resetAllSelectors();
+        hideDataPanels();
         showPage('pageLogin');
     }
     
-    function loadEleveurs() {
+    // =====================================================
+    // CHARGEMENT DONNÉES
+    // =====================================================
+    function loadAllEleveurs() {
         if (!supabase) return;
-        log('Chargement éleveurs...');
-        
-        supabase.from('eleveurs').select('*').eq('is_active', true).order('nom')
-            .then(function(res) {
-                var sel = $('selEleveur');
-                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-                (res.data || []).forEach(function(e) {
-                    var opt = document.createElement('option');
-                    opt.value = e.id;
-                    opt.setAttribute('data-json', JSON.stringify(e));
-                    opt.textContent = e.nom + ' ' + (e.prenom || '') + ' - ' + e.code_eleveur;
-                    sel.appendChild(opt);
-                });
-                log('Éleveurs: ' + (res.data || []).length);
+        supabase.from('eleveurs').select('*').eq('is_active', true).order('nom').then(function(res) {
+            var sel = $('selEleveur');
+            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+            (res.data || []).forEach(function(e) {
+                var opt = document.createElement('option');
+                opt.value = e.id;
+                opt.setAttribute('data-json', JSON.stringify(e));
+                opt.textContent = e.nom + ' ' + (e.prenom || '') + ' (' + e.code_eleveur + ')';
+                sel.appendChild(opt);
             });
+        });
     }
     
     function loadSitesForEleveur(eleveurId) {
         if (!supabase || !eleveurId) return;
-        log('Chargement sites pour éleveur: ' + eleveurId);
-        
-        supabase.from('sites').select('*').eq('eleveur_id', eleveurId).eq('is_active', true).order('nom')
-            .then(function(res) {
-                var sel = $('selSite');
-                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-                sel.disabled = false;
-                (res.data || []).forEach(function(s) {
-                    var opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.setAttribute('data-json', JSON.stringify(s));
-                    opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
-                    sel.appendChild(opt);
-                });
-                log('Sites: ' + (res.data || []).length);
-                if (res.data && res.data.length === 1) {
-                    sel.value = res.data[0].id;
-                    onSiteChange();
-                }
+        supabase.from('sites').select('*').eq('eleveur_id', eleveurId).eq('is_active', true).order('nom').then(function(res) {
+            var sel = $('selSite');
+            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+            sel.disabled = false;
+            var sites = res.data || [];
+            sites.forEach(function(s) {
+                var opt = document.createElement('option');
+                opt.value = s.id;
+                opt.setAttribute('data-json', JSON.stringify(s));
+                opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
+                sel.appendChild(opt);
             });
+            if (sites.length === 1) { sel.value = sites[0].id; onSiteChange(); }
+        });
     }
     
     function onEleveurChange() {
         var id = $('selEleveur').value;
         resetSelectors('site');
-        if (!id) return;
-        loadSitesForEleveur(id);
+        if (id) loadSitesForEleveur(id);
     }
     
     function onSiteChange() {
         var id = $('selSite').value;
         resetSelectors('batiment');
         if (!id) return;
-        
-        supabase.from('batiments').select('*').eq('site_id', id).eq('is_active', true).order('nom')
-            .then(function(res) {
-                var sel = $('selBatiment');
-                sel.disabled = false;
-                (res.data || []).forEach(function(b) {
-                    var opt = document.createElement('option');
-                    opt.value = b.id;
-                    opt.textContent = b.nom + (b.capacite ? ' (' + b.capacite + ')' : '');
-                    sel.appendChild(opt);
-                });
-                log('Bâtiments: ' + (res.data || []).length);
-                if (res.data && res.data.length === 1) {
-                    sel.value = res.data[0].id;
-                    onBatimentChange();
-                }
+        supabase.from('batiments').select('*').eq('site_id', id).eq('is_active', true).order('nom').then(function(res) {
+            var sel = $('selBatiment');
+            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+            sel.disabled = false;
+            var bats = res.data || [];
+            bats.forEach(function(b) {
+                var opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.nom + (b.capacite ? ' (cap.' + b.capacite + ')' : '');
+                sel.appendChild(opt);
             });
+            if (bats.length === 1) { sel.value = bats[0].id; onBatimentChange(); }
+        });
     }
     
     function onBatimentChange() {
         var id = $('selBatiment').value;
         resetSelectors('lot');
         if (!id) return;
-        
-        supabase.from('lots').select('*, souches(nom)').eq('batiment_id', id).order('date_mise_place', { ascending: false })
-            .then(function(res) {
-                var sel = $('selLot');
-                sel.disabled = false;
-                (res.data || []).forEach(function(l) {
-                    var opt = document.createElement('option');
-                    opt.value = l.id;
-                    opt.setAttribute('data-json', JSON.stringify(l));
-                    var icon = l.statut === 'actif' ? '🟢' : '⚪';
-                    opt.textContent = icon + ' ' + l.code_lot + ' - ' + (l.souches ? l.souches.nom : 'N/A');
-                    sel.appendChild(opt);
-                });
-                log('Lots: ' + (res.data || []).length);
-                var actif = (res.data || []).find(function(l) { return l.statut === 'actif'; });
-                if (actif) {
-                    sel.value = actif.id;
-                    onLotChange();
-                }
+        supabase.from('lots').select('*, souches(nom)').eq('batiment_id', id).order('date_mise_place', { ascending: false }).then(function(res) {
+            var sel = $('selLot');
+            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+            sel.disabled = false;
+            var lots = res.data || [];
+            lots.forEach(function(l) {
+                var opt = document.createElement('option');
+                opt.value = l.id;
+                opt.setAttribute('data-json', JSON.stringify(l));
+                opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot + ' - ' + (l.souches ? l.souches.nom : 'N/A');
+                sel.appendChild(opt);
             });
+            var actif = lots.find(function(l) { return l.statut === 'actif'; });
+            if (actif) { sel.value = actif.id; onLotChange(); }
+        });
     }
     
     function onLotChange() {
         var id = $('selLot').value;
         if (!id) { hideDataPanels(); return; }
-        
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
-        var lot = {};
-        try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
+        var lot = {}; try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
         
         $('lotCode').textContent = lot.code_lot || '--';
         $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
-        $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString() : '--';
+        $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
         $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
         $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
         $('lotStatut').textContent = lot.statut || '--';
-        
-        log('Chargement données lot ' + id);
         
         Promise.all([
             supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age')
-        ]).then(function(results) {
-            lotData.poids = results[0].data || [];
-            lotData.mortalite = results[1].data || [];
-            lotData.aliment = results[2].data || [];
-            lotData.oeufs = results[3].data || [];
-            
-            log('Données: P=' + lotData.poids.length + ' M=' + lotData.mortalite.length + ' A=' + lotData.aliment.length + ' O=' + lotData.oeufs.length);
-            
-            if (lot.souche_id) {
-                loadStandards(lot.souche_id);
-            } else {
-                showDataPanels();
-                updateUI();
-            }
+        ]).then(function(r) {
+            lotData.poids = r[0].data || [];
+            lotData.mortalite = r[1].data || [];
+            lotData.aliment = r[2].data || [];
+            lotData.oeufs = r[3].data || [];
+            if (lot.souche_id) loadStandards(lot.souche_id);
+            else { showDataPanels(); updateUI(); }
         });
     }
     
@@ -733,22 +633,21 @@
             supabase.from('standards_mortalite').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabase.from('standards_aliment').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabase.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age')
-        ]).then(function(results) {
-            standardsData.poids = results[0].data || [];
-            standardsData.mortalite = results[1].data || [];
-            standardsData.aliment = results[2].data || [];
-            standardsData.oeufs = results[3].data || [];
-            log('Standards: P=' + standardsData.poids.length + ' M=' + standardsData.mortalite.length + ' A=' + standardsData.aliment.length + ' O=' + standardsData.oeufs.length);
+        ]).then(function(r) {
+            standardsData.poids = r[0].data || [];
+            standardsData.mortalite = r[1].data || [];
+            standardsData.aliment = r[2].data || [];
+            standardsData.oeufs = r[3].data || [];
             showDataPanels();
             updateUI();
         });
     }
     
     function resetSelectors(from) {
-        var levels = ['site', 'batiment', 'lot'];
-        var start = levels.indexOf(from);
-        for (var i = start; i < levels.length; i++) {
-            var sel = $('sel' + levels[i].charAt(0).toUpperCase() + levels[i].slice(1));
+        var order = ['site', 'batiment', 'lot'];
+        var start = order.indexOf(from);
+        for (var i = start; i < order.length; i++) {
+            var sel = $('sel' + order[i].charAt(0).toUpperCase() + order[i].slice(1));
             sel.innerHTML = '<option value="">-- Sélectionner --</option>';
             sel.disabled = true;
         }
@@ -761,77 +660,63 @@
     }
     
     function showDataPanels() {
-        $('lotCard').classList.remove('hidden');
-        $('controlsGrid').classList.remove('hidden');
-        $('chartCard').classList.remove('hidden');
-        $('statsRow').classList.remove('hidden');
-        $('emptyState').classList.add('hidden');
+        $('lotCard').classList.add('show');
+        $('controlsGrid').classList.add('show');
+        $('chartCard').classList.add('show');
+        $('statsRow').classList.add('show');
+        $('emptyState').classList.remove('show');
     }
     
     function hideDataPanels() {
-        $('lotCard').classList.add('hidden');
-        $('controlsGrid').classList.add('hidden');
-        $('chartCard').classList.add('hidden');
-        $('statsRow').classList.add('hidden');
-        $('emptyState').classList.remove('hidden');
+        $('lotCard').classList.remove('show');
+        $('controlsGrid').classList.remove('show');
+        $('chartCard').classList.remove('show');
+        $('statsRow').classList.remove('show');
+        $('emptyState').classList.add('show');
     }
     
-    function updateUI() {
-        updateChart();
-        updateStats();
-        updateLegend();
-    }
+    // =====================================================
+    // UI UPDATE
+    // =====================================================
+    function updateUI() { updateChart(); updateStats(); updateLegend(); }
     
     function updateStats() {
-        var ind1 = INDICATORS[selectedIndicators[0]];
-        var data1 = lotData[selectedIndicators[0]] || [];
-        
+        var t1 = selectedIndicators[0], ind1 = INDICATORS[t1], d1 = lotData[t1] || [];
         $('statTitle1').textContent = ind1.label;
         $('statIcon1').textContent = ind1.icon;
         $('statUnit1').textContent = ind1.unit;
-        if (data1.length > 0) {
-            var last1 = data1[data1.length - 1];
-            var val1 = parseFloat(last1[ind1.dataField]) || 0;
-            $('statValue1').textContent = Math.round(val1);
-            $('statDetail1').textContent = 'Jour ' + last1.jour_age;
-        } else {
-            $('statValue1').textContent = '--';
-            $('statDetail1').textContent = 'Pas de données';
-        }
+        if (d1.length > 0) {
+            var last = d1[d1.length - 1];
+            $('statValue1').textContent = Math.round(parseFloat(last[ind1.dataField]) || 0);
+            $('statDetail1').textContent = 'Jour ' + last.jour_age;
+        } else { $('statValue1').textContent = '--'; $('statDetail1').textContent = 'Pas de données'; }
         
         if (selectedIndicators[1]) {
-            var ind2 = INDICATORS[selectedIndicators[1]];
-            var data2 = lotData[selectedIndicators[1]] || [];
+            var t2 = selectedIndicators[1], ind2 = INDICATORS[t2], d2 = lotData[t2] || [];
             $('statCard2').classList.remove('hidden');
             $('statTitle2').textContent = ind2.label;
             $('statIcon2').textContent = ind2.icon;
             $('statUnit2').textContent = ind2.unit;
-            if (data2.length > 0) {
-                var last2 = data2[data2.length - 1];
-                var val2 = parseFloat(last2[ind2.dataField]) || 0;
-                $('statValue2').textContent = Math.round(val2);
+            if (d2.length > 0) {
+                var last2 = d2[d2.length - 1];
+                $('statValue2').textContent = Math.round(parseFloat(last2[ind2.dataField]) || 0);
                 $('statDetail2').textContent = 'Jour ' + last2.jour_age;
-            } else {
-                $('statValue2').textContent = '--';
-                $('statDetail2').textContent = 'Pas de données';
-            }
-        } else {
-            $('statCard2').classList.add('hidden');
-        }
+            } else { $('statValue2').textContent = '--'; $('statDetail2').textContent = 'Pas de données'; }
+        } else { $('statCard2').classList.add('hidden'); }
         
         var total = 0;
         selectedIndicators.forEach(function(t) { total += (lotData[t] || []).length; });
         $('dataCount').textContent = total;
-        $('dataPeriod').textContent = currentPeriod === 'all' ? 'Cycle complet' : currentPeriod + ' jours';
+        $('dataPeriod').textContent = currentPeriod === 'all' ? 'Tout' : currentPeriod + 'j';
     }
     
     function updateLegend() {
         var html = '';
         selectedIndicators.forEach(function(type, idx) {
             var ind = INDICATORS[type];
-            var axisLabel = idx === 0 ? ' (Y1)' : ' (Y2)';
-            html += '<div class="legend-item"><span class="legend-line" style="background:' + ind.color + '"></span>' + ind.label + axisLabel + '</div>';
-            html += '<div class="legend-item"><span class="legend-area" style="background:' + ind.color + '"></span>Zone tolérance' + axisLabel + '</div>';
+            var axis = idx === 0 ? 'Y1' : 'Y2';
+            html += '<div class="legend-item"><span class="legend-line" style="background:' + ind.color + '"></span>' + ind.label + ' (' + axis + ')</div>';
+            html += '<div class="legend-item"><span class="legend-area" style="background:' + ind.colorArea + '"></span>Zone ' + axis + '</div>';
         });
         $('chartLegend').innerHTML = html;
     }
@@ -840,280 +725,134 @@
         var canvas = $('mainChart');
         if (!canvas) return;
         var ctx = canvas.getContext('2d');
-        if (mainChart) mainChart.destroy();
+        if (mainChart) { mainChart.destroy(); mainChart = null; }
         
-        var type1 = selectedIndicators[0];
-        var type2 = selectedIndicators[1];
-        var ind1 = INDICATORS[type1];
-        var data1 = filterByPeriod(lotData[type1] || []);
-        var std1 = standardsData[type1] || [];
+        var t1 = selectedIndicators[0], t2 = selectedIndicators[1];
+        var ind1 = INDICATORS[t1];
+        var d1 = filterByPeriod(lotData[t1] || []);
+        var std1 = standardsData[t1] || [];
         
-        if (data1.length === 0) {
-            $('chartTitle').textContent = 'Aucune donnée disponible';
+        if (d1.length === 0) {
+            $('chartTitle').textContent = 'Aucune donnée';
             $('chartSubtitle').textContent = '';
             return;
         }
         
-        var labels = data1.map(function(d) { return 'J' + d.jour_age; });
-        var jourAges = data1.map(function(d) { return d.jour_age; });
+        var labels = d1.map(function(d) { return 'J' + d.jour_age; });
+        var jours = d1.map(function(d) { return d.jour_age; });
         
         var title = ind1.label;
-        if (type2) title += ' vs ' + INDICATORS[type2].label;
+        if (t2) title += ' vs ' + INDICATORS[t2].label;
         $('chartTitle').textContent = title;
-        $('chartSubtitle').textContent = type2 ? 'Comparaison sur deux axes' : 'Évolution temporelle';
+        $('chartSubtitle').textContent = t2 ? 'Comparaison sur deux axes' : 'Évolution';
         
         var datasets = [];
         
-        // Zone de tolérance Y1
-        var stdMin1 = [], stdMax1 = [];
-        jourAges.forEach(function(ja) {
-            var s = std1.find(function(x) { return x.jour_age === ja; });
-            stdMin1.push(s ? (parseFloat(s[ind1.stdMinField]) || null) : null);
-            stdMax1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
+        // Y1 Zone
+        var min1 = [], max1 = [];
+        jours.forEach(function(j) {
+            var s = std1.find(function(x) { return x.jour_age === j; });
+            min1.push(s ? (parseFloat(s[ind1.stdMinField]) || null) : null);
+            max1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
         });
-        
-        if (stdMax1.some(function(v) { return v !== null; })) {
-            datasets.push({
-                label: '_zoneMax1',
-                data: stdMax1,
-                borderColor: 'transparent',
-                backgroundColor: ind1.colorLight,
-                fill: '+1',
-                pointRadius: 0,
-                yAxisID: 'y1',
-                order: 20
-            });
-            datasets.push({
-                label: '_zoneMin1',
-                data: stdMin1,
-                borderColor: ind1.color + '60',
-                borderWidth: 1,
-                borderDash: [4, 4],
-                backgroundColor: 'transparent',
-                fill: false,
-                pointRadius: 0,
-                yAxisID: 'y1',
-                order: 19
-            });
-            datasets.push({
-                label: '_zoneMaxLine1',
-                data: stdMax1,
-                borderColor: ind1.color + '60',
-                borderWidth: 1,
-                borderDash: [4, 4],
-                backgroundColor: 'transparent',
-                fill: false,
-                pointRadius: 0,
-                yAxisID: 'y1',
-                order: 19
-            });
+        if (max1.some(function(v) { return v !== null; })) {
+            datasets.push({ label: '_z1max', data: max1, borderColor: 'transparent', backgroundColor: ind1.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y1', order: 100 });
+            datasets.push({ label: '_z1min', data: min1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
+            datasets.push({ label: '_z1maxL', data: max1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
         }
         
-        // Courbe Y1
-        var values1 = data1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
-        datasets.push({
-            label: ind1.label,
-            data: values1,
-            borderColor: ind1.color,
-            backgroundColor: ind1.color,
-            borderWidth: 3,
-            tension: 0.35,
-            fill: false,
-            pointRadius: values1.length > 60 ? 0 : 4,
-            pointBackgroundColor: ind1.color,
-            yAxisID: 'y1',
-            order: 1
-        });
+        // Y1 courbe
+        var v1 = d1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
+        datasets.push({ label: ind1.label, data: v1, borderColor: ind1.color, backgroundColor: ind1.color, borderWidth: 3, tension: 0.35, fill: false, pointRadius: v1.length > 50 ? 0 : 4, yAxisID: 'y1', order: 1 });
         
         var scales = {
-            x: {
-                grid: { color: 'rgba(71,85,105,0.3)' },
-                ticks: { color: '#94a3b8', maxTicksLimit: 15 },
-                title: { display: true, text: 'Jours du cycle', color: '#64748b' }
-            },
-            y1: {
-                type: 'linear',
-                position: 'left',
-                grid: { color: 'rgba(71,85,105,0.3)' },
-                ticks: { color: ind1.color },
-                title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color }
-            }
+            x: { grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours', color: '#64748b' } },
+            y1: { type: 'linear', position: 'left', grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: ind1.color }, title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color } }
         };
         
-        // Y2 avec zone de tolérance
-        if (type2) {
-            var ind2 = INDICATORS[type2];
-            var data2 = filterByPeriod(lotData[type2] || []);
-            var std2 = standardsData[type2] || [];
+        // Y2
+        if (t2) {
+            var ind2 = INDICATORS[t2];
+            var d2 = filterByPeriod(lotData[t2] || []);
+            var std2 = standardsData[t2] || [];
             
-            var stdMin2 = [], stdMax2 = [];
-            jourAges.forEach(function(ja) {
-                var s = std2.find(function(x) { return x.jour_age === ja; });
-                stdMin2.push(s ? (parseFloat(s[ind2.stdMinField]) || null) : null);
-                stdMax2.push(s ? (parseFloat(s[ind2.stdMaxField]) || null) : null);
+            // Y2 Zone
+            var min2 = [], max2 = [];
+            jours.forEach(function(j) {
+                var s = std2.find(function(x) { return x.jour_age === j; });
+                min2.push(s ? (parseFloat(s[ind2.stdMinField]) || null) : null);
+                max2.push(s ? (parseFloat(s[ind2.stdMaxField]) || null) : null);
             });
-            
-            if (stdMax2.some(function(v) { return v !== null; })) {
-                datasets.push({
-                    label: '_zoneMax2',
-                    data: stdMax2,
-                    borderColor: 'transparent',
-                    backgroundColor: ind2.colorLight,
-                    fill: '+1',
-                    pointRadius: 0,
-                    yAxisID: 'y2',
-                    order: 18
-                });
-                datasets.push({
-                    label: '_zoneMin2',
-                    data: stdMin2,
-                    borderColor: ind2.color + '60',
-                    borderWidth: 1,
-                    borderDash: [4, 4],
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    pointRadius: 0,
-                    yAxisID: 'y2',
-                    order: 17
-                });
-                datasets.push({
-                    label: '_zoneMaxLine2',
-                    data: stdMax2,
-                    borderColor: ind2.color + '60',
-                    borderWidth: 1,
-                    borderDash: [4, 4],
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    pointRadius: 0,
-                    yAxisID: 'y2',
-                    order: 17
-                });
+            if (max2.some(function(v) { return v !== null; })) {
+                datasets.push({ label: '_z2max', data: max2, borderColor: 'transparent', backgroundColor: ind2.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y2', order: 98 });
+                datasets.push({ label: '_z2min', data: min2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
+                datasets.push({ label: '_z2maxL', data: max2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
             }
             
-            var values2 = jourAges.map(function(ja) {
-                var d = data2.find(function(x) { return x.jour_age === ja; });
+            // Y2 courbe
+            var v2 = jours.map(function(j) {
+                var d = d2.find(function(x) { return x.jour_age === j; });
                 return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
             });
+            datasets.push({ label: ind2.label, data: v2, borderColor: ind2.color, backgroundColor: ind2.color, borderWidth: 3, tension: 0.35, fill: false, pointRadius: v2.filter(function(x){return x!==null;}).length > 50 ? 0 : 4, yAxisID: 'y2', order: 2 });
             
-            datasets.push({
-                label: ind2.label,
-                data: values2,
-                borderColor: ind2.color,
-                backgroundColor: ind2.color,
-                borderWidth: 3,
-                tension: 0.35,
-                fill: false,
-                pointRadius: values2.length > 60 ? 0 : 4,
-                pointBackgroundColor: ind2.color,
-                yAxisID: 'y2',
-                order: 2
-            });
-            
-            scales.y2 = {
-                type: 'linear',
-                position: 'right',
-                grid: { drawOnChartArea: false },
-                ticks: { color: ind2.color },
-                title: { display: true, text: ind2.label + ' (' + ind2.unit + ')', color: ind2.color }
-            };
+            scales.y2 = { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: ind2.color }, title: { display: true, text: ind2.label + ' (' + ind2.unit + ')', color: ind2.color } };
         }
         
         mainChart = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: datasets },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(30,41,59,0.95)',
-                        titleColor: '#f8fafc',
-                        bodyColor: '#94a3b8',
-                        padding: 12,
-                        displayColors: true,
-                        filter: function(item) {
-                            return !item.dataset.label.startsWith('_');
-                        }
-                    }
-                },
+                plugins: { legend: { display: false }, tooltip: { filter: function(i) { return !i.dataset.label.startsWith('_'); } } },
                 scales: scales
             }
         });
     }
     
     function filterByPeriod(data) {
-        if (!data || currentPeriod === 'all') return data;
-        var days = parseInt(currentPeriod);
-        return data.slice(-days);
+        if (!data || !data.length || currentPeriod === 'all') return data;
+        return data.slice(-parseInt(currentPeriod));
     }
     
     function onIndicatorClick(e) {
-        var btn = e.currentTarget;
-        var type = btn.getAttribute('data-type');
+        var btn = e.currentTarget, type = btn.getAttribute('data-type');
         var idx = selectedIndicators.indexOf(type);
-        
-        if (idx === 0) {
-            if (selectedIndicators.length > 1) {
-                selectedIndicators = [selectedIndicators[1]];
-            }
-        } else if (idx === 1) {
-            selectedIndicators = [selectedIndicators[0]];
-        } else {
-            if (selectedIndicators.length < 2) {
-                selectedIndicators.push(type);
-            } else {
-                selectedIndicators[1] = type;
-            }
-        }
-        
+        if (idx === 0) { if (selectedIndicators.length > 1) selectedIndicators = [selectedIndicators[1]]; }
+        else if (idx === 1) { selectedIndicators = [selectedIndicators[0]]; }
+        else { if (selectedIndicators.length < 2) selectedIndicators.push(type); else selectedIndicators[1] = type; }
         updateIndicatorButtons();
         updateUI();
     }
     
     function updateIndicatorButtons() {
         document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
-            var type = btn.getAttribute('data-type');
-            var tag = btn.querySelector('.axis-tag');
+            var type = btn.getAttribute('data-type'), tag = btn.querySelector('.axis-tag');
             btn.classList.remove('selected-y1', 'selected-y2');
             tag.textContent = '';
-            
-            if (selectedIndicators[0] === type) {
-                btn.classList.add('selected-y1');
-                tag.textContent = 'Y1';
-            } else if (selectedIndicators[1] === type) {
-                btn.classList.add('selected-y2');
-                tag.textContent = 'Y2';
-            }
+            if (selectedIndicators[0] === type) { btn.classList.add('selected-y1'); tag.textContent = 'Y1'; }
+            else if (selectedIndicators[1] === type) { btn.classList.add('selected-y2'); tag.textContent = 'Y2'; }
         });
     }
     
+    // =====================================================
+    // INITIALISATION
+    // =====================================================
     document.addEventListener('DOMContentLoaded', function() {
-        log('App v9 démarrée');
-        
-        var cfg = loadConfig();
-        if (cfg.url) $('cfgUrl').value = cfg.url;
-        if (cfg.key) $('cfgKey').value = cfg.key;
-        initSupabase();
+        // Charger la configuration depuis le serveur
+        loadConfig();
         
         $('loginBtn').addEventListener('click', doLogin);
         $('loginPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
-        $('btnTestSupa').addEventListener('click', testSupabase);
-        $('btnSaveSupa').addEventListener('click', saveSupabaseConfig);
-        $('btnBack').addEventListener('click', function() { showPage('pageLogin'); });
         $('btnLogout').addEventListener('click', doLogout);
-        $('btnConfig').addEventListener('click', function() { showPage('pageConfig'); });
         
         $('selEleveur').addEventListener('change', onEleveurChange);
         $('selSite').addEventListener('change', onSiteChange);
         $('selBatiment').addEventListener('change', onBatimentChange);
         $('selLot').addEventListener('change', onLotChange);
         
-        document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
-            btn.addEventListener('click', onIndicatorClick);
-        });
-        
+        document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) { btn.addEventListener('click', onIndicatorClick); });
         document.querySelectorAll('#periodBtns .period-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('#periodBtns .period-btn').forEach(function(b) { b.classList.remove('active'); });
