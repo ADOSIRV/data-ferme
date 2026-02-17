@@ -462,11 +462,25 @@
                             currentEleveur = eleveur;
                             setupEleveurMode(eleveur);
                         } else {
-                            showAlert('loginAlert', 'error', '⚠️ Aucun éleveur associé à ce compte');
-                            $('groupEleveur').classList.add('hidden');
-                            $('eleveurBanner').classList.add('show');
-                            $('eleveurBannerName').textContent = name;
-                            $('eleveurBannerDetail').textContent = '⚠️ Compte non lié';
+                            // Éleveur non trouvé - essayer de charger quand même par nom
+                            console.log('Éleveur non trouvé, recherche alternative par nom...');
+                            return supabase.from('eleveurs').select('*')
+                                .ilike('nom', '%' + res.data.nom + '%')
+                                .eq('is_active', true)
+                                .maybeSingle()
+                                .then(function(res2) {
+                                    if (res2 && res2.data) {
+                                        console.log('Éleveur trouvé par recherche alternative:', res2.data);
+                                        currentEleveur = res2.data;
+                                        setupEleveurMode(res2.data);
+                                    } else {
+                                        showAlert('loginAlert', 'error', '⚠️ Aucun éleveur associé. Vérifiez le user_id dans la table eleveurs.');
+                                        $('groupEleveur').classList.add('hidden');
+                                        $('eleveurBanner').classList.add('show');
+                                        $('eleveurBannerName').textContent = name;
+                                        $('eleveurBannerDetail').textContent = '⚠️ Compte non lié - contactez l\'admin';
+                                    }
+                                });
                         }
                         showPage('pageApp');
                     });
@@ -481,13 +495,37 @@
     }
     
     function findEleveurForUser(user) {
+        console.log('Recherche éleveur pour user:', user.id, user.email);
+        
+        // Méthode 1: par user_id
         return supabase.from('eleveurs').select('*').eq('user_id', user.id).eq('is_active', true).maybeSingle()
             .then(function(res) {
+                console.log('Recherche par user_id:', res);
                 if (res.data) return res.data;
+                
+                // Méthode 2: par email
+                console.log('Essai par email:', user.email);
                 return supabase.from('eleveurs').select('*').eq('email', user.email).eq('is_active', true).maybeSingle();
             })
-            .then(function(res) { return (res && res.data) ? res.data : null; })
-            .catch(function() { return null; });
+            .then(function(res) {
+                console.log('Recherche par email:', res);
+                if (res && res.data) return res.data;
+                
+                // Méthode 3: par nom/prénom (fallback)
+                console.log('Essai par nom/prénom:', user.nom, user.prenom);
+                return supabase.from('eleveurs').select('*')
+                    .eq('nom', user.nom)
+                    .eq('is_active', true)
+                    .maybeSingle();
+            })
+            .then(function(res) {
+                console.log('Recherche par nom:', res);
+                return (res && res.data) ? res.data : null;
+            })
+            .catch(function(err) { 
+                console.error('Erreur recherche éleveur:', err);
+                return null; 
+            });
     }
     
     function setupEleveurMode(eleveur) {
