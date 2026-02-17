@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐔 Avicole v12</title>
+    <title>🐔 Avicole v13</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <!-- Librairies pour export PDF et Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -45,17 +49,16 @@
         .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem; text-transform: uppercase; }
         .form-input { width: 100%; padding: 0.8rem 1rem; background: var(--bg-input); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; font-family: inherit; }
         .form-input:focus { outline: none; border-color: var(--blue); }
-        .btn { width: 100%; padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn { padding: 1rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn-full { width: 100%; }
         .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
         .btn-secondary { background: var(--bg-input); color: var(--text); border: 2px solid var(--border); }
         .alert { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
         .alert.show { display: block; }
         .alert-error { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #ef4444; }
         .alert-success { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
-        .alert-info { background: var(--blue-light); border: 1px solid var(--blue); color: var(--blue); }
         .status-box { text-align: center; margin-top: 1rem; padding: 0.7rem; background: var(--bg-input); border-radius: 8px; font-size: 0.85rem; }
         .status-box.ok { background: var(--green-light); color: var(--green); }
-        .status-box.warn { background: var(--orange-light); color: var(--orange); }
         .status-box.error { background: rgba(239,68,68,0.15); color: #ef4444; }
         
         .session-bar { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.8rem; z-index: 1000; }
@@ -121,16 +124,10 @@
         .indicator-btn:hover { border-color: var(--text-dim); background: var(--bg-input); }
         .indicator-btn .icon { font-size: 1rem; }
         .indicator-btn .axis-tag {
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            background: var(--bg-input);
-            color: var(--text-dim);
-            min-width: 24px;
-            text-align: center;
+            font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.4rem;
+            border-radius: 4px; background: var(--bg-input); color: var(--text-dim);
+            min-width: 24px; text-align: center;
         }
-        
         .indicator-btn.selected-y1 { border-color: var(--green); background: var(--green-light); color: var(--green); }
         .indicator-btn.selected-y1 .axis-tag { background: var(--green); color: white; }
         .indicator-btn.selected-y2 { border-color: var(--orange); background: var(--orange-light); color: var(--orange); }
@@ -173,13 +170,63 @@
         .empty-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
         .empty-text { color: var(--text-dim); }
         
+        /* Export buttons */
+        .export-section { display: none; margin-bottom: 2rem; }
+        .export-section.show { display: block; }
+        .export-buttons { display: flex; gap: 1rem; justify-content: center; }
+        .export-btn {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text);
+            transition: all 0.2s ease;
+        }
+        .export-btn:hover { border-color: var(--blue); background: var(--blue-light); }
+        .export-btn .export-icon { font-size: 1.2rem; }
+        .export-btn.pdf:hover { border-color: #ef4444; background: rgba(239,68,68,0.15); }
+        .export-btn.excel:hover { border-color: var(--green); background: var(--green-light); }
+        
         .footer { text-align: center; padding: 1rem; color: var(--text-dim); font-size: 0.75rem; }
         
+        /* Loading overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15,23,42,0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .loading-overlay.show { display: flex; }
+        .loading-spinner {
+            width: 50px; height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text); font-size: 1rem; }
+        
         @media (max-width: 900px) { .controls-grid.show { grid-template-columns: 1fr; } .chart-container { height: 320px; } }
-        @media (max-width: 600px) { .indicator-btns { flex-direction: column; } }
+        @media (max-width: 600px) { .indicator-btns { flex-direction: column; } .export-buttons { flex-direction: column; } }
     </style>
 </head>
 <body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Génération en cours...</div>
+</div>
 
 <!-- PAGE LOGIN -->
 <div class="page active" id="pageLogin">
@@ -199,7 +246,7 @@
                 <label class="form-label">Mot de passe</label>
                 <input type="password" class="form-input" id="loginPass" placeholder="••••••••">
             </div>
-            <button class="btn btn-primary" id="loginBtn">Se connecter</button>
+            <button class="btn btn-primary btn-full" id="loginBtn">Se connecter</button>
             <div class="status-box" id="dbStatus"><span id="dbStatusText">Chargement configuration...</span></div>
         </div>
     </div>
@@ -323,6 +370,20 @@
             </div>
         </div>
         
+        <!-- Export buttons -->
+        <div class="export-section" id="exportSection">
+            <div class="export-buttons">
+                <button class="export-btn pdf" id="btnExportPDF">
+                    <span class="export-icon">📄</span>
+                    Export PDF
+                </button>
+                <button class="export-btn excel" id="btnExportExcel">
+                    <span class="export-icon">📊</span>
+                    Export Excel
+                </button>
+            </div>
+        </div>
+        
         <!-- Empty -->
         <div class="chart-card show" id="emptyState">
             <div class="empty-state">
@@ -332,7 +393,7 @@
             </div>
         </div>
         
-        <div class="footer">Production Avicole v12 - ADOSI</div>
+        <div class="footer">Production Avicole v13 - ADOSI</div>
     </div>
 </div>
 
@@ -340,17 +401,12 @@
 (function() {
     'use strict';
     
-    // =====================================================
-    // CONFIGURATION - Chargée depuis config.json
-    // =====================================================
-    var CONFIG = {
-        supabase_url: null,
-        supabase_anon_key: null
-    };
-    
+    var CONFIG = { supabase_url: null, supabase_anon_key: null };
     var supabase = null;
     var currentUser = null;
     var currentEleveur = null;
+    var currentSite = null;
+    var currentBatiment = null;
     var mainChart = null;
     
     var lotData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
@@ -370,82 +426,49 @@
     function showPage(id) { document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); }); $(id).classList.add('active'); }
     function showAlert(id, type, msg) { var el = $(id); if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; } }
     function hideAlert(id) { var el = $(id); if (el) el.classList.remove('show'); }
+    function showLoading(text) { $('loadingText').textContent = text || 'Génération en cours...'; $('loadingOverlay').classList.add('show'); }
+    function hideLoading() { $('loadingOverlay').classList.remove('show'); }
     
-    // =====================================================
-    // CHARGEMENT CONFIGURATION DEPUIS LE SERVEUR
-    // =====================================================
+    // Config
     function loadConfig() {
         $('dbStatus').className = 'status-box';
         $('dbStatusText').textContent = 'Chargement configuration...';
-        
-        // Charger config.json depuis le même dossier que le fichier HTML
         fetch('config.json')
-            .then(function(response) {
-                if (!response.ok) throw new Error('Fichier config.json non trouvé');
-                return response.json();
-            })
+            .then(function(r) { if (!r.ok) throw new Error('config.json non trouvé'); return r.json(); })
             .then(function(data) {
-                if (!data.supabase_url || !data.supabase_anon_key) {
-                    throw new Error('Configuration incomplète');
-                }
-                if (data.supabase_anon_key === 'VOTRE_CLE_ANON_ICI') {
-                    throw new Error('Clé Supabase non configurée');
-                }
-                
+                if (!data.supabase_url || !data.supabase_anon_key || data.supabase_anon_key === 'VOTRE_CLE_ANON_ICI') throw new Error('Config incomplète');
                 CONFIG.supabase_url = data.supabase_url;
                 CONFIG.supabase_anon_key = data.supabase_anon_key;
-                
                 initSupabase();
             })
-            .catch(function(err) {
-                console.error('Erreur config:', err);
-                $('dbStatus').className = 'status-box error';
-                $('dbStatusText').textContent = '❌ ' + err.message;
-            });
+            .catch(function(e) { $('dbStatus').className = 'status-box error'; $('dbStatusText').textContent = '❌ ' + e.message; });
     }
     
     function initSupabase() {
         try {
             supabase = window.supabase.createClient(CONFIG.supabase_url, CONFIG.supabase_anon_key);
-            
-            // Test de connexion
-            supabase.from('users').select('id').limit(1).then(function(res) {
-                if (res.error) {
-                    $('dbStatus').className = 'status-box error';
-                    $('dbStatusText').textContent = '❌ Erreur connexion';
-                } else {
-                    $('dbStatus').className = 'status-box ok';
-                    $('dbStatusText').textContent = '✓ Connecté';
-                }
+            supabase.from('users').select('id').limit(1).then(function(r) {
+                if (r.error) { $('dbStatus').className = 'status-box error'; $('dbStatusText').textContent = '❌ Erreur'; }
+                else { $('dbStatus').className = 'status-box ok'; $('dbStatusText').textContent = '✓ Connecté'; }
             });
-        } catch (e) {
-            $('dbStatus').className = 'status-box error';
-            $('dbStatusText').textContent = '❌ Erreur: ' + e.message;
-        }
+        } catch (e) { $('dbStatus').className = 'status-box error'; $('dbStatusText').textContent = '❌ ' + e.message; }
     }
     
-    // =====================================================
-    // AUTHENTIFICATION
-    // =====================================================
+    // Auth
     function doLogin() {
         var user = $('loginUser').value.trim(), pass = $('loginPass').value;
         hideAlert('loginAlert');
-        
         if (!user || !pass) { showAlert('loginAlert', 'error', '❌ Remplissez les champs'); return; }
-        if (!supabase) { showAlert('loginAlert', 'error', '❌ Base de données non connectée'); return; }
+        if (!supabase) { showAlert('loginAlert', 'error', '❌ Base non connectée'); return; }
         
         var btn = $('loginBtn');
-        btn.disabled = true;
-        btn.textContent = 'Connexion...';
+        btn.disabled = true; btn.textContent = 'Connexion...';
         
         supabase.from('users').select('*').eq('email', user).eq('is_active', true).single()
             .then(function(res) {
                 if (res.error || !res.data) throw new Error('Utilisateur non trouvé');
-                
                 var storedPass = res.data.password_hash || '';
-                if (storedPass !== pass && storedPass !== ('hash_' + pass)) {
-                    throw new Error('Mot de passe incorrect');
-                }
+                if (storedPass !== pass && storedPass !== ('hash_' + pass)) throw new Error('Mot de passe incorrect');
                 
                 currentUser = res.data;
                 var role = res.data.role || 'eleveur';
@@ -458,74 +481,36 @@
                 
                 if (role === 'eleveur') {
                     return findEleveurForUser(res.data).then(function(eleveur) {
-                        if (eleveur) {
-                            currentEleveur = eleveur;
-                            setupEleveurMode(eleveur);
-                        } else {
-                            // Éleveur non trouvé - essayer de charger quand même par nom
-                            console.log('Éleveur non trouvé, recherche alternative par nom...');
-                            return supabase.from('eleveurs').select('*')
-                                .ilike('nom', '%' + res.data.nom + '%')
-                                .eq('is_active', true)
-                                .maybeSingle()
-                                .then(function(res2) {
-                                    if (res2 && res2.data) {
-                                        console.log('Éleveur trouvé par recherche alternative:', res2.data);
-                                        currentEleveur = res2.data;
-                                        setupEleveurMode(res2.data);
-                                    } else {
-                                        showAlert('loginAlert', 'error', '⚠️ Aucun éleveur associé. Vérifiez le user_id dans la table eleveurs.');
+                        if (eleveur) { currentEleveur = eleveur; setupEleveurMode(eleveur); }
+                        else {
+                            return supabase.from('eleveurs').select('*').ilike('nom', '%' + res.data.nom + '%').eq('is_active', true).maybeSingle()
+                                .then(function(r2) {
+                                    if (r2 && r2.data) { currentEleveur = r2.data; setupEleveurMode(r2.data); }
+                                    else {
+                                        showAlert('loginAlert', 'error', '⚠️ Aucun éleveur associé');
                                         $('groupEleveur').classList.add('hidden');
                                         $('eleveurBanner').classList.add('show');
                                         $('eleveurBannerName').textContent = name;
-                                        $('eleveurBannerDetail').textContent = '⚠️ Compte non lié - contactez l\'admin';
+                                        $('eleveurBannerDetail').textContent = '⚠️ Compte non lié';
                                     }
                                 });
                         }
                         showPage('pageApp');
                     });
-                } else {
-                    currentEleveur = null;
-                    setupAdminMode();
-                    showPage('pageApp');
-                }
+                } else { currentEleveur = null; setupAdminMode(); showPage('pageApp'); }
             })
-            .catch(function(err) { showAlert('loginAlert', 'error', '❌ ' + err.message); })
+            .catch(function(e) { showAlert('loginAlert', 'error', '❌ ' + e.message); })
             .finally(function() { btn.disabled = false; btn.textContent = 'Se connecter'; });
     }
     
     function findEleveurForUser(user) {
-        console.log('Recherche éleveur pour user:', user.id, user.email);
-        
-        // Méthode 1: par user_id
         return supabase.from('eleveurs').select('*').eq('user_id', user.id).eq('is_active', true).maybeSingle()
-            .then(function(res) {
-                console.log('Recherche par user_id:', res);
-                if (res.data) return res.data;
-                
-                // Méthode 2: par email
-                console.log('Essai par email:', user.email);
+            .then(function(r) {
+                if (r.data) return r.data;
                 return supabase.from('eleveurs').select('*').eq('email', user.email).eq('is_active', true).maybeSingle();
             })
-            .then(function(res) {
-                console.log('Recherche par email:', res);
-                if (res && res.data) return res.data;
-                
-                // Méthode 3: par nom/prénom (fallback)
-                console.log('Essai par nom/prénom:', user.nom, user.prenom);
-                return supabase.from('eleveurs').select('*')
-                    .eq('nom', user.nom)
-                    .eq('is_active', true)
-                    .maybeSingle();
-            })
-            .then(function(res) {
-                console.log('Recherche par nom:', res);
-                return (res && res.data) ? res.data : null;
-            })
-            .catch(function(err) { 
-                console.error('Erreur recherche éleveur:', err);
-                return null; 
-            });
+            .then(function(r) { return (r && r.data) ? r.data : null; })
+            .catch(function() { return null; });
     }
     
     function setupEleveurMode(eleveur) {
@@ -543,29 +528,23 @@
     }
     
     function doLogout() {
-        currentUser = null;
-        currentEleveur = null;
+        currentUser = null; currentEleveur = null;
         $('sessionBar').style.display = 'none';
-        $('loginUser').value = '';
-        $('loginPass').value = '';
+        $('loginUser').value = ''; $('loginPass').value = '';
         hideAlert('loginAlert');
-        resetAllSelectors();
-        hideDataPanels();
+        resetAllSelectors(); hideDataPanels();
         showPage('pageLogin');
     }
     
-    // =====================================================
-    // CHARGEMENT DONNÉES
-    // =====================================================
+    // Data loading
     function loadAllEleveurs() {
         if (!supabase) return;
-        supabase.from('eleveurs').select('*').eq('is_active', true).order('nom').then(function(res) {
+        supabase.from('eleveurs').select('*').eq('is_active', true).order('nom').then(function(r) {
             var sel = $('selEleveur');
             sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-            (res.data || []).forEach(function(e) {
+            (r.data || []).forEach(function(e) {
                 var opt = document.createElement('option');
-                opt.value = e.id;
-                opt.setAttribute('data-json', JSON.stringify(e));
+                opt.value = e.id; opt.setAttribute('data-json', JSON.stringify(e));
                 opt.textContent = e.nom + ' ' + (e.prenom || '') + ' (' + e.code_eleveur + ')';
                 sel.appendChild(opt);
             });
@@ -574,15 +553,14 @@
     
     function loadSitesForEleveur(eleveurId) {
         if (!supabase || !eleveurId) return;
-        supabase.from('sites').select('*').eq('eleveur_id', eleveurId).eq('is_active', true).order('nom').then(function(res) {
+        supabase.from('sites').select('*').eq('eleveur_id', eleveurId).eq('is_active', true).order('nom').then(function(r) {
             var sel = $('selSite');
             sel.innerHTML = '<option value="">-- Sélectionner --</option>';
             sel.disabled = false;
-            var sites = res.data || [];
+            var sites = r.data || [];
             sites.forEach(function(s) {
                 var opt = document.createElement('option');
-                opt.value = s.id;
-                opt.setAttribute('data-json', JSON.stringify(s));
+                opt.value = s.id; opt.setAttribute('data-json', JSON.stringify(s));
                 opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
                 sel.appendChild(opt);
             });
@@ -591,48 +569,59 @@
     }
     
     function onEleveurChange() {
-        var id = $('selEleveur').value;
+        var sel = $('selEleveur');
+        var opt = sel.options[sel.selectedIndex];
+        if (opt && opt.value) {
+            try { currentEleveur = JSON.parse(opt.getAttribute('data-json')); } catch(e) {}
+        }
         resetSelectors('site');
-        if (id) loadSitesForEleveur(id);
+        if (sel.value) loadSitesForEleveur(sel.value);
     }
     
     function onSiteChange() {
-        var id = $('selSite').value;
+        var sel = $('selSite');
+        var opt = sel.options[sel.selectedIndex];
+        if (opt && opt.value) {
+            try { currentSite = JSON.parse(opt.getAttribute('data-json')); } catch(e) {}
+        }
         resetSelectors('batiment');
-        if (!id) return;
-        supabase.from('batiments').select('*').eq('site_id', id).eq('is_active', true).order('nom').then(function(res) {
-            var sel = $('selBatiment');
-            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-            sel.disabled = false;
-            var bats = res.data || [];
+        if (!sel.value) return;
+        supabase.from('batiments').select('*').eq('site_id', sel.value).eq('is_active', true).order('nom').then(function(r) {
+            var s = $('selBatiment');
+            s.innerHTML = '<option value="">-- Sélectionner --</option>';
+            s.disabled = false;
+            var bats = r.data || [];
             bats.forEach(function(b) {
                 var opt = document.createElement('option');
-                opt.value = b.id;
+                opt.value = b.id; opt.setAttribute('data-json', JSON.stringify(b));
                 opt.textContent = b.nom + (b.capacite ? ' (cap.' + b.capacite + ')' : '');
-                sel.appendChild(opt);
+                s.appendChild(opt);
             });
-            if (bats.length === 1) { sel.value = bats[0].id; onBatimentChange(); }
+            if (bats.length === 1) { s.value = bats[0].id; onBatimentChange(); }
         });
     }
     
     function onBatimentChange() {
-        var id = $('selBatiment').value;
+        var sel = $('selBatiment');
+        var opt = sel.options[sel.selectedIndex];
+        if (opt && opt.value) {
+            try { currentBatiment = JSON.parse(opt.getAttribute('data-json')); } catch(e) {}
+        }
         resetSelectors('lot');
-        if (!id) return;
-        supabase.from('lots').select('*, souches(nom)').eq('batiment_id', id).order('date_mise_place', { ascending: false }).then(function(res) {
-            var sel = $('selLot');
-            sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-            sel.disabled = false;
-            var lots = res.data || [];
+        if (!sel.value) return;
+        supabase.from('lots').select('*, souches(nom)').eq('batiment_id', sel.value).order('date_mise_place', { ascending: false }).then(function(r) {
+            var s = $('selLot');
+            s.innerHTML = '<option value="">-- Sélectionner --</option>';
+            s.disabled = false;
+            var lots = r.data || [];
             lots.forEach(function(l) {
                 var opt = document.createElement('option');
-                opt.value = l.id;
-                opt.setAttribute('data-json', JSON.stringify(l));
+                opt.value = l.id; opt.setAttribute('data-json', JSON.stringify(l));
                 opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot + ' - ' + (l.souches ? l.souches.nom : 'N/A');
-                sel.appendChild(opt);
+                s.appendChild(opt);
             });
             var actif = lots.find(function(l) { return l.statut === 'actif'; });
-            if (actif) { sel.value = actif.id; onLotChange(); }
+            if (actif) { s.value = actif.id; onLotChange(); }
         });
     }
     
@@ -676,8 +665,7 @@
             standardsData.mortalite = r[1].data || [];
             standardsData.aliment = r[2].data || [];
             standardsData.oeufs = r[3].data || [];
-            showDataPanels();
-            updateUI();
+            showDataPanels(); updateUI();
         });
     }
     
@@ -702,6 +690,7 @@
         $('controlsGrid').classList.add('show');
         $('chartCard').classList.add('show');
         $('statsRow').classList.add('show');
+        $('exportSection').classList.add('show');
         $('emptyState').classList.remove('show');
     }
     
@@ -710,12 +699,11 @@
         $('controlsGrid').classList.remove('show');
         $('chartCard').classList.remove('show');
         $('statsRow').classList.remove('show');
+        $('exportSection').classList.remove('show');
         $('emptyState').classList.add('show');
     }
     
-    // =====================================================
-    // UI UPDATE
-    // =====================================================
+    // UI
     function updateUI() { updateChart(); updateStats(); updateLegend(); }
     
     function updateStats() {
@@ -770,11 +758,7 @@
         var d1 = filterByPeriod(lotData[t1] || []);
         var std1 = standardsData[t1] || [];
         
-        if (d1.length === 0) {
-            $('chartTitle').textContent = 'Aucune donnée';
-            $('chartSubtitle').textContent = '';
-            return;
-        }
+        if (d1.length === 0) { $('chartTitle').textContent = 'Aucune donnée'; $('chartSubtitle').textContent = ''; return; }
         
         var labels = d1.map(function(d) { return 'J' + d.jour_age; });
         var jours = d1.map(function(d) { return d.jour_age; });
@@ -799,22 +783,19 @@
             datasets.push({ label: '_z1maxL', data: max1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
         }
         
-        // Y1 courbe
         var v1 = d1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
         datasets.push({ label: ind1.label, data: v1, borderColor: ind1.color, backgroundColor: ind1.color, borderWidth: 3, tension: 0.35, fill: false, pointRadius: v1.length > 50 ? 0 : 4, yAxisID: 'y1', order: 1 });
         
         var scales = {
-            x: { grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours', color: '#64748b' } },
+            x: { grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours du cycle', color: '#64748b' } },
             y1: { type: 'linear', position: 'left', grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: ind1.color }, title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color } }
         };
         
-        // Y2
         if (t2) {
             var ind2 = INDICATORS[t2];
             var d2 = filterByPeriod(lotData[t2] || []);
             var std2 = standardsData[t2] || [];
             
-            // Y2 Zone
             var min2 = [], max2 = [];
             jours.forEach(function(j) {
                 var s = std2.find(function(x) { return x.jour_age === j; });
@@ -827,7 +808,6 @@
                 datasets.push({ label: '_z2maxL', data: max2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
             }
             
-            // Y2 courbe
             var v2 = jours.map(function(j) {
                 var d = d2.find(function(x) { return x.jour_age === j; });
                 return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
@@ -838,8 +818,7 @@
         }
         
         mainChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: datasets },
+            type: 'line', data: { labels: labels, datasets: datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
@@ -860,25 +839,223 @@
         if (idx === 0) { if (selectedIndicators.length > 1) selectedIndicators = [selectedIndicators[1]]; }
         else if (idx === 1) { selectedIndicators = [selectedIndicators[0]]; }
         else { if (selectedIndicators.length < 2) selectedIndicators.push(type); else selectedIndicators[1] = type; }
-        updateIndicatorButtons();
-        updateUI();
+        updateIndicatorButtons(); updateUI();
     }
     
     function updateIndicatorButtons() {
         document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
             var type = btn.getAttribute('data-type'), tag = btn.querySelector('.axis-tag');
-            btn.classList.remove('selected-y1', 'selected-y2');
-            tag.textContent = '';
+            btn.classList.remove('selected-y1', 'selected-y2'); tag.textContent = '';
             if (selectedIndicators[0] === type) { btn.classList.add('selected-y1'); tag.textContent = 'Y1'; }
             else if (selectedIndicators[1] === type) { btn.classList.add('selected-y2'); tag.textContent = 'Y2'; }
         });
     }
     
     // =====================================================
-    // INITIALISATION
+    // EXPORT PDF
     // =====================================================
+    function exportPDF() {
+        showLoading('Génération du PDF...');
+        
+        setTimeout(function() {
+            try {
+                var jsPDF = window.jspdf.jsPDF;
+                var doc = new jsPDF('landscape', 'mm', 'a4');
+                var pageWidth = doc.internal.pageSize.getWidth();
+                var pageHeight = doc.internal.pageSize.getHeight();
+                var margin = 15;
+                
+                // Fond sombre
+                doc.setFillColor(15, 23, 42);
+                doc.rect(0, 0, pageWidth, pageHeight, 'F');
+                
+                // Titre
+                doc.setTextColor(248, 250, 252);
+                doc.setFontSize(24);
+                doc.text('Rapport de Suivi Production Avicole', margin, 20);
+                
+                // Date
+                doc.setFontSize(10);
+                doc.setTextColor(148, 163, 184);
+                var now = new Date();
+                doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, 28);
+                
+                // Informations éleveur
+                doc.setFillColor(30, 41, 59);
+                doc.roundedRect(margin, 35, 80, 30, 3, 3, 'F');
+                doc.setTextColor(148, 163, 184);
+                doc.setFontSize(8);
+                doc.text('INFORMATIONS ÉLEVEUR', margin + 5, 42);
+                doc.setTextColor(248, 250, 252);
+                doc.setFontSize(11);
+                var eleveurNom = currentEleveur ? (currentEleveur.nom + ' ' + (currentEleveur.prenom || '')) : '--';
+                doc.text(eleveurNom, margin + 5, 50);
+                doc.setFontSize(9);
+                doc.setTextColor(34, 197, 94);
+                var eleveurCode = currentEleveur ? ('Code: ' + currentEleveur.code_eleveur) : '';
+                doc.text(eleveurCode, margin + 5, 57);
+                
+                // Informations lot
+                doc.setFillColor(30, 41, 59);
+                doc.roundedRect(margin + 85, 35, 80, 30, 3, 3, 'F');
+                doc.setTextColor(148, 163, 184);
+                doc.setFontSize(8);
+                doc.text('INFORMATIONS DU LOT', margin + 90, 42);
+                doc.setTextColor(248, 250, 252);
+                doc.setFontSize(11);
+                var lotInfo = currentLotInfo ? (currentLotInfo.code_lot + ' - ' + (currentBatiment ? currentBatiment.nom : '')) : '--';
+                doc.text(lotInfo, margin + 90, 50);
+                doc.setFontSize(9);
+                doc.setTextColor(148, 163, 184);
+                var lotDetails = 'Effectif: ' + (currentLotInfo && currentLotInfo.effectif_depart ? currentLotInfo.effectif_depart.toLocaleString('fr-FR') : '--');
+                lotDetails += ' | Souche: ' + (currentLotInfo && currentLotInfo.souches ? currentLotInfo.souches.nom : '--');
+                doc.text(lotDetails, margin + 90, 57);
+                
+                // Indicateurs analysés
+                doc.setFillColor(30, 41, 59);
+                doc.roundedRect(margin + 170, 35, 80, 30, 3, 3, 'F');
+                doc.setTextColor(148, 163, 184);
+                doc.setFontSize(8);
+                doc.text('INDICATEURS ANALYSÉS', margin + 175, 42);
+                doc.setTextColor(59, 130, 246);
+                doc.setFontSize(11);
+                var indicateursText = selectedIndicators.map(function(t) { return INDICATORS[t].label; }).join(', ');
+                doc.text(indicateursText, margin + 175, 50);
+                doc.setFontSize(9);
+                doc.setTextColor(148, 163, 184);
+                var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Cycle complet' : currentPeriod + ' jours');
+                doc.text(periodeText, margin + 175, 57);
+                
+                // Valeurs actuelles
+                var t1 = selectedIndicators[0];
+                var ind1 = INDICATORS[t1];
+                var d1 = lotData[t1] || [];
+                var lastVal = d1.length > 0 ? Math.round(parseFloat(d1[d1.length - 1][ind1.dataField]) || 0) : '--';
+                
+                doc.setFillColor(30, 41, 59);
+                doc.roundedRect(pageWidth - margin - 50, 35, 50, 30, 3, 3, 'F');
+                doc.setTextColor(148, 163, 184);
+                doc.setFontSize(8);
+                doc.text('VALEUR ACTUELLE', pageWidth - margin - 45, 42);
+                doc.setTextColor(34, 197, 94);
+                doc.setFontSize(18);
+                doc.text(lastVal + ' ' + ind1.unit, pageWidth - margin - 45, 55);
+                
+                // Graphique
+                var chartCanvas = $('mainChart');
+                if (chartCanvas) {
+                    var chartImage = chartCanvas.toDataURL('image/png', 1.0);
+                    
+                    // Fond pour le graphique
+                    doc.setFillColor(30, 41, 59);
+                    doc.roundedRect(margin, 70, pageWidth - 2*margin, pageHeight - 85, 3, 3, 'F');
+                    
+                    // Titre graphique
+                    doc.setTextColor(248, 250, 252);
+                    doc.setFontSize(14);
+                    doc.text($('chartTitle').textContent, margin + 10, 82);
+                    
+                    // Image du graphique
+                    doc.addImage(chartImage, 'PNG', margin + 5, 88, pageWidth - 2*margin - 10, pageHeight - 105);
+                }
+                
+                // Pied de page
+                doc.setTextColor(100, 116, 139);
+                doc.setFontSize(8);
+                doc.text('Production Avicole v13 - ADOSI', margin, pageHeight - 5);
+                doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
+                
+                // Télécharger
+                var filename = 'Rapport_Avicole_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
+                doc.save(filename);
+                
+                hideLoading();
+            } catch (e) {
+                console.error('Erreur PDF:', e);
+                hideLoading();
+                alert('Erreur lors de la génération du PDF: ' + e.message);
+            }
+        }, 100);
+    }
+    
+    // =====================================================
+    // EXPORT EXCEL
+    // =====================================================
+    function exportExcel() {
+        showLoading('Génération du fichier Excel...');
+        
+        setTimeout(function() {
+            try {
+                var wb = XLSX.utils.book_new();
+                
+                // Feuille 1: Informations générales
+                var infoData = [
+                    ['Rapport de Suivi Production Avicole'],
+                    [''],
+                    ['Généré le', new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR')],
+                    [''],
+                    ['INFORMATIONS ÉLEVEUR'],
+                    ['Nom', currentEleveur ? (currentEleveur.nom + ' ' + (currentEleveur.prenom || '')) : '--'],
+                    ['Code', currentEleveur ? currentEleveur.code_eleveur : '--'],
+                    ['Raison sociale', currentEleveur ? (currentEleveur.raison_sociale || '--') : '--'],
+                    [''],
+                    ['INFORMATIONS LOT'],
+                    ['Code lot', currentLotInfo ? currentLotInfo.code_lot : '--'],
+                    ['Bâtiment', currentBatiment ? currentBatiment.nom : '--'],
+                    ['Site', currentSite ? currentSite.nom : '--'],
+                    ['Effectif départ', currentLotInfo ? currentLotInfo.effectif_depart : '--'],
+                    ['Souche', currentLotInfo && currentLotInfo.souches ? currentLotInfo.souches.nom : '--'],
+                    ['Date mise en place', currentLotInfo ? currentLotInfo.date_mise_place : '--'],
+                    ['Statut', currentLotInfo ? currentLotInfo.statut : '--']
+                ];
+                var wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+                XLSX.utils.book_append_sheet(wb, wsInfo, 'Informations');
+                
+                // Feuille 2: Données du graphique
+                selectedIndicators.forEach(function(type, idx) {
+                    var ind = INDICATORS[type];
+                    var data = filterByPeriod(lotData[type] || []);
+                    var std = standardsData[type] || [];
+                    
+                    if (data.length > 0) {
+                        var sheetData = [
+                            [ind.label + ' (' + ind.unit + ')'],
+                            [''],
+                            ['Jour', 'Valeur', 'Standard Min', 'Standard Max', 'Écart vs Cible']
+                        ];
+                        
+                        data.forEach(function(d) {
+                            var jour = d.jour_age;
+                            var val = parseFloat(d[ind.dataField]) || 0;
+                            var stdRow = std.find(function(s) { return s.jour_age === jour; });
+                            var stdMin = stdRow ? (parseFloat(stdRow[ind.stdMinField]) || '') : '';
+                            var stdMax = stdRow ? (parseFloat(stdRow[ind.stdMaxField]) || '') : '';
+                            var cible = stdRow ? ((parseFloat(stdRow[ind.stdMinField]) + parseFloat(stdRow[ind.stdMaxField])) / 2) : null;
+                            var ecart = cible ? (((val - cible) / cible) * 100).toFixed(1) + '%' : '';
+                            
+                            sheetData.push([jour, val, stdMin, stdMax, ecart]);
+                        });
+                        
+                        var ws = XLSX.utils.aoa_to_sheet(sheetData);
+                        XLSX.utils.book_append_sheet(wb, ws, ind.label.substring(0, 31));
+                    }
+                });
+                
+                // Télécharger
+                var filename = 'Donnees_Avicole_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+                XLSX.writeFile(wb, filename);
+                
+                hideLoading();
+            } catch (e) {
+                console.error('Erreur Excel:', e);
+                hideLoading();
+                alert('Erreur lors de la génération Excel: ' + e.message);
+            }
+        }, 100);
+    }
+    
+    // Init
     document.addEventListener('DOMContentLoaded', function() {
-        // Charger la configuration depuis le serveur
         loadConfig();
         
         $('loginBtn').addEventListener('click', doLogin);
@@ -899,6 +1076,10 @@
                 updateUI();
             });
         });
+        
+        // Export buttons
+        $('btnExportPDF').addEventListener('click', exportPDF);
+        $('btnExportExcel').addEventListener('click', exportExcel);
     });
 })();
 </script>
