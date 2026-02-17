@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>🐔 Avicole v13.4</title>
+    <title>🐔 Avicole v13.5</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <!-- Librairies pour export PDF et Excel -->
@@ -396,7 +396,7 @@
             </div>
         </div>
         
-        <div class="footer">Production Avicole v13.4 - ADOSI</div>
+        <div class="footer">Production Avicole v13.5 - ADOSI</div>
     </div>
 </div>
 
@@ -627,29 +627,23 @@
         resetSelectors('lot');
         if (!sel.value) return;
         
-        // Requête avec jointure sur souches (maintenant que la FK existe)
+        // Charger les lots simplement (sans jointure)
         supabase.from('lots')
-            .select('*, souches(id, nom, type)')
+            .select('*')
             .eq('batiment_id', sel.value)
             .order('date_mise_place', { ascending: false })
             .then(function(r) {
-                console.log('Lots avec souches:', r.data);
+                console.log('Lots chargés:', r.data);
                 var s = $('selLot');
                 s.innerHTML = '<option value="">-- Sélectionner --</option>';
                 s.disabled = false;
                 var lots = r.data || [];
                 
                 lots.forEach(function(l) {
-                    // Ajouter souche_nom pour faciliter l'accès
-                    if (l.souches && l.souches.nom) {
-                        l.souche_nom = l.souches.nom;
-                    }
-                    
                     var opt = document.createElement('option');
                     opt.value = l.id; 
                     opt.setAttribute('data-json', JSON.stringify(l));
-                    var soucheName = l.souche_nom || 'N/A';
-                    opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot + ' - ' + soucheName;
+                    opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot;
                     s.appendChild(opt);
                 });
                 
@@ -672,22 +666,35 @@
         console.log('Lot sélectionné:', lot);
         
         $('lotCode').textContent = lot.code_lot || '--';
-        
-        // Affichage de la souche - vérifier plusieurs formats possibles
-        var soucheName = '--';
-        if (lot.souche_nom) {
-            soucheName = lot.souche_nom;
-        } else if (lot.souches && lot.souches.nom) {
-            soucheName = lot.souches.nom;
-        }
-        console.log('Souche affichée:', soucheName);
-        $('lotSouche').textContent = soucheName;
-        
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
         $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
         $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
         $('lotStatut').textContent = lot.statut || '--';
         
+        // Charger la souche séparément si souche_id existe
+        if (lot.souche_id) {
+            supabase.from('souches')
+                .select('id, nom, type')
+                .eq('id', lot.souche_id)
+                .single()
+                .then(function(soucheRes) {
+                    console.log('Souche chargée:', soucheRes.data);
+                    if (soucheRes.data && soucheRes.data.nom) {
+                        currentLotInfo.souche_nom = soucheRes.data.nom;
+                        $('lotSouche').textContent = soucheRes.data.nom;
+                    } else {
+                        $('lotSouche').textContent = '--';
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Erreur chargement souche:', err);
+                    $('lotSouche').textContent = '--';
+                });
+        } else {
+            $('lotSouche').textContent = '--';
+        }
+        
+        // Charger les données du lot
         Promise.all([
             supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
