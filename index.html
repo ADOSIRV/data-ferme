@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>🐔 Avicole v13.1</title>
+    <title>🐔 Avicole v13.2</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <!-- Librairies pour export PDF et Excel -->
@@ -396,7 +396,7 @@
             </div>
         </div>
         
-        <div class="footer">Production Avicole v13.1 - ADOSI</div>
+        <div class="footer">Production Avicole v13.2 - ADOSI</div>
     </div>
 </div>
 
@@ -626,31 +626,58 @@
         }
         resetSelectors('lot');
         if (!sel.value) return;
-        supabase.from('lots').select('*, souches(nom)').eq('batiment_id', sel.value).order('date_mise_place', { ascending: false }).then(function(r) {
-            var s = $('selLot');
-            s.innerHTML = '<option value="">-- Sélectionner --</option>';
-            s.disabled = false;
-            var lots = r.data || [];
-            lots.forEach(function(l) {
-                var opt = document.createElement('option');
-                opt.value = l.id; opt.setAttribute('data-json', JSON.stringify(l));
-                opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot + ' - ' + (l.souches ? l.souches.nom : 'N/A');
-                s.appendChild(opt);
+        
+        // Requête avec jointure explicite sur souches
+        supabase.from('lots')
+            .select('*, souches:souche_id(id, nom, type)')
+            .eq('batiment_id', sel.value)
+            .order('date_mise_place', { ascending: false })
+            .then(function(r) {
+                console.log('Lots chargés:', r.data);
+                var s = $('selLot');
+                s.innerHTML = '<option value="">-- Sélectionner --</option>';
+                s.disabled = false;
+                var lots = r.data || [];
+                lots.forEach(function(l) {
+                    var opt = document.createElement('option');
+                    opt.value = l.id; 
+                    opt.setAttribute('data-json', JSON.stringify(l));
+                    var soucheName = (l.souches && l.souches.nom) ? l.souches.nom : 'N/A';
+                    opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot + ' - ' + soucheName;
+                    s.appendChild(opt);
+                });
+                var actif = lots.find(function(l) { return l.statut === 'actif'; });
+                if (actif) { s.value = actif.id; onLotChange(); }
+            })
+            .catch(function(err) {
+                console.error('Erreur chargement lots:', err);
             });
-            var actif = lots.find(function(l) { return l.statut === 'actif'; });
-            if (actif) { s.value = actif.id; onLotChange(); }
-        });
     }
     
     function onLotChange() {
         var id = $('selLot').value;
         if (!id) { hideDataPanels(); return; }
         var opt = document.querySelector('#selLot option[value="' + id + '"]');
-        var lot = {}; try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
+        var lot = {}; 
+        try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
         currentLotInfo = lot;
         
+        console.log('Lot sélectionné:', lot);
+        console.log('Souche:', lot.souches);
+        
         $('lotCode').textContent = lot.code_lot || '--';
-        $('lotSouche').textContent = (lot.souches && lot.souches.nom) ? lot.souches.nom : '--';
+        
+        // Gestion de la souche - plusieurs formats possibles
+        var soucheName = '--';
+        if (lot.souches) {
+            if (typeof lot.souches === 'object' && lot.souches.nom) {
+                soucheName = lot.souches.nom;
+            } else if (typeof lot.souches === 'string') {
+                soucheName = lot.souches;
+            }
+        }
+        $('lotSouche').textContent = soucheName;
+        
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
         $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
         $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
@@ -924,8 +951,21 @@
                 doc.text(lotInfo, margin + 90, 50);
                 doc.setFontSize(9);
                 doc.setTextColor(148, 163, 184);
+                // Fonction helper pour récupérer le nom de la souche
+                function getSoucheName() {
+                    if (!currentLotInfo) return '--';
+                    if (currentLotInfo.souches) {
+                        if (typeof currentLotInfo.souches === 'object' && currentLotInfo.souches.nom) {
+                            return currentLotInfo.souches.nom;
+                        } else if (typeof currentLotInfo.souches === 'string') {
+                            return currentLotInfo.souches;
+                        }
+                    }
+                    return '--';
+                }
+                
                 var lotDetails = 'Effectif: ' + (currentLotInfo && currentLotInfo.effectif_depart ? currentLotInfo.effectif_depart.toLocaleString('fr-FR') : '--');
-                lotDetails += ' | Souche: ' + (currentLotInfo && currentLotInfo.souches ? currentLotInfo.souches.nom : '--');
+                lotDetails += ' | Souche: ' + getSoucheName();
                 doc.text(lotDetails, margin + 90, 57);
                 
                 // Indicateurs analysés
@@ -1006,6 +1046,19 @@
                 var wb = XLSX.utils.book_new();
                 
                 // Feuille 1: Informations générales
+                // Fonction helper pour récupérer le nom de la souche
+                function getSoucheNameExcel() {
+                    if (!currentLotInfo) return '--';
+                    if (currentLotInfo.souches) {
+                        if (typeof currentLotInfo.souches === 'object' && currentLotInfo.souches.nom) {
+                            return currentLotInfo.souches.nom;
+                        } else if (typeof currentLotInfo.souches === 'string') {
+                            return currentLotInfo.souches;
+                        }
+                    }
+                    return '--';
+                }
+                
                 var infoData = [
                     ['Rapport de Suivi Production Avicole'],
                     [''],
@@ -1021,7 +1074,7 @@
                     ['Bâtiment', currentBatiment ? currentBatiment.nom : '--'],
                     ['Site', currentSite ? currentSite.nom : '--'],
                     ['Effectif départ', currentLotInfo ? currentLotInfo.effectif_depart : '--'],
-                    ['Souche', currentLotInfo && currentLotInfo.souches ? currentLotInfo.souches.nom : '--'],
+                    ['Souche', getSoucheNameExcel()],
                     ['Date mise en place', currentLotInfo ? currentLotInfo.date_mise_place : '--'],
                     ['Statut', currentLotInfo ? currentLotInfo.statut : '--']
                 ];
