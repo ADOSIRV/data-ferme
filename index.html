@@ -636,7 +636,7 @@
             </div>
         </div>
         
-        <div class="footer">Dataferme v15.2 - ADOSI</div>
+        <div class="footer">Dataferme v15.4 - ADOSI</div>
     </div>
 </div>
 
@@ -1353,6 +1353,9 @@
         
         var datasets = [];
         
+        // Stocker les données de tolérance pour le tooltip
+        var toleranceData = { y1: { min: [], max: [] }, y2: { min: [], max: [] } };
+        
         // Y1 Zone
         var min1 = [], max1 = [];
         jours.forEach(function(j) {
@@ -1360,6 +1363,9 @@
             min1.push(s ? (parseFloat(s[ind1.stdMinField]) || null) : null);
             max1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
         });
+        toleranceData.y1.min = min1;
+        toleranceData.y1.max = max1;
+        
         if (max1.some(function(v) { return v !== null; })) {
             datasets.push({ label: '_z1max', data: max1, borderColor: 'transparent', backgroundColor: ind1.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y1', order: 100 });
             datasets.push({ label: '_z1min', data: min1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
@@ -1367,7 +1373,22 @@
         }
         
         var v1 = d1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
-        datasets.push({ label: ind1.label, data: v1, borderColor: ind1.color, backgroundColor: ind1.color, borderWidth: 3, tension: 0.35, fill: false, pointRadius: v1.length > 50 ? 0 : 4, yAxisID: 'y1', order: 1 });
+        datasets.push({ 
+            label: ind1.label, 
+            data: v1, 
+            borderColor: ind1.color, 
+            backgroundColor: ind1.color, 
+            borderWidth: 2, 
+            tension: 0.35, 
+            fill: false, 
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            pointBackgroundColor: ind1.color,
+            pointBorderColor: ind1.color,
+            pointBorderWidth: 0,
+            yAxisID: 'y1', 
+            order: 1 
+        });
         
         var scales = {
             x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(71,85,105,0.3)' }, ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text').trim() || '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours du cycle', color: getComputedStyle(document.documentElement).getPropertyValue('--text-dim').trim() || '#64748b' } },
@@ -1385,6 +1406,9 @@
                 min2.push(s ? (parseFloat(s[ind2.stdMinField]) || null) : null);
                 max2.push(s ? (parseFloat(s[ind2.stdMaxField]) || null) : null);
             });
+            toleranceData.y2.min = min2;
+            toleranceData.y2.max = max2;
+            
             if (max2.some(function(v) { return v !== null; })) {
                 datasets.push({ label: '_z2max', data: max2, borderColor: 'transparent', backgroundColor: ind2.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y2', order: 98 });
                 datasets.push({ label: '_z2min', data: min2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
@@ -1395,17 +1419,111 @@
                 var d = d2.find(function(x) { return x.jour_age === j; });
                 return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
             });
-            datasets.push({ label: ind2.label, data: v2, borderColor: ind2.color, backgroundColor: ind2.color, borderWidth: 3, tension: 0.35, fill: false, pointRadius: v2.filter(function(x){return x!==null;}).length > 50 ? 0 : 4, yAxisID: 'y2', order: 2 });
+            datasets.push({ 
+                label: ind2.label, 
+                data: v2, 
+                borderColor: ind2.color, 
+                backgroundColor: ind2.color, 
+                borderWidth: 2, 
+                tension: 0.35, 
+                fill: false, 
+                pointRadius: 2,
+                pointHoverRadius: 5,
+                pointBackgroundColor: ind2.color,
+                pointBorderColor: ind2.color,
+                pointBorderWidth: 0,
+                yAxisID: 'y2', 
+                order: 2 
+            });
             
             scales.y2 = { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: ind2.color }, title: { display: true, text: ind2.label + ' (' + ind2.unit + ')', color: ind2.color } };
         }
         
+        // Configuration du tooltip personnalisé
+        var tooltipConfig = {
+            enabled: true,
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#f8fafc',
+            titleFont: { size: 14, weight: 'bold' },
+            bodyColor: '#e2e8f0',
+            bodyFont: { size: 12 },
+            borderColor: 'rgba(71, 85, 105, 0.8)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 12,
+            displayColors: true,
+            boxWidth: 12,
+            boxHeight: 12,
+            boxPadding: 6,
+            usePointStyle: true,
+            filter: function(tooltipItem) {
+                return !tooltipItem.dataset.label.startsWith('_');
+            },
+            callbacks: {
+                title: function(tooltipItems) {
+                    return '📅 ' + tooltipItems[0].label;
+                },
+                label: function(context) {
+                    var value = context.parsed.y;
+                    var index = context.dataIndex;
+                    
+                    // Déterminer l'indicateur et l'unité
+                    var isY1 = context.dataset.yAxisID === 'y1';
+                    var ind = isY1 ? ind1 : (t2 ? INDICATORS[t2] : null);
+                    var unit = ind ? ind.unit : '';
+                    var label = context.dataset.label;
+                    
+                    // Valeur principale
+                    return ' ' + label + ': ' + value.toLocaleString('fr-FR') + ' ' + unit;
+                },
+                afterLabel: function(context) {
+                    var index = context.dataIndex;
+                    var isY1 = context.dataset.yAxisID === 'y1';
+                    var ind = isY1 ? ind1 : (t2 ? INDICATORS[t2] : null);
+                    var unit = ind ? ind.unit : '';
+                    var value = context.parsed.y;
+                    
+                    // Tolérance
+                    var tolMin, tolMax;
+                    if (isY1) {
+                        tolMin = toleranceData.y1.min[index];
+                        tolMax = toleranceData.y1.max[index];
+                    } else {
+                        tolMin = toleranceData.y2.min[index];
+                        tolMax = toleranceData.y2.max[index];
+                    }
+                    
+                    var lines = [];
+                    if (tolMin !== null && tolMax !== null) {
+                        lines.push('   ↳ Min: ' + tolMin.toLocaleString('fr-FR') + ' ' + unit);
+                        lines.push('   ↳ Max: ' + tolMax.toLocaleString('fr-FR') + ' ' + unit);
+                        
+                        // Indicateur de position
+                        if (value < tolMin) {
+                            lines.push('   ⚠️ Sous le seuil minimum');
+                        } else if (value > tolMax) {
+                            lines.push('   ⚠️ Au-dessus du seuil maximum');
+                        } else {
+                            lines.push('   ✅ Dans la zone de tolérance');
+                        }
+                    }
+                    
+                    return lines;
+                }
+            }
+        };
+        
         mainChart = new Chart(ctx, {
-            type: 'line', data: { labels: labels, datasets: datasets },
+            type: 'line', 
+            data: { labels: labels, datasets: datasets },
             options: {
-                responsive: true, maintainAspectRatio: false,
+                responsive: true, 
+                maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { display: false }, tooltip: { filter: function(i) { return !i.dataset.label.startsWith('_'); } } },
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: tooltipConfig
+                },
                 scales: scales
             }
         });
@@ -1568,7 +1686,7 @@
                 
                 doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
-                doc.text('Dataferme v15.2 - ADOSI', margin, pageHeight - 5);
+                doc.text('Dataferme v15.4 - ADOSI', margin, pageHeight - 5);
                 doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
                 
                 var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
