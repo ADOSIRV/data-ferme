@@ -210,10 +210,10 @@
         .indicator-btn:hover { border-color: var(--text-dim); background: var(--bg-input); }
         .indicator-btn .icon { font-size: 1rem; }
         .indicator-btn .axis-tag { font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; background: var(--bg-input); color: var(--text-dim); min-width: 24px; text-align: center; }
-        .indicator-btn.selected-y1 { border-color: var(--green); background: var(--green-light); color: var(--green); }
-        .indicator-btn.selected-y1 .axis-tag { background: var(--green); color: white; }
-        .indicator-btn.selected-y2 { border-color: var(--orange); background: var(--orange-light); color: var(--orange); }
-        .indicator-btn.selected-y2 .axis-tag { background: var(--orange); color: white; }
+        .indicator-btn.selected-y1 { border-color: #2563eb; background: rgba(37,99,235,0.15); color: #2563eb; }
+        .indicator-btn.selected-y1 .axis-tag { background: #2563eb; color: white; }
+        .indicator-btn.selected-y2 { border-color: #e11d48; background: rgba(225,29,72,0.15); color: #e11d48; }
+        .indicator-btn.selected-y2 .axis-tag { background: #e11d48; color: white; }
         
         .period-btns { display: flex; gap: 0.5rem; }
         .period-btn { flex: 1; padding: 0.7rem; border: 1px solid var(--border); background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.85rem; color: var(--text-dim); }
@@ -636,7 +636,7 @@
             </div>
         </div>
         
-        <div class="footer">Dataferme v15 - ADOSI</div>
+        <div class="footer">Dataferme v15.2 - ADOSI</div>
     </div>
 </div>
 
@@ -661,10 +661,10 @@
     var allEleveursList = [];
     
     var INDICATORS = {
-        poids: { label: 'Croissance en poids', unit: 'g', color: '#22c55e', colorArea: 'rgba(34,197,94,0.3)', colorBorder: 'rgba(34,197,94,0.6)', icon: '📈', dataField: 'poids_moyen', stdMinField: 'poids_min', stdMaxField: 'poids_max' },
-        mortalite: { label: 'Mortalité', unit: 'morts', color: '#f97316', colorArea: 'rgba(249,115,22,0.3)', colorBorder: 'rgba(249,115,22,0.6)', icon: '⚠️', dataField: 'nombre_morts', stdMinField: 'mortalite_min', stdMaxField: 'mortalite_max' },
-        aliment: { label: 'Conso. aliment', unit: 'g/j', color: '#3b82f6', colorArea: 'rgba(59,130,246,0.3)', colorBorder: 'rgba(59,130,246,0.6)', icon: '🌾', dataField: 'conso_par_animal', stdMinField: 'conso_min', stdMaxField: 'conso_max' },
-        oeufs: { label: 'Œufs pondus', unit: 'œufs', color: '#a855f7', colorArea: 'rgba(168,85,247,0.3)', colorBorder: 'rgba(168,85,247,0.6)', icon: '🥚', dataField: 'nombre_oeufs', stdMinField: 'taux_ponte_min', stdMaxField: 'taux_ponte_max' }
+        poids: { label: 'Croissance en poids', unit: 'g', color: '#2563eb', colorArea: 'rgba(37,99,235,0.2)', colorBorder: 'rgba(37,99,235,0.5)', icon: '📈', dataField: 'poids_moyen', stdMinField: 'poids_min', stdMaxField: 'poids_max' },
+        mortalite: { label: 'Mortalité', unit: 'morts', color: '#e11d48', colorArea: 'rgba(225,29,72,0.2)', colorBorder: 'rgba(225,29,72,0.5)', icon: '⚠️', dataField: 'nombre_morts', stdMinField: 'mortalite_min', stdMaxField: 'mortalite_max' },
+        aliment: { label: 'Conso. aliment', unit: 'g/j', color: '#ea580c', colorArea: 'rgba(234,88,12,0.2)', colorBorder: 'rgba(234,88,12,0.5)', icon: '🌾', dataField: 'conso_par_animal', stdMinField: 'conso_min', stdMaxField: 'conso_max' },
+        oeufs: { label: 'Œufs pondus', unit: 'œufs', color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)', colorBorder: 'rgba(124,58,237,0.5)', icon: '🥚', dataField: 'nombre_oeufs', stdMinField: 'taux_ponte_min', stdMaxField: 'taux_ponte_max' }
     };
     
     function $(id) { return document.getElementById(id); }
@@ -1568,7 +1568,7 @@
                 
                 doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
-                doc.text('Dataferme v15 - ADOSI', margin, pageHeight - 5);
+                doc.text('Dataferme v15.2 - ADOSI', margin, pageHeight - 5);
                 doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
                 
                 var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
