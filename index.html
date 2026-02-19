@@ -15,7 +15,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
+        /* Theme Dark (default) */
+        :root, [data-theme="dark"] {
             --bg-dark: #0f172a;
             --bg-card: #1e293b;
             --bg-input: #334155;
@@ -36,6 +37,34 @@
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #475569;
+            --chart-grid: rgba(71,85,105,0.3);
+            --chart-text: #94a3b8;
+        }
+        
+        /* Theme Light */
+        [data-theme="light"] {
+            --bg-dark: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #e2e8f0;
+            --green: #16a34a;
+            --green-light: rgba(22,163,74,0.12);
+            --green-area: rgba(22,163,74,0.25);
+            --orange: #ea580c;
+            --orange-light: rgba(234,88,12,0.12);
+            --orange-area: rgba(234,88,12,0.25);
+            --blue: #2563eb;
+            --blue-light: rgba(37,99,235,0.12);
+            --blue-area: rgba(37,99,235,0.25);
+            --purple: #9333ea;
+            --purple-light: rgba(147,51,234,0.12);
+            --purple-area: rgba(147,51,234,0.25);
+            --red: #dc2626;
+            --red-light: rgba(220,38,38,0.12);
+            --text: #1e293b;
+            --text-dim: #64748b;
+            --border: #cbd5e1;
+            --chart-grid: rgba(148,163,184,0.3);
+            --chart-text: #64748b;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; }
@@ -78,6 +107,22 @@
         .session-role { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
         .session-role.eleveur { background: var(--green-light); color: var(--green); }
         .session-role.admin { background: var(--orange-light); color: var(--orange); }
+        
+        /* Theme toggle button */
+        .theme-toggle { 
+            background: var(--bg-input); 
+            border: 1px solid var(--border); 
+            border-radius: 50%; 
+            width: 32px; 
+            height: 32px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover { background: var(--border); transform: rotate(20deg); }
         .session-role.technicien { background: var(--blue-light); color: var(--blue); }
         .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; font-family: inherit; }
         .session-btn:hover { background: var(--border); }
@@ -326,6 +371,9 @@
 <!-- PAGE LOGIN -->
 <div class="page active" id="pageLogin">
     <div class="login-box">
+        <div style="position: absolute; top: 1rem; right: 1rem;">
+            <button class="theme-toggle" id="themeToggleLogin" title="Changer de thème">🌙</button>
+        </div>
         <div class="card" style="padding-top: 2rem;">
             <div style="text-align: center; margin-bottom: 1.5rem;">
                 <img src="Logo_Dataferme.png" alt="Dataferme" style="width: 240px; height: auto;">
@@ -347,6 +395,7 @@
 
 <!-- SESSION BAR -->
 <div class="session-bar" id="sessionBar">
+    <button class="theme-toggle" id="themeToggle" title="Changer de thème">🌙</button>
     <span class="session-user" id="sessionUser">👤</span>
     <span class="session-role" id="sessionRole">-</span>
     <button class="session-btn" id="btnLogout">Déconnexion</button>
@@ -587,7 +636,7 @@
             </div>
         </div>
         
-        <div class="footer">Dataferme v14.2 - ADOSI</div>
+        <div class="footer">Dataferme v15 - ADOSI</div>
     </div>
 </div>
 
@@ -1321,8 +1370,8 @@
         datasets.push({ label: ind1.label, data: v1, borderColor: ind1.color, backgroundColor: ind1.color, borderWidth: 3, tension: 0.35, fill: false, pointRadius: v1.length > 50 ? 0 : 4, yAxisID: 'y1', order: 1 });
         
         var scales = {
-            x: { grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours du cycle', color: '#64748b' } },
-            y1: { type: 'linear', position: 'left', grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: ind1.color }, title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color } }
+            x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(71,85,105,0.3)' }, ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text').trim() || '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours du cycle', color: getComputedStyle(document.documentElement).getPropertyValue('--text-dim').trim() || '#64748b' } },
+            y1: { type: 'linear', position: 'left', grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(71,85,105,0.3)' }, ticks: { color: ind1.color }, title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color } }
         };
         
         if (t2) {
@@ -1519,7 +1568,7 @@
                 
                 doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
-                doc.text('Dataferme v14.2 - ADOSI', margin, pageHeight - 5);
+                doc.text('Dataferme v15 - ADOSI', margin, pageHeight - 5);
                 doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
                 
                 var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
@@ -1605,10 +1654,59 @@
     }
     
     // =====================================================
+    // THEME MANAGEMENT
+    // =====================================================
+    function getCurrentTheme() {
+        return localStorage.getItem('dataferme-theme') || 'dark';
+    }
+    
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('dataferme-theme', theme);
+        
+        // Update toggle buttons icons
+        var icon = theme === 'dark' ? '🌙' : '☀️';
+        var toggleBtn = $('themeToggle');
+        var toggleBtnLogin = $('themeToggleLogin');
+        if (toggleBtn) toggleBtn.textContent = icon;
+        if (toggleBtnLogin) toggleBtnLogin.textContent = icon;
+        
+        // Update chart if exists
+        if (mainChart) {
+            updateChartTheme();
+        }
+    }
+    
+    function toggleTheme() {
+        var currentTheme = getCurrentTheme();
+        var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    }
+    
+    function updateChartTheme() {
+        // Redraw chart with new theme colors
+        if (mainChart && currentLotInfo) {
+            updateChart();
+        }
+    }
+    
+    function initTheme() {
+        var savedTheme = getCurrentTheme();
+        setTheme(savedTheme);
+    }
+    
+    // =====================================================
     // INIT
     // =====================================================
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize theme first
+        initTheme();
+        
         loadConfig();
+        
+        // Theme toggles
+        $('themeToggle').addEventListener('click', toggleTheme);
+        $('themeToggleLogin').addEventListener('click', toggleTheme);
         
         // Login
         $('loginBtn').addEventListener('click', doLogin);
