@@ -636,7 +636,7 @@
             </div>
         </div>
         
-        <div class="footer">Dataferme v15.6 - ADOSI</div>
+        <div class="footer">Dataferme v15.8 - ADOSI</div>
     </div>
 </div>
 
@@ -1558,340 +1558,186 @@
     function exportPDF() {
         showLoading('Génération du PDF...');
         
-        // Créer un canvas temporaire pour le graphique en mode light
-        createLightChartForPDF(function(chartImageBase64) {
-            // Charger le logo en base64
-            var logoImg = new Image();
-            logoImg.crossOrigin = 'Anonymous';
-            logoImg.onload = function() {
-                var canvas = document.createElement('canvas');
-                canvas.width = logoImg.width;
-                canvas.height = logoImg.height;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(logoImg, 0, 0);
-                var logoBase64 = canvas.toDataURL('image/png');
-                generatePDFWithLogo(logoBase64, chartImageBase64);
-            };
-            logoImg.onerror = function() {
-                generatePDFWithLogo(null, chartImageBase64);
-            };
-            logoImg.src = 'Logo_Dataferme.png';
-        });
-    }
-    
-    function createLightChartForPDF(callback) {
-        // Créer un canvas temporaire hors écran
-        var tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.width = '1200px';
-        tempContainer.style.height = '500px';
-        document.body.appendChild(tempContainer);
+        // Capturer le graphique actuel directement
+        var chartCanvas = $('mainChart');
+        var chartImageBase64 = null;
         
-        var tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 1200;
-        tempCanvas.height = 500;
-        tempContainer.appendChild(tempCanvas);
-        
-        var ctx = tempCanvas.getContext('2d');
-        
-        // Données du graphique
-        var t1 = selectedIndicators[0];
-        var t2 = selectedIndicators[1];
-        var ind1 = INDICATORS[t1];
-        var d1 = filterByPeriod(lotData[t1] || []);
-        var std1 = standardsData[t1] || [];
-        
-        if (d1.length === 0) {
-            document.body.removeChild(tempContainer);
-            callback(null);
-            return;
+        if (chartCanvas) {
+            chartImageBase64 = chartCanvas.toDataURL('image/png', 1.0);
         }
         
-        var labels = d1.map(function(d) { return 'J' + d.jour_age; });
-        var jours = d1.map(function(d) { return d.jour_age; });
-        
-        var datasets = [];
-        
-        // Couleurs pour le thème light
-        var lightColors = {
-            grid: 'rgba(148, 163, 184, 0.3)',
-            text: '#64748b',
-            textDark: '#1e293b'
+        // Charger le logo
+        var logoImg = new Image();
+        logoImg.crossOrigin = 'Anonymous';
+        logoImg.onload = function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = logoImg.width;
+            canvas.height = logoImg.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(logoImg, 0, 0);
+            var logoBase64 = canvas.toDataURL('image/png');
+            generatePDFWithLogo(logoBase64, chartImageBase64);
         };
-        
-        // Y1 Zone de tolérance
-        var min1 = [], max1 = [];
-        jours.forEach(function(j) {
-            var s = std1.find(function(x) { return x.jour_age === j; });
-            min1.push(s ? (parseFloat(s[ind1.stdMinField]) || null) : null);
-            max1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
-        });
-        
-        if (max1.some(function(v) { return v !== null; })) {
-            datasets.push({ label: '_z1max', data: max1, borderColor: 'transparent', backgroundColor: ind1.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y1', order: 100 });
-            datasets.push({ label: '_z1min', data: min1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
-            datasets.push({ label: '_z1maxL', data: max1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
-        }
-        
-        var v1 = d1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
-        datasets.push({ 
-            label: ind1.label, 
-            data: v1, 
-            borderColor: ind1.color, 
-            backgroundColor: ind1.color, 
-            borderWidth: 2, 
-            tension: 0.35, 
-            fill: false, 
-            pointRadius: 2,
-            pointBackgroundColor: ind1.color,
-            yAxisID: 'y1', 
-            order: 1 
-        });
-        
-        var scales = {
-            x: { 
-                grid: { color: lightColors.grid }, 
-                ticks: { color: lightColors.text, maxTicksLimit: 15 }, 
-                title: { display: true, text: 'Jours du cycle', color: lightColors.textDark } 
-            },
-            y1: { 
-                type: 'linear', 
-                position: 'left', 
-                grid: { color: lightColors.grid }, 
-                ticks: { color: ind1.color }, 
-                title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color } 
-            }
+        logoImg.onerror = function() {
+            generatePDFWithLogo(null, chartImageBase64);
         };
-        
-        if (t2) {
-            var ind2 = INDICATORS[t2];
-            var d2 = filterByPeriod(lotData[t2] || []);
-            var std2 = standardsData[t2] || [];
-            
-            var min2 = [], max2 = [];
-            jours.forEach(function(j) {
-                var s = std2.find(function(x) { return x.jour_age === j; });
-                min2.push(s ? (parseFloat(s[ind2.stdMinField]) || null) : null);
-                max2.push(s ? (parseFloat(s[ind2.stdMaxField]) || null) : null);
-            });
-            
-            if (max2.some(function(v) { return v !== null; })) {
-                datasets.push({ label: '_z2max', data: max2, borderColor: 'transparent', backgroundColor: ind2.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y2', order: 98 });
-                datasets.push({ label: '_z2min', data: min2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
-                datasets.push({ label: '_z2maxL', data: max2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
-            }
-            
-            var v2 = jours.map(function(j) {
-                var d = d2.find(function(x) { return x.jour_age === j; });
-                return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
-            });
-            
-            datasets.push({ 
-                label: ind2.label, 
-                data: v2, 
-                borderColor: ind2.color, 
-                backgroundColor: ind2.color, 
-                borderWidth: 2, 
-                tension: 0.35, 
-                fill: false, 
-                pointRadius: 2,
-                pointBackgroundColor: ind2.color,
-                yAxisID: 'y2', 
-                order: 2 
-            });
-            
-            scales.y2 = { 
-                type: 'linear', 
-                position: 'right', 
-                grid: { drawOnChartArea: false }, 
-                ticks: { color: ind2.color }, 
-                title: { display: true, text: ind2.label + ' (' + ind2.unit + ')', color: ind2.color } 
-            };
-        }
-        
-        // Créer le graphique temporaire avec fond blanc
-        var tempChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: datasets },
-            options: {
-                responsive: false,
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: { 
-                    legend: { display: false }
-                },
-                scales: scales,
-                layout: {
-                    padding: 10
-                }
-            }
-        });
-        
-        // Attendre que le graphique soit rendu
-        setTimeout(function() {
-            // Créer un canvas avec fond blanc
-            var finalCanvas = document.createElement('canvas');
-            finalCanvas.width = 1200;
-            finalCanvas.height = 500;
-            var finalCtx = finalCanvas.getContext('2d');
-            
-            // Fond blanc
-            finalCtx.fillStyle = '#ffffff';
-            finalCtx.fillRect(0, 0, 1200, 500);
-            
-            // Dessiner le graphique par-dessus
-            finalCtx.drawImage(tempCanvas, 0, 0);
-            
-            var imageBase64 = finalCanvas.toDataURL('image/png', 1.0);
-            
-            // Nettoyer
-            tempChart.destroy();
-            document.body.removeChild(tempContainer);
-            
-            callback(imageBase64);
-        }, 100);
+        logoImg.src = 'Logo_Dataferme.png';
     }
     
     function generatePDFWithLogo(logoBase64, chartImageBase64) {
-        setTimeout(function() {
-            try {
-                var jsPDF = window.jspdf.jsPDF;
-                var doc = new jsPDF('landscape', 'mm', 'a4');
-                var pageWidth = doc.internal.pageSize.getWidth();
-                var pageHeight = doc.internal.pageSize.getHeight();
-                var margin = 15;
-                
-                // Thème CLAIR pour le PDF
-                var colors = {
-                    bgPage: [255, 255, 255],        // Blanc
-                    bgCard: [241, 245, 249],        // Gris très clair
-                    bgCardAlt: [226, 232, 240],     // Gris clair
-                    textDark: [30, 41, 59],         // Texte principal foncé
-                    textMuted: [100, 116, 139],     // Texte secondaire
-                    accent: [37, 99, 235],          // Bleu accent
-                    success: [22, 163, 74],         // Vert
-                    border: [203, 213, 225]         // Bordure
-                };
-                
-                // Fond blanc
-                doc.setFillColor(colors.bgPage[0], colors.bgPage[1], colors.bgPage[2]);
-                doc.rect(0, 0, pageWidth, pageHeight, 'F');
-                
-                // Logo
-                var titleStartX = margin;
-                if (logoBase64) {
-                    try {
-                        doc.addImage(logoBase64, 'PNG', margin, 5, 50, 25);
-                        titleStartX = margin + 55;
-                    } catch(e) { console.log('Erreur logo PDF:', e); }
-                }
-                
-                // Titre principal
-                doc.setTextColor(colors.textDark[0], colors.textDark[1], colors.textDark[2]);
-                doc.setFontSize(22);
-                doc.text('Rapport de Suivi', titleStartX, 15);
-                
-                doc.setFontSize(12);
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                var now = new Date();
-                doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), titleStartX, 24);
-                
-                // Position des blocs d'info
-                var infoY = 38;
-                
-                // Bloc Éleveur
-                doc.setFillColor(colors.bgCard[0], colors.bgCard[1], colors.bgCard[2]);
-                doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-                doc.roundedRect(margin, infoY, 80, 28, 3, 3, 'FD');
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                doc.setFontSize(8);
-                doc.text('INFORMATIONS ÉLEVEUR', margin + 5, infoY + 7);
-                doc.setTextColor(colors.textDark[0], colors.textDark[1], colors.textDark[2]);
-                doc.setFontSize(11);
-                var eleveurNom = currentEleveur ? (currentEleveur.nom + ' ' + (currentEleveur.prenom || '')) : '--';
-                doc.text(eleveurNom, margin + 5, infoY + 15);
-                doc.setFontSize(9);
-                doc.setTextColor(colors.success[0], colors.success[1], colors.success[2]);
-                var eleveurCode = currentEleveur ? ('Code: ' + currentEleveur.code_eleveur) : '';
-                doc.text(eleveurCode, margin + 5, infoY + 22);
-                
-                // Bloc Lot
-                doc.setFillColor(colors.bgCard[0], colors.bgCard[1], colors.bgCard[2]);
-                doc.roundedRect(margin + 85, infoY, 80, 28, 3, 3, 'FD');
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                doc.setFontSize(8);
-                doc.text('INFORMATIONS DU LOT', margin + 90, infoY + 7);
-                doc.setTextColor(colors.textDark[0], colors.textDark[1], colors.textDark[2]);
-                doc.setFontSize(11);
-                var lotInfo = currentLotInfo ? (currentLotInfo.code_lot + ' - ' + (currentBatiment ? currentBatiment.nom : '')) : '--';
-                doc.text(lotInfo, margin + 90, infoY + 15);
-                doc.setFontSize(9);
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                var soucheNamePDF = currentLotInfo && currentLotInfo.souche_nom ? currentLotInfo.souche_nom : '--';
-                var lotDetails = 'Effectif: ' + (currentLotInfo && currentLotInfo.effectif_depart ? currentLotInfo.effectif_depart.toLocaleString('fr-FR') : '--');
-                lotDetails += ' | Souche: ' + soucheNamePDF;
-                doc.text(lotDetails, margin + 90, infoY + 22);
-                
-                // Bloc Indicateurs
-                doc.setFillColor(colors.bgCard[0], colors.bgCard[1], colors.bgCard[2]);
-                doc.roundedRect(margin + 170, infoY, 55, 28, 3, 3, 'FD');
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                doc.setFontSize(8);
-                doc.text('INDICATEURS', margin + 175, infoY + 7);
-                doc.setTextColor(colors.accent[0], colors.accent[1], colors.accent[2]);
-                doc.setFontSize(10);
-                var indicateursText = selectedIndicators.map(function(t) { return INDICATORS[t].label; }).join(', ');
-                if (indicateursText.length > 25) indicateursText = indicateursText.substring(0, 22) + '...';
-                doc.text(indicateursText, margin + 175, infoY + 15);
-                doc.setFontSize(9);
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Tout' : currentPeriod + ' jours');
-                doc.text(periodeText, margin + 175, infoY + 22);
-                
-                // Bloc Valeur actuelle
-                var t1 = selectedIndicators[0];
-                var ind1 = INDICATORS[t1];
-                var d1 = lotData[t1] || [];
-                var lastVal = d1.length > 0 ? Math.round(parseFloat(d1[d1.length - 1][ind1.dataField]) || 0) : '--';
-                
-                doc.setFillColor(colors.bgCardAlt[0], colors.bgCardAlt[1], colors.bgCardAlt[2]);
-                doc.roundedRect(margin + 230, infoY, 47, 28, 3, 3, 'FD');
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                doc.setFontSize(8);
-                doc.text('VALEUR ACTUELLE', margin + 235, infoY + 7);
-                doc.setTextColor(colors.accent[0], colors.accent[1], colors.accent[2]);
-                doc.setFontSize(18);
-                doc.text(lastVal + ' ' + ind1.unit, margin + 235, infoY + 20);
-                
-                // Zone du graphique
-                var chartY = infoY + 33;
-                
-                // Utiliser le graphique light généré
-                if (chartImageBase64) {
-                    doc.setFillColor(colors.bgCard[0], colors.bgCard[1], colors.bgCard[2]);
-                    doc.roundedRect(margin, chartY, pageWidth - 2*margin, pageHeight - chartY - 15, 3, 3, 'FD');
-                    doc.setTextColor(colors.textDark[0], colors.textDark[1], colors.textDark[2]);
-                    doc.setFontSize(14);
-                    doc.text($('chartTitle').textContent, margin + 10, chartY + 12);
-                    doc.addImage(chartImageBase64, 'PNG', margin + 5, chartY + 18, pageWidth - 2*margin - 10, pageHeight - chartY - 38);
-                }
-                
-                // Footer
-                doc.setTextColor(colors.textMuted[0], colors.textMuted[1], colors.textMuted[2]);
-                doc.setFontSize(8);
-                doc.text('Dataferme v15.6 - ADOSI', margin, pageHeight - 5);
-                doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 5);
-                
-                var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
-                doc.save(filename);
-                hideLoading();
-            } catch (e) {
-                console.error('Erreur PDF:', e);
-                hideLoading();
-                alert('Erreur lors de la génération du PDF: ' + e.message);
+        try {
+            var jsPDF = window.jspdf.jsPDF;
+            var doc = new jsPDF('landscape', 'mm', 'a4');
+            var pageWidth = doc.internal.pageSize.getWidth();
+            var pageHeight = doc.internal.pageSize.getHeight();
+            var margin = 12;
+            
+            // Fond blanc
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, pageWidth, pageHeight, 'F');
+            
+            // Logo
+            var titleStartX = margin;
+            if (logoBase64) {
+                try {
+                    doc.addImage(logoBase64, 'PNG', margin, 5, 45, 22);
+                    titleStartX = margin + 50;
+                } catch(e) { console.log('Erreur logo PDF:', e); }
             }
-        }, 100);
+            
+            // Titre principal
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(20);
+            doc.setFont(undefined, 'bold');
+            doc.text('Rapport de Suivi', titleStartX, 14);
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(100, 116, 139);
+            var now = new Date();
+            doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), titleStartX, 22);
+            
+            // Blocs d'information - une seule ligne compacte
+            var infoY = 32;
+            var blockHeight = 22;
+            var blockWidth = 65;
+            var gap = 3;
+            
+            // Bloc Éleveur
+            doc.setFillColor(241, 245, 249);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(margin, infoY, blockWidth, blockHeight, 2, 2, 'FD');
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            doc.text('ÉLEVEUR', margin + 3, infoY + 6);
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            var eleveurNom = currentEleveur ? (currentEleveur.nom + ' ' + (currentEleveur.prenom || '')) : '--';
+            if (eleveurNom.length > 20) eleveurNom = eleveurNom.substring(0, 18) + '...';
+            doc.text(eleveurNom, margin + 3, infoY + 13);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(22, 163, 74);
+            var eleveurCode = currentEleveur ? currentEleveur.code_eleveur : '';
+            doc.text(eleveurCode, margin + 3, infoY + 19);
+            
+            // Bloc Lot
+            var lotX = margin + blockWidth + gap;
+            doc.setFillColor(241, 245, 249);
+            doc.roundedRect(lotX, infoY, blockWidth + 15, blockHeight, 2, 2, 'FD');
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            doc.text('LOT', lotX + 3, infoY + 6);
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            var lotCode = currentLotInfo ? currentLotInfo.code_lot : '--';
+            doc.text(lotCode, lotX + 3, infoY + 13);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            var soucheNamePDF = currentLotInfo && currentLotInfo.souche_nom ? currentLotInfo.souche_nom : '--';
+            var effectif = currentLotInfo && currentLotInfo.effectif_depart ? currentLotInfo.effectif_depart.toLocaleString('fr-FR') : '--';
+            doc.text('Effectif: ' + effectif + ' | ' + soucheNamePDF, lotX + 3, infoY + 19);
+            
+            // Bloc Indicateurs
+            var indX = lotX + blockWidth + 15 + gap;
+            doc.setFillColor(241, 245, 249);
+            doc.roundedRect(indX, infoY, blockWidth, blockHeight, 2, 2, 'FD');
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            doc.text('INDICATEURS', indX + 3, infoY + 6);
+            doc.setTextColor(37, 99, 235);
+            doc.setFontSize(8);
+            var indicateursText = selectedIndicators.map(function(t) { return INDICATORS[t].label; }).join(', ');
+            if (indicateursText.length > 28) indicateursText = indicateursText.substring(0, 25) + '...';
+            doc.text(indicateursText, indX + 3, infoY + 13);
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Tout' : currentPeriod + ' jours');
+            doc.text(periodeText, indX + 3, infoY + 19);
+            
+            // Bloc Valeur actuelle
+            var valX = indX + blockWidth + gap;
+            var t1 = selectedIndicators[0];
+            var ind1 = INDICATORS[t1];
+            var d1 = lotData[t1] || [];
+            var lastVal = d1.length > 0 ? Math.round(parseFloat(d1[d1.length - 1][ind1.dataField]) || 0) : '--';
+            
+            doc.setFillColor(226, 232, 240);
+            doc.roundedRect(valX, infoY, 40, blockHeight, 2, 2, 'FD');
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            doc.text('VALEUR ACTUELLE', valX + 3, infoY + 6);
+            doc.setTextColor(37, 99, 235);
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text(lastVal + ' ' + ind1.unit, valX + 3, infoY + 17);
+            doc.setFont(undefined, 'normal');
+            
+            // Zone du graphique
+            var chartY = infoY + blockHeight + 5;
+            var chartHeight = pageHeight - chartY - 12;
+            var chartWidth = pageWidth - 2 * margin;
+            
+            // Fond blanc avec bordure pour le graphique
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(margin, chartY, chartWidth, chartHeight, 2, 2, 'FD');
+            
+            // Titre du graphique
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text($('chartTitle').textContent, margin + 5, chartY + 7);
+            doc.setFont(undefined, 'normal');
+            
+            // Image du graphique
+            if (chartImageBase64) {
+                var imgPadding = 3;
+                var imgX = margin + imgPadding;
+                var imgY = chartY + 10;
+                var imgWidth = chartWidth - (imgPadding * 2);
+                var imgHeight = chartHeight - 13;
+                
+                doc.addImage(chartImageBase64, 'PNG', imgX, imgY, imgWidth, imgHeight);
+            }
+            
+            // Footer
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(8);
+            doc.text('Dataferme v15.8 - ADOSI', margin, pageHeight - 4);
+            doc.text('Page 1/1', pageWidth - margin - 15, pageHeight - 4);
+            
+            var filename = 'Dataferme_Rapport_' + (currentLotInfo ? currentLotInfo.code_lot : 'export') + '_' + now.toISOString().slice(0,10) + '.pdf';
+            doc.save(filename);
+            hideLoading();
+        } catch (e) {
+            console.error('Erreur PDF:', e);
+            hideLoading();
+            alert('Erreur lors de la génération du PDF: ' + e.message);
+        }
     }
     
     // =====================================================
