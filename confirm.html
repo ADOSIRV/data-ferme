@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataferme — Confirmation de livraison</title>
+    <link rel="icon" type="image/png" href="Logo_Dataferme.png">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --green: #22c55e;
+            --green-light: rgba(34,197,94,0.15);
+            --orange: #f97316;
+            --orange-light: rgba(249,115,22,0.15);
+            --blue: #3b82f6;
+            --blue-light: rgba(59,130,246,0.15);
+            --red: #ef4444;
+            --red-light: rgba(239,68,68,0.15);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #475569;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .confirm-box {
+            width: 100%;
+            max-width: 560px;
+        }
+        .confirm-logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .confirm-logo img { width: 180px; height: auto; }
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+        .card-subtitle {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-item {
+            background: var(--bg-input);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+        }
+        .info-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .info-value.highlight { color: var(--green); }
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1.5rem 0;
+        }
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-input:focus { outline: none; border-color: var(--blue); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .btn {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .alert {
+            padding: 0.9rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .alert.show { display: block; }
+        .alert-error { background: var(--red-light); border: 1px solid var(--red); color: var(--red); }
+        .alert-success { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+        .alert-info { background: var(--blue-light); border: 1px solid var(--blue); color: var(--blue); }
+
+        /* État chargement */
+        #stateLoading { text-align: center; padding: 2rem 0; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* État succès */
+        #stateSuccess { display: none; text-align: center; }
+        #stateSuccess .success-icon { font-size: 4rem; margin-bottom: 1rem; }
+        #stateSuccess .success-title { font-size: 1.3rem; font-weight: 700; color: var(--green); margin-bottom: 0.5rem; }
+        #stateSuccess .success-text { color: var(--text-dim); font-size: 0.9rem; }
+
+        /* État erreur */
+        #stateError { display: none; text-align: center; }
+        #stateError .error-icon { font-size: 4rem; margin-bottom: 1rem; }
+        #stateError .error-title { font-size: 1.3rem; font-weight: 700; color: var(--red); margin-bottom: 0.5rem; }
+        #stateError .error-text { color: var(--text-dim); font-size: 0.9rem; }
+
+        .footer { text-align: center; margin-top: 1.5rem; color: var(--text-dim); font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+<div class="confirm-box">
+    <div class="confirm-logo">
+        <img src="Logo_Dataferme.png" alt="Dataferme">
+    </div>
+
+    <div class="card">
+
+        <!-- État : Chargement -->
+        <div id="stateLoading">
+            <div class="spinner"></div>
+            <div style="color:var(--text-dim);">Chargement de la commande...</div>
+        </div>
+
+        <!-- État : Erreur (token invalide ou expiré) -->
+        <div id="stateError">
+            <div class="error-icon">❌</div>
+            <div class="error-title">Lien invalide ou expiré</div>
+            <div class="error-text" id="errorText">Ce lien de confirmation n'est plus valide. Veuillez contacter l'éleveur.</div>
+        </div>
+
+        <!-- État : Succès après confirmation -->
+        <div id="stateSuccess">
+            <div class="success-icon">✅</div>
+            <div class="success-title">Livraison confirmée !</div>
+            <div class="success-text" id="successText">Votre confirmation a bien été enregistrée. L'éleveur en sera informé.</div>
+        </div>
+
+        <!-- État : Formulaire de confirmation -->
+        <div id="stateForm" style="display:none;">
+            <div class="card-title">📦 Confirmation de livraison</div>
+            <div class="card-subtitle">Merci de confirmer la date et l'heure de livraison pour la commande ci-dessous.</div>
+
+            <div class="alert" id="confirmAlert"></div>
+
+            <!-- Informations de la commande -->
+            <div class="section-title">📋 Détails de la commande</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Éleveur</div>
+                    <div class="info-value" id="infoEleveur">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Type d'aliment</div>
+                    <div class="info-value highlight" id="infoTypeAliment">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Quantité</div>
+                    <div class="info-value" id="infoQuantite">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Date souhaitée</div>
+                    <div class="info-value" id="infoDateSouhaitee">--</div>
+                </div>
+            </div>
+            <div class="info-item" id="infoNotesContainer" style="margin-bottom:1.5rem; display:none;">
+                <div class="info-label">Notes de l'éleveur</div>
+                <div class="info-value" id="infoNotes" style="font-weight:400; font-size:0.9rem; color:var(--text-dim);">--</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Formulaire de confirmation -->
+            <div class="section-title">✏️ Votre confirmation</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Date de livraison confirmée *</label>
+                    <input type="date" class="form-input" id="confirmDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Heure prévue *</label>
+                    <input type="time" class="form-input" id="confirmHeure">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="btnConfirmer">✅ Confirmer la livraison</button>
+        </div>
+    </div>
+
+    <div class="footer">Dataferme v16.0 — ADOSI · Plateforme de gestion avicole</div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    var supabase = null;
+    var token = null;
+    var commandeId = null;
+
+    function showState(state) {
+        ['stateLoading', 'stateError', 'stateSuccess', 'stateForm'].forEach(function(s) {
+            document.getElementById(s).style.display = 'none';
+        });
+        document.getElementById(state).style.display = 'block';
+    }
+
+    function showAlert(type, msg) {
+        var el = document.getElementById('confirmAlert');
+        el.className = 'alert alert-' + type + ' show';
+        el.textContent = msg;
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '--';
+        return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+    }
+
+    function init() {
+        // Lire le token depuis l'URL
+        var params = new URLSearchParams(window.location.search);
+        token = params.get('token');
+
+        if (!token) {
+            showState('stateError');
+            document.getElementById('errorText').textContent = 'Aucun token de confirmation dans l\'URL.';
+            return;
+        }
+
+        // Charger la config Supabase
+        fetch('config.json')
+            .then(function(r) {
+                if (!r.ok) throw new Error('config.json non trouvé');
+                return r.json();
+            })
+            .then(function(cfg) {
+                if (!cfg.supabase_url || !cfg.supabase_anon_key) throw new Error('Config incomplète');
+                supabase = window.supabase.createClient(cfg.supabase_url, cfg.supabase_anon_key);
+                loadCommande();
+            })
+            .catch(function(e) {
+                showState('stateError');
+                document.getElementById('errorText').textContent = 'Erreur de configuration: ' + e.message;
+            });
+    }
+
+    function loadCommande() {
+        // Requête avec le token dans le header pour la RLS
+        supabase.from('v_planning_commandes')
+            .select('*')
+            .eq('confirmation_token', token)
+            .single()
+            .then(function(res) {
+                if (res.error || !res.data) {
+                    showState('stateError');
+                    document.getElementById('errorText').textContent = 'Commande introuvable ou lien expiré.';
+                    return;
+                }
+                var c = res.data;
+                commandeId = c.id;
+
+                // Vérifier statut
+                if (c.statut === 'confirmee' || c.statut === 'livree') {
+                    showState('stateSuccess');
+                    var dateConfirmee = c.date_livraison_confirmee ? formatDate(c.date_livraison_confirmee) : '';
+                    var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
+                    document.getElementById('successText').textContent =
+                        'Cette commande a déjà été confirmée' + (dateConfirmee ? ' pour le ' + dateConfirmee + heure : '') + '.';
+                    return;
+                }
+                if (c.statut === 'annulee') {
+                    showState('stateError');
+                    document.getElementById('errorText').textContent = 'Cette commande a été annulée.';
+                    return;
+                }
+
+                // Afficher le formulaire
+                document.getElementById('infoEleveur').textContent = (c.eleveur_nom || '') + ' ' + (c.eleveur_prenom || '');
+                document.getElementById('infoTypeAliment').textContent = c.type_aliment || '--';
+                document.getElementById('infoQuantite').textContent = (c.quantite || '--') + ' ' + (c.unite || 'tonnes');
+                document.getElementById('infoDateSouhaitee').textContent = formatDate(c.date_livraison_souhaitee);
+
+                if (c.notes) {
+                    document.getElementById('infoNotes').textContent = c.notes;
+                    document.getElementById('infoNotesContainer').style.display = 'block';
+                }
+
+                // Pré-remplir la date avec la date souhaitée
+                if (c.date_livraison_souhaitee) {
+                    document.getElementById('confirmDate').value = c.date_livraison_souhaitee;
+                }
+
+                showState('stateForm');
+            })
+            .catch(function(err) {
+                showState('stateError');
+                document.getElementById('errorText').textContent = 'Erreur: ' + err.message;
+            });
+    }
+
+    function confirmerLivraison() {
+        var date = document.getElementById('confirmDate').value;
+        var heure = document.getElementById('confirmHeure').value;
+
+        if (!date) { showAlert('error', '❌ Veuillez indiquer la date de livraison confirmée'); return; }
+        if (!heure) { showAlert('error', '❌ Veuillez indiquer l\'heure prévue'); return; }
+
+        var btn = document.getElementById('btnConfirmer');
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement...';
+
+        // Mise à jour via RLS token (on passe le token dans les headers custom)
+        // Note: la policy RLS vérifie confirmation_token dans la requête
+        supabase.from('commandes_aliment')
+            .update({
+                statut: 'confirmee',
+                date_livraison_confirmee: date,
+                heure_livraison_confirmee: heure,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', commandeId)
+            .eq('confirmation_token', token)
+            .eq('statut', 'en_attente')
+            .then(function(res) {
+                if (res.error) throw res.error;
+                showState('stateSuccess');
+                var dateStr = new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                document.getElementById('successText').textContent =
+                    'Livraison confirmée pour le ' + dateStr + ' à ' + heure + '. L\'éleveur sera notifié.';
+            })
+            .catch(function(err) {
+                showAlert('error', '❌ Erreur lors de la confirmation: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '✅ Confirmer la livraison';
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        init();
+        document.getElementById('btnConfirmer').addEventListener('click', confirmerLivraison);
+
+        // Définir la date minimum = aujourd'hui
+        var today = new Date().toISOString().split('T')[0];
+        document.getElementById('confirmDate').min = today;
+    });
+})();
+</script>
+</body>
+</html>

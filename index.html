@@ -283,6 +283,15 @@
         .users-table .action-btn:hover { background: var(--bg-input); }
         .users-table .action-btn.delete:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
         
+        /* Aliment table */
+        .aliment-table-container { overflow-x: auto; margin-top: 1rem; }
+        .alim-code { font-family: monospace; font-size: 0.8rem; color: var(--blue); font-weight: 700; }
+        .alim-cat-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; background: var(--bg-input); color: var(--text-dim); white-space: nowrap; }
+        .alim-unite { font-size: 0.8rem; color: var(--text-dim); }
+        /* Import result */
+        .import-ok { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+        .import-error { background: var(--red-light); border: 1px solid var(--red); color: var(--red); }
+
         /* Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
         .modal-overlay.show { display: flex; }
@@ -304,6 +313,309 @@
         
         @media (max-width: 900px) { .controls-grid.show { grid-template-columns: 1fr; } .chart-container { height: 320px; } .admin-menu-bar { flex-wrap: wrap; } }
         @media (max-width: 600px) { .indicator-btns { flex-direction: column; } .export-buttons { flex-direction: column; } .config-row { flex-direction: column; } }
+
+        /* =====================================================
+           NAVIGATION PRINCIPALE (tous rôles)
+           ===================================================== */
+        .main-nav-bar {
+            background: var(--bg-card);
+            border-bottom: 2px solid var(--border);
+            padding: 0 1.5rem;
+            display: none;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+        .main-nav-bar.show { display: flex; }
+        .main-nav-buttons { display: flex; }
+        .main-nav-btn {
+            padding: 0.9rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .main-nav-btn:hover { color: var(--text); background: var(--bg-input); }
+        .main-nav-btn.active { color: var(--green); border-bottom-color: var(--green); font-weight: 700; }
+        .main-nav-btn .nav-icon { font-size: 1.1rem; }
+
+        /* Sections principales */
+        .main-section { display: none; }
+        .main-section.show { display: block; }
+
+        /* =====================================================
+           SECTION COMMANDE D'ALIMENT
+           ===================================================== */
+        .commande-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        .commande-form-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .commande-form-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .commande-unit-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+        .commande-unit-row .form-group { flex: 1; margin-bottom: 0; }
+        .commande-unit-badge {
+            padding: 0.8rem 1rem;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            height: 46px;
+            display: flex;
+            align-items: center;
+        }
+        .commande-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+        .commande-actions .btn { flex: 1; }
+        .fournisseur-select-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .fournisseur-select-row .form-input { flex: 1; }
+        .btn-add-fourn {
+            flex-shrink: 0;
+            width: 2.6rem; height: 2.6rem;
+            border: none; border-radius: 10px;
+            background: var(--blue); color: #fff;
+            font-size: 1.2rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .btn-add-fourn:hover { background: #2563eb; }
+        /* Modale fournisseur */
+        #fournisseurModal .modal-body { max-height: 80vh; overflow-y: auto; }
+
+        /* Historique commandes */
+        .historique-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .historique-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .commande-item {
+            padding: 0.9rem 1rem;
+            background: var(--bg-input);
+            border-radius: 10px;
+            margin-bottom: 0.6rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        .commande-item-left { flex: 1; min-width: 0; }
+        .commande-item-date { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.2rem; }
+        .commande-item-type { font-weight: 600; font-size: 0.95rem; }
+        .commande-item-qty { font-size: 0.85rem; color: var(--text-dim); }
+        .commande-statut {
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .statut-en_attente { background: var(--orange-light); color: var(--orange); }
+        .statut-confirmee  { background: var(--green-light); color: var(--green); }
+        .statut-livree     { background: var(--blue-light); color: var(--blue); }
+        .statut-annulee    { background: var(--red-light); color: var(--red); }
+
+        /* =====================================================
+           SECTION PLANNING D'EXPLOITATION
+           ===================================================== */
+        .planning-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        .calendar-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            position: sticky;
+            top: 80px;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .calendar-month-label { font-weight: 700; font-size: 1rem; }
+        .calendar-nav-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .calendar-nav-btn:hover { background: var(--border); }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        .calendar-day-header {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            font-weight: 700;
+            padding: 0.3rem 0;
+            text-transform: uppercase;
+        }
+        .calendar-day {
+            padding: 0.2rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            position: relative;
+            min-height: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            transition: background 0.15s;
+            gap: 2px;
+        }
+        .calendar-day:hover { background: var(--bg-input); }
+        .calendar-day.today { background: var(--blue-light); color: var(--blue); font-weight: 700; }
+        .calendar-day.selected { background: var(--green-light); color: var(--green); font-weight: 700; outline: 1px solid var(--green); }
+        .calendar-day.empty { cursor: default; }
+        .calendar-day.other-month { color: var(--text-dim); opacity: 0.35; }
+        .calendar-day.has-event { font-weight: 600; }
+        .calendar-day .day-num { font-size: 0.78rem; line-height: 1.4; }
+        .calendar-day .day-dots { display: flex; gap: 2px; justify-content: center; flex-wrap: wrap; }
+        .day-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-en_attente { background: var(--orange); }
+        .dot-confirmee  { background: var(--green); }
+        .dot-livree     { background: var(--blue); }
+        .calendar-legend {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .legend-dot-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+
+        /* Timeline planning */
+        .timeline-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .timeline-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .timeline-section-sep {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin: 1.25rem 0 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .timeline-section-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .timeline-event {
+            display: flex;
+            gap: 1rem;
+            padding: 0.9rem 1rem;
+            background: var(--bg-input);
+            border-radius: 12px;
+            margin-bottom: 0.6rem;
+            border-left: 4px solid var(--border);
+            transition: transform 0.15s;
+        }
+        .timeline-event:hover { transform: translateX(3px); }
+        .timeline-event.ev-en_attente { border-left-color: var(--orange); }
+        .timeline-event.ev-confirmee  { border-left-color: var(--green); }
+        .timeline-event.ev-livree     { border-left-color: var(--blue); }
+        .timeline-event.ev-annulee    { border-left-color: var(--red); opacity: 0.55; }
+        .timeline-event-icon { font-size: 1.5rem; flex-shrink: 0; align-self: center; }
+        .timeline-event-body { flex: 1; min-width: 0; }
+        .timeline-event-date { font-weight: 700; font-size: 0.95rem; }
+        .timeline-event-sub  { font-size: 0.82rem; color: var(--text-dim); margin-top: 0.15rem; }
+        .timeline-event-badges { margin-top: 0.35rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .timeline-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-dim); }
+        .timeline-empty .tl-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+        @media (max-width: 1100px) {
+            .commande-layout { grid-template-columns: 1fr; }
+            .planning-layout { grid-template-columns: 1fr; }
+            .calendar-card { position: static; }
+        }
+        @media (max-width: 600px) {
+            .main-nav-btn { padding: 0.7rem 0.9rem; font-size: 0.8rem; }
+            .main-nav-btn .nav-icon { font-size: 1rem; }
+            .commande-actions { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
@@ -368,6 +680,107 @@
     </div>
 </div>
 
+<!-- MODALE FOURNISSEUR -->
+<div class="modal-overlay" id="fournisseurModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title" id="fournisseurModalTitle">🚚 Ajouter un fournisseur</div>
+            <button class="modal-close" id="closeFournisseurModal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="alert" id="fournisseurModalAlert"></div>
+            <div class="form-group">
+                <label class="form-label">Nom du fournisseur *</label>
+                <input type="text" class="form-input" id="fourn_nom" placeholder="Ex: Cooperl Arc Atlantique">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rue</label>
+                <input type="text" class="form-input" id="fourn_rue" placeholder="Ex: 22 rue de la Coopérative">
+            </div>
+            <div style="display:grid; grid-template-columns:130px 1fr; gap:0.75rem;">
+                <div class="form-group">
+                    <label class="form-label">Code postal</label>
+                    <input type="text" class="form-input" id="fourn_code_postal" placeholder="22400" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ville</label>
+                    <input type="text" class="form-input" id="fourn_ville" placeholder="Lamballe">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nom du contact</label>
+                <input type="text" class="form-input" id="fourn_contact_nom" placeholder="Ex: Service commandes">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email (pour envoi des commandes) *</label>
+                <input type="email" class="form-input" id="fourn_email" placeholder="commandes@fournisseur.fr">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelFournisseurModal">Annuler</button>
+                <button class="btn btn-primary" id="saveFournisseurModal">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE ALIMENT -->
+<div class="modal-overlay" id="alimentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title" id="alimentModalTitle">🌾 Ajouter un aliment</div>
+            <button class="modal-close" id="closeAlimentModal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="alert" id="alimentModalAlert"></div>
+            <div style="display:grid; grid-template-columns:140px 1fr; gap:0.75rem;">
+                <div class="form-group">
+                    <label class="form-label">Code aliment *</label>
+                    <input type="text" class="form-input" id="alimCode" placeholder="Ex: ALI-001" style="text-transform:uppercase;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Catégorie *</label>
+                    <input type="text" class="form-input" id="alimCategorie" placeholder="Ex: Démarrage, Croissance..." list="alimCategorieList">
+                    <datalist id="alimCategorieList">
+                        <option value="Démarrage">
+                        <option value="Croissance">
+                        <option value="Finition">
+                        <option value="Ponte">
+                        <option value="Minéraux">
+                        <option value="Compléments">
+                    </datalist>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Libellé *</label>
+                <input type="text" class="form-input" id="alimLibelle" placeholder="Ex: Aliment Démarrage Poulet de Chair">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div class="form-group">
+                    <label class="form-label">Unité de commande *</label>
+                    <input type="text" class="form-input" id="alimUnite" placeholder="Ex: tonnes" list="alimUniteList">
+                    <datalist id="alimUniteList">
+                        <option value="tonnes">
+                        <option value="kg">
+                        <option value="sacs 25 kg">
+                        <option value="sacs 50 kg">
+                        <option value="big-bags">
+                        <option value="litres">
+                    </datalist>
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:0.25rem;">
+                    <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; cursor:pointer;">
+                        <input type="checkbox" id="alimIsActive" checked> Aliment actif (visible à la commande)
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelAlimentModal">Annuler</button>
+                <button class="btn btn-primary" id="saveAlimentModal">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- PAGE LOGIN -->
 <div class="page active" id="pageLogin">
     <div class="login-box">
@@ -403,8 +816,23 @@
 
 <!-- PAGE APP -->
 <div class="page page-app" id="pageApp">
-    
-    <!-- Admin Menu Bar -->
+
+    <!-- NAVIGATION PRINCIPALE (tous rôles) -->
+    <nav class="main-nav-bar" id="mainNavBar">
+        <div class="main-nav-buttons">
+            <button class="main-nav-btn active" data-section="exploitation">
+                <span class="nav-icon">🏠</span><span class="nav-label">Exploitation</span>
+            </button>
+            <button class="main-nav-btn" data-section="commande">
+                <span class="nav-icon">📦</span><span class="nav-label">Commande</span>
+            </button>
+            <button class="main-nav-btn" data-section="planning">
+                <span class="nav-icon">📅</span><span class="nav-label">Planning</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Admin Menu Bar (sous-barre, admin uniquement) -->
     <div class="admin-menu-bar" id="adminMenuBar">
         <span class="admin-menu-label">⚙️ Administration</span>
         <div class="admin-menu-buttons">
@@ -417,9 +845,12 @@
             <button class="admin-menu-btn" id="menuUsers" data-panel="users">
                 <span class="menu-icon">👥</span> Gestion utilisateurs
             </button>
+            <button class="admin-menu-btn" id="menuAliments" data-panel="aliments">
+                <span class="menu-icon">🌾</span> Aliments
+            </button>
         </div>
     </div>
-    
+
     <div class="container">
         <header class="app-header">
             <div class="app-logo">
@@ -427,6 +858,11 @@
             </div>
         </header>
         
+        <!-- ================================================
+             SECTION : EXPLOITATION (tableau de bord)
+             ================================================ -->
+        <div class="main-section show" id="sectionExploitation">
+
         <!-- PANEL: Dashboard (default) -->
         <div class="admin-panel show" id="panelDashboard">
             
@@ -556,41 +992,108 @@
             <div class="admin-panel-header">
                 <span class="admin-panel-icon">🔌</span>
                 <div>
-                    <div class="admin-panel-title">Configuration API Tuffigo</div>
-                    <div class="admin-panel-subtitle">Gérer la connexion à l'API Tuffigo Rapidex</div>
+                    <div class="admin-panel-title">Configuration API Tuffigo Rapidex</div>
+                    <div class="admin-panel-subtitle">Identifiants de connexion à l'API et au portail Tuffigo</div>
                 </div>
             </div>
-            
+
             <div class="card">
                 <div class="alert" id="apiConfigAlert"></div>
-                
+
+                <!-- Bloc info authentification -->
+                <div style="padding:0.85rem 1rem; background:var(--blue-light,#eff6ff); border:1px solid var(--blue); border-radius:10px; margin-bottom:1.25rem; font-size:0.82rem; line-height:1.6;">
+                    <div style="font-weight:700; color:var(--blue); margin-bottom:0.4rem;">ℹ️ Comment fonctionne l'authentification Tuffigo Rapidex ?</div>
+                    <div>L'API REST utilise un <strong>token statique</strong> transmis dans le header HTTP :</div>
+                    <code style="display:block; background:var(--bg-input); border-radius:6px; padding:0.4rem 0.75rem; margin:0.4rem 0; font-size:0.8rem;">Authorization: token &lt;votre_token&gt;</code>
+                    <div>Le <strong>login / mot de passe</strong> donnent accès au <a href="https://app.mytuffigorapidex.com" target="_blank" style="color:var(--blue);">portail web Tuffigo</a> et sont stockés ici pour référence et pour les workflows N8N.</div>
+                </div>
+
+                <!-- Section 1 : Token API -->
                 <div class="config-section">
-                    <div class="config-section-title">🔑 Clé API Tuffigo</div>
+                    <div class="config-section-title">🔑 Token API (authentification des appels REST)</div>
                     <div class="form-group">
-                        <label class="form-label">Clé API</label>
-                        <input type="password" class="form-input" id="tuffigoApiKey" placeholder="Entrez la clé API Tuffigo">
+                        <label class="form-label">Token API *</label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="password" class="form-input" id="tuffigoApiKey" placeholder="Votre token fourni par Tuffigo" style="flex:1;">
+                            <button class="btn btn-secondary" id="btnShowApiKey" style="flex-shrink:0;">👁️ Afficher</button>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;">Utilisé dans le header : <code>Authorization: token &lt;token&gt;</code></div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">URL de base (optionnel)</label>
-                        <input type="url" class="form-input" id="tuffigoBaseUrl" placeholder="https://api.tuffigo.com">
-                    </div>
-                    <div class="config-row">
-                        <button class="btn btn-secondary" id="btnShowApiKey">👁️ Afficher</button>
-                        <button class="btn btn-primary" id="btnSaveApiConfig">💾 Enregistrer</button>
+                        <label class="form-label">URL de base de l'API</label>
+                        <input type="url" class="form-input" id="tuffigoBaseUrl" placeholder="https://api.mytuffigorapidex.com/group/v2/">
+                        <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;">Par défaut : <code>https://api.mytuffigorapidex.com/group/v2/</code></div>
                     </div>
                 </div>
-                
+
+                <!-- Section 2 : Login / Mot de passe portail -->
                 <div class="config-section">
-                    <div class="config-section-title">📊 Statut de la configuration</div>
-                    <div id="apiConfigStatus">
-                        <p style="color: var(--text-dim);">Chargement...</p>
+                    <div class="config-section-title">👤 Identifiants portail Tuffigo Rapidex</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                        <div class="form-group">
+                            <label class="form-label">Login (email)</label>
+                            <input type="text" class="form-input" id="tuffigoLogin" placeholder="votre@email.com" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Mot de passe</label>
+                            <div style="display:flex; gap:0.5rem;">
+                                <input type="password" class="form-input" id="tuffigoPassword" placeholder="••••••••" autocomplete="off" style="flex:1;">
+                                <button class="btn btn-secondary" id="btnShowPassword" style="flex-shrink:0; padding:0 0.65rem;">👁️</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="config-section">
-                    <div class="config-section-title">🔄 Dernière synchronisation</div>
-                    <div id="lastSyncInfo">
-                        <p style="color: var(--text-dim);">Aucune synchronisation</p>
+
+                <!-- Boutons d'action -->
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1.25rem;">
+                    <button class="btn btn-primary" id="btnSaveApiConfig" style="flex:1;">💾 Enregistrer</button>
+                    <button class="btn btn-secondary" id="btnTestApiConfig" style="flex:1;">🧪 Tester la connexion</button>
+                </div>
+
+                <!-- Statut + Dernière sync -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <div class="config-section" style="margin-bottom:0;">
+                        <div class="config-section-title">📊 Statut</div>
+                        <div id="apiConfigStatus"><p style="color:var(--text-dim);">Chargement...</p></div>
+                    </div>
+                    <div class="config-section" style="margin-bottom:0;">
+                        <div class="config-section-title">🔄 Dernière synchronisation</div>
+                        <div id="lastSyncInfo"><p style="color:var(--text-dim);">Aucune synchronisation</p></div>
+                    </div>
+                </div>
+
+                <!-- Aide N8N -->
+                <div class="config-section" style="margin-top:1.25rem;">
+                    <div class="config-section-title">⚙️ Configuration des workflows N8N</div>
+                    <div style="font-size:0.82rem; line-height:1.7; color:var(--text);">
+                        <div style="margin-bottom:0.5rem;">Dans le nœud <strong>HTTP Request</strong> de N8N, utiliser ces paramètres :</div>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                            <tr style="background:var(--bg-input);">
+                                <th style="padding:0.4rem 0.6rem; text-align:left; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);">Paramètre</th>
+                                <th style="padding:0.4rem 0.6rem; text-align:left; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);">Valeur</th>
+                            </tr>
+                            <tr>
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);">Méthode</td>
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);"><code>GET</code></td>
+                            </tr>
+                            <tr style="background:var(--bg-input);">
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);">URL</td>
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);"><code>https://api.mytuffigorapidex.com/group/v2/breeders/</code></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);">Authentification</td>
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);"><code>Header Auth</code></td>
+                            </tr>
+                            <tr style="background:var(--bg-input);">
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);">Nom du header</td>
+                                <td style="padding:0.4rem 0.6rem; border-bottom:1px solid var(--border);"><code>Authorization</code></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:0.4rem 0.6rem;">Valeur du header</td>
+                                <td style="padding:0.4rem 0.6rem;"><code>token &lt;votre_token&gt;</code></td>
+                            </tr>
+                        </table>
+                        <div style="margin-top:0.6rem; color:var(--text-dim);">Endpoints principaux : <code>/breeders/</code> · <code>/buildings/</code> · <code>/batchs/</code> · <code>/batchs/{id}/measures/?date=YYYY-MM-DD</code></div>
                     </div>
                 </div>
             </div>
@@ -635,8 +1138,177 @@
                 </div>
             </div>
         </div>
-        
-        <div class="footer">Dataferme v15.8 - ADOSI</div>
+
+        <!-- PANEL: Gestion des aliments (admin) -->
+        <div class="admin-panel" id="panelAliments">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🌾</span>
+                <div>
+                    <div class="admin-panel-title">Gestion des aliments</div>
+                    <div class="admin-panel-subtitle">Référentiel des aliments disponibles à la commande</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="alert" id="alimentsAlert"></div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+                    <span id="alimentsCount" style="color:var(--text-dim);">0 aliments</span>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <label class="btn btn-secondary" style="cursor:pointer;" title="Importer depuis un fichier Excel">
+                            📥 Importer Excel
+                            <input type="file" id="importAlimentsFile" accept=".xlsx,.xls" style="display:none;">
+                        </label>
+                        <button class="btn btn-secondary" id="btnDownloadModele" title="Télécharger le modèle Excel">📄 Modèle Excel</button>
+                        <button class="btn btn-primary" id="btnNewAliment">➕ Ajouter</button>
+                    </div>
+                </div>
+
+                <!-- Zone de retour import -->
+                <div id="importAlimentsResult" style="display:none; padding:0.75rem 1rem; border-radius:10px; margin-bottom:1rem; font-size:0.85rem;"></div>
+
+                <div class="aliment-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Catégorie</th>
+                                <th>Libellé</th>
+                                <th>Unité</th>
+                                <th>Actif</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alimentsTableBody">
+                            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /panelAliments -->
+
+        </div><!-- /sectionExploitation -->
+
+        <!-- ================================================
+             SECTION : COMMANDE D'ALIMENT
+             ================================================ -->
+        <div class="main-section" id="sectionCommande">
+            <div class="admin-panel-header" style="margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border);">
+                <span class="admin-panel-icon">📦</span>
+                <div>
+                    <div class="admin-panel-title">Commande d'aliment</div>
+                    <div class="admin-panel-subtitle">Passer une commande de livraison pour votre exploitation</div>
+                </div>
+            </div>
+
+            <div class="alert" id="commandeAlert"></div>
+
+            <div class="commande-layout">
+                <!-- Formulaire de commande -->
+                <div class="commande-form-card">
+                    <div class="commande-form-title">✏️ Nouvelle commande</div>
+
+                    <!-- Sélection fournisseur -->
+                    <div class="form-group">
+                        <label class="form-label">Fournisseur *</label>
+                        <div class="fournisseur-select-row">
+                            <select class="form-input" id="cmdFournisseur">
+                                <option value="">-- Sélectionner un fournisseur --</option>
+                            </select>
+                            <button class="btn-add-fourn" id="btnAddFournisseur" title="Ajouter un fournisseur">＋</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Type d'aliment *</label>
+                        <select class="form-input" id="cmdTypeAliment">
+                            <option value="">-- Sélectionner --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Quantité *</label>
+                        <div class="commande-unit-row">
+                            <div class="form-group">
+                                <input type="number" class="form-input" id="cmdQuantite" placeholder="0" min="0.1" step="0.1">
+                            </div>
+                            <div class="commande-unit-badge">tonnes</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Date de livraison souhaitée *</label>
+                        <input type="date" class="form-input" id="cmdDateLivraison">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Notes / Précisions</label>
+                        <textarea class="form-input" id="cmdNotes" rows="3" placeholder="Instructions particulières, accès, horaires préférés..."></textarea>
+                    </div>
+
+                    <div class="commande-actions">
+                        <button class="btn btn-secondary" id="btnPreviewPDF">📄 Prévisualiser</button>
+                        <button class="btn btn-primary" id="btnEnvoyerCommande">✉️ Envoyer la commande</button>
+                    </div>
+                </div>
+
+                <!-- Historique des commandes -->
+                <div class="historique-card">
+                    <div class="historique-title">
+                        <span>📋 Historique des commandes</span>
+                        <button class="btn btn-secondary btn-sm" id="btnRefreshCommandes">↻ Actualiser</button>
+                    </div>
+                    <div id="commandesListContainer">
+                        <div style="text-align:center; color:var(--text-dim); padding:2rem;">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /sectionCommande -->
+
+        <!-- ================================================
+             SECTION : PLANNING D'EXPLOITATION
+             ================================================ -->
+        <div class="main-section" id="sectionPlanning">
+            <div class="admin-panel-header" style="margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border);">
+                <span class="admin-panel-icon">📅</span>
+                <div>
+                    <div class="admin-panel-title">Planning d'exploitation</div>
+                    <div class="admin-panel-subtitle">Vue des livraisons confirmées et en attente</div>
+                </div>
+            </div>
+
+            <div class="planning-layout">
+                <!-- Mini-calendrier -->
+                <div class="calendar-card">
+                    <div class="calendar-header">
+                        <button class="calendar-nav-btn" id="calPrev">◀</button>
+                        <span class="calendar-month-label" id="calMonthLabel">--</span>
+                        <button class="calendar-nav-btn" id="calNext">▶</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Généré par JS -->
+                    </div>
+                    <div class="calendar-legend">
+                        <div class="legend-dot-item"><span class="day-dot dot-confirmee"></span> Livraison confirmée</div>
+                        <div class="legend-dot-item"><span class="day-dot dot-en_attente"></span> En attente de confirmation</div>
+                        <div class="legend-dot-item"><span class="day-dot dot-livree"></span> Livré</div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline-card">
+                    <div class="timeline-card-title">📋 Livraisons</div>
+                    <div id="planningTimeline">
+                        <div class="timeline-empty">
+                            <div class="tl-icon">📅</div>
+                            <div>Chargement du planning...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /sectionPlanning -->
+
+        <div class="footer">Dataferme v16.0 - ADOSI</div>
     </div>
 </div>
 
@@ -659,6 +1331,10 @@
     var currentPeriod = '56';
     var currentLotInfo = null;
     var allEleveursList = [];
+    // Caches en mémoire pour éviter le stockage de JSON dans les attributs DOM
+    var cacheSites = {};
+    var cacheBatiments = {};
+    var cacheLots = {};
     
     var INDICATORS = {
         poids: { label: 'Croissance en poids', unit: 'g', color: '#2563eb', colorArea: 'rgba(37,99,235,0.2)', colorBorder: 'rgba(37,99,235,0.5)', icon: '📈', dataField: 'poids_moyen', stdMinField: 'poids_min', stdMaxField: 'poids_max' },
@@ -668,6 +1344,7 @@
     };
     
     function $(id) { return document.getElementById(id); }
+    function esc(str) { var d = document.createElement('div'); d.appendChild(document.createTextNode(str == null ? '' : String(str))); return d.innerHTML; }
     function showPage(id) { document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); }); $(id).classList.add('active'); }
     function showAlert(id, type, msg) { var el = $(id); if (el) { el.className = 'alert alert-' + type + ' show'; el.innerHTML = msg; } }
     function hideAlert(id) { var el = $(id); if (el) el.classList.remove('show'); }
@@ -724,7 +1401,9 @@
                 }
                 
                 var storedPass = res.data.password_hash || '';
-                if (storedPass !== pass && storedPass !== ('hash_' + pass)) throw new Error('Mot de passe incorrect');
+                // Accepte le mot de passe en clair ou préfixé 'hash_' (compatibilité seeds)
+                var passOk = (storedPass === pass) || (storedPass === 'hash_' + pass);
+                if (!passOk) throw new Error('Mot de passe incorrect');
                 
                 currentUser = res.data;
                 var role = res.data.role || 'eleveur';
@@ -735,12 +1414,14 @@
                 $('sessionRole').className = 'session-role ' + role;
                 $('sessionBar').style.display = 'flex';
                 
+                // Afficher la navigation principale pour tous les rôles
+                $('mainNavBar').classList.add('show');
+                switchSection('exploitation');
+
                 if (role === 'eleveur') {
-                    // Masquer le menu admin pour les éleveurs
                     $('adminMenuBar').classList.remove('show');
-                    // S'assurer que le dashboard est visible
                     switchAdminPanel('dashboard');
-                    
+
                     return findEleveurForUser(res.data).then(function(eleveur) {
                         if (eleveur) { currentEleveur = eleveur; setupEleveurMode(eleveur); }
                         else {
@@ -757,19 +1438,18 @@
                         }
                     }).then(function() { showPage('pageApp'); });
                 } else if (role === 'admin') {
-                    // Afficher menu admin uniquement pour les admins
                     $('adminMenuBar').classList.add('show');
                     switchAdminPanel('dashboard');
-                    currentEleveur = null; 
-                    setupAdminMode(); 
+                    currentEleveur = null;
+                    setupAdminMode();
                     showPage('pageApp');
                 } else {
-                    // Technicien : pas de menu admin, mais accès à tous les éleveurs
+                    // Technicien : navigation principale seulement
                     $('adminMenuBar').classList.remove('show');
                     switchAdminPanel('dashboard');
-                    currentEleveur = null; 
-                    setupAdminMode(); 
-                    showPage('pageApp'); 
+                    currentEleveur = null;
+                    setupAdminMode();
+                    showPage('pageApp');
                 }
             })
             .catch(function(e) { showAlert('loginAlert', 'error', '❌ ' + e.message); })
@@ -802,11 +1482,19 @@
     
     function doLogout() {
         currentUser = null; currentEleveur = null;
+        planningCommandes = null;
         $('sessionBar').style.display = 'none';
+        $('mainNavBar').classList.remove('show');
         $('adminMenuBar').classList.remove('show');
         $('loginUser').value = ''; $('loginPass').value = '';
         hideAlert('loginAlert');
         resetAllSelectors(); hideDataPanels();
+        // Réinitialiser la section active
+        document.querySelectorAll('.main-section').forEach(function(s) { s.classList.remove('show'); });
+        $('sectionExploitation').classList.add('show');
+        document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-section') === 'exploitation');
+        });
         showPage('pageLogin');
     }
     
@@ -829,8 +1517,239 @@
         // Load panel data
         if (panelName === 'apiConfig') loadApiConfig();
         if (panelName === 'users') loadUsers();
+        if (panelName === 'aliments') loadAliments();
     }
     
+    // =====================================================
+    // GESTION DES ALIMENTS (admin)
+    // =====================================================
+    var editingAlimentId = null;
+
+    function loadAliments() {
+        if (!supabase) return;
+        $('alimentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);">Chargement...</td></tr>';
+        supabase.from('types_aliment')
+            .select('*')
+            .order('categorie', { ascending: true })
+            .order('code_aliment', { ascending: true })
+            .then(function(r) {
+                var aliments = r.data || [];
+                $('alimentsCount').textContent = aliments.length + ' aliment' + (aliments.length > 1 ? 's' : '');
+                if (aliments.length === 0) {
+                    $('alimentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);">Aucun aliment enregistré.</td></tr>';
+                    return;
+                }
+                var html = '';
+                aliments.forEach(function(a) {
+                    var actifBadge = a.is_active
+                        ? '<span class="status-badge status-active">Actif</span>'
+                        : '<span class="status-badge status-inactive">Inactif</span>';
+                    html += '<tr>' +
+                        '<td><span class="alim-code">' + esc(a.code_aliment || '—') + '</span></td>' +
+                        '<td><span class="alim-cat-badge">' + esc(a.categorie || '—') + '</span></td>' +
+                        '<td>' + esc(a.nom) + '</td>' +
+                        '<td><span class="alim-unite">' + esc(a.unite || 'tonnes') + '</span></td>' +
+                        '<td>' + actifBadge + '</td>' +
+                        '<td><div class="action-btns">' +
+                            '<button class="action-btn" data-id="' + a.id + '" data-action="edit-alim">✏️ Éditer</button>' +
+                            '<button class="action-btn delete" data-id="' + a.id + '" data-action="del-alim">🗑️</button>' +
+                        '</div></td>' +
+                        '</tr>';
+                });
+                $('alimentsTableBody').innerHTML = html;
+                // Attacher les listeners dynamiques
+                $('alimentsTableBody').querySelectorAll('[data-action="edit-alim"]').forEach(function(btn) {
+                    btn.addEventListener('click', function() { openAlimentModal(this.getAttribute('data-id')); });
+                });
+                $('alimentsTableBody').querySelectorAll('[data-action="del-alim"]').forEach(function(btn) {
+                    btn.addEventListener('click', function() { deleteAliment(this.getAttribute('data-id')); });
+                });
+            })
+            .catch(function(err) {
+                $('alimentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">Erreur: ' + esc(err.message) + '</td></tr>';
+            });
+    }
+
+    function openAlimentModal(alimentId) {
+        editingAlimentId = alimentId || null;
+        $('alimentModalAlert').className = 'alert';
+        $('alimentModalAlert').textContent = '';
+        if (alimentId) {
+            $('alimentModalTitle').textContent = '✏️ Modifier un aliment';
+            supabase.from('types_aliment').select('*').eq('id', alimentId).single()
+                .then(function(r) {
+                    if (r.error) throw r.error;
+                    var a = r.data;
+                    $('alimCode').value      = a.code_aliment || '';
+                    $('alimCategorie').value = a.categorie || '';
+                    $('alimLibelle').value   = a.nom || '';
+                    $('alimUnite').value     = a.unite || 'tonnes';
+                    $('alimIsActive').checked = a.is_active !== false;
+                    $('alimentModal').classList.add('show');
+                })
+                .catch(function(err) { showAlert('alimentsAlert', 'error', '❌ ' + esc(err.message)); });
+        } else {
+            $('alimentModalTitle').textContent = '🌾 Ajouter un aliment';
+            $('alimCode').value      = '';
+            $('alimCategorie').value = '';
+            $('alimLibelle').value   = '';
+            $('alimUnite').value     = 'tonnes';
+            $('alimIsActive').checked = true;
+            $('alimentModal').classList.add('show');
+            $('alimCode').focus();
+        }
+    }
+
+    function closeAlimentModal() {
+        $('alimentModal').classList.remove('show');
+        editingAlimentId = null;
+    }
+
+    function saveAliment() {
+        var code    = $('alimCode').value.trim().toUpperCase();
+        var cat     = $('alimCategorie').value.trim();
+        var libelle = $('alimLibelle').value.trim();
+        var unite   = $('alimUnite').value.trim() || 'tonnes';
+        var actif   = $('alimIsActive').checked;
+
+        if (!code)    { showAlert('alimentModalAlert', 'error', '❌ Le code aliment est requis'); return; }
+        if (!cat)     { showAlert('alimentModalAlert', 'error', '❌ La catégorie est requise'); return; }
+        if (!libelle) { showAlert('alimentModalAlert', 'error', '❌ Le libellé est requis'); return; }
+
+        $('saveAlimentModal').disabled = true;
+        var payload = { code_aliment: code, categorie: cat, nom: libelle, unite: unite, is_active: actif };
+        var promise = editingAlimentId
+            ? supabase.from('types_aliment').update(payload).eq('id', editingAlimentId)
+            : supabase.from('types_aliment').insert(payload);
+
+        promise
+            .then(function(res) {
+                if (res.error) throw res.error;
+                closeAlimentModal();
+                showAlert('alimentsAlert', 'success', '✓ Aliment enregistré');
+                loadAliments();
+                typesAlimentList = []; // forcer rechargement dans l'écran commande
+            })
+            .catch(function(err) {
+                var msg = err.message && err.message.includes('uq_types_aliment_code')
+                    ? '❌ Ce code aliment existe déjà'
+                    : '❌ Erreur: ' + esc(err.message);
+                showAlert('alimentModalAlert', 'error', msg);
+            })
+            .finally(function() { $('saveAlimentModal').disabled = false; });
+    }
+
+    function deleteAliment(alimentId) {
+        if (!confirm('Supprimer cet aliment ? Il sera retiré de la liste de commande.')) return;
+        supabase.from('types_aliment').delete().eq('id', alimentId)
+            .then(function(res) {
+                if (res.error) throw res.error;
+                showAlert('alimentsAlert', 'success', '✓ Aliment supprimé');
+                loadAliments();
+                typesAlimentList = [];
+            })
+            .catch(function(err) {
+                // Si des commandes référencent cet aliment, désactiver plutôt que supprimer
+                if (err.message && err.message.includes('foreign key')) {
+                    supabase.from('types_aliment').update({ is_active: false }).eq('id', alimentId)
+                        .then(function() { showAlert('alimentsAlert', 'success', '⚠️ Aliment désactivé (référencé par des commandes existantes)'); loadAliments(); typesAlimentList = []; })
+                        .catch(function(e) { showAlert('alimentsAlert', 'error', '❌ ' + esc(e.message)); });
+                } else {
+                    showAlert('alimentsAlert', 'error', '❌ ' + esc(err.message));
+                }
+            });
+    }
+
+    function importAlimentsExcel(file) {
+        if (!file) return;
+        var resultDiv = $('importAlimentsResult');
+        resultDiv.style.display = 'none';
+        resultDiv.className = '';
+        resultDiv.textContent = '';
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var data = new Uint8Array(e.target.result);
+                var wb   = XLSX.read(data, { type: 'array' });
+                var ws   = wb.Sheets[wb.SheetNames[0]];
+                var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+                if (rows.length < 2) {
+                    showImportResult('error', '❌ Le fichier est vide ou ne contient pas de données.');
+                    return;
+                }
+
+                // Ligne 1 = en-têtes, lignes suivantes = données
+                var lignes = rows.slice(1).filter(function(r) {
+                    return r[0] || r[1] || r[2]; // au moins code, cat ou libellé non vide
+                });
+
+                if (lignes.length === 0) {
+                    showImportResult('error', '❌ Aucune ligne de données trouvée dans le fichier.');
+                    return;
+                }
+
+                var payload = [];
+                var erreurs = [];
+                lignes.forEach(function(r, i) {
+                    var code    = String(r[0] || '').trim().toUpperCase();
+                    var cat     = String(r[1] || '').trim();
+                    var libelle = String(r[2] || '').trim();
+                    var unite   = String(r[3] || 'tonnes').trim() || 'tonnes';
+                    if (!code)    { erreurs.push('Ligne ' + (i + 2) + ': code manquant'); return; }
+                    if (!libelle) { erreurs.push('Ligne ' + (i + 2) + ': libellé manquant'); return; }
+                    payload.push({ code_aliment: code, categorie: cat || null, nom: libelle, unite: unite, is_active: true });
+                });
+
+                if (payload.length === 0) {
+                    showImportResult('error', '❌ Aucune ligne valide.\n' + erreurs.join('\n'));
+                    return;
+                }
+
+                // Upsert (code_aliment comme clé de conflit)
+                supabase.from('types_aliment')
+                    .upsert(payload, { onConflict: 'code_aliment', ignoreDuplicates: false })
+                    .then(function(res) {
+                        if (res.error) throw res.error;
+                        var msg = '✅ ' + payload.length + ' aliment(s) importé(s) / mis à jour.';
+                        if (erreurs.length > 0) msg += '\n⚠️ ' + erreurs.length + ' ligne(s) ignorée(s) : ' + erreurs.join(', ');
+                        showImportResult('ok', msg);
+                        loadAliments();
+                        typesAlimentList = [];
+                    })
+                    .catch(function(err) {
+                        showImportResult('error', '❌ Erreur import : ' + esc(err.message));
+                    });
+            } catch(ex) {
+                showImportResult('error', '❌ Impossible de lire le fichier Excel : ' + esc(ex.message));
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function showImportResult(type, msg) {
+        var div = $('importAlimentsResult');
+        div.style.display = 'block';
+        div.className = type === 'ok' ? 'import-ok' : 'import-error';
+        div.style.whiteSpace = 'pre-line';
+        div.textContent = msg;
+    }
+
+    function downloadModeleExcel() {
+        var ws_data = [
+            ['Code', 'Catégorie', 'Libellé', 'Unité'],
+            ['ALI-001', 'Démarrage', 'Aliment Démarrage Poulet Chair', 'tonnes'],
+            ['ALI-002', 'Croissance', 'Aliment Croissance Poulet Chair', 'tonnes'],
+            ['ALI-003', 'Finition', 'Aliment Finition Poulet Chair', 'tonnes']
+        ];
+        var ws = XLSX.utils.aoa_to_sheet(ws_data);
+        ws['!cols'] = [{ wch: 14 }, { wch: 18 }, { wch: 36 }, { wch: 14 }];
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Aliments');
+        XLSX.writeFile(wb, 'modele_import_aliments.xlsx');
+    }
+
     // =====================================================
     // API CONFIG MANAGEMENT
     // =====================================================
@@ -838,42 +1757,51 @@
         supabase.from('api_config').select('*').eq('is_active', true).maybeSingle()
             .then(function(res) {
                 if (res.data) {
-                    $('tuffigoApiKey').value = res.data.api_key || '';
-                    $('tuffigoBaseUrl').value = res.data.base_url || '';
-                    $('apiConfigStatus').innerHTML = '<p style="color: var(--green);">✓ Configuration trouvée</p>';
+                    $('tuffigoApiKey').value   = res.data.api_key   || '';
+                    $('tuffigoBaseUrl').value  = res.data.base_url  || 'https://api.mytuffigorapidex.com/group/v2/';
+                    $('tuffigoLogin').value    = res.data.api_login    || '';
+                    $('tuffigoPassword').value = res.data.api_password || '';
+                    var hasToken = !!(res.data.api_key);
+                    var hasLogin = !!(res.data.api_login);
+                    $('apiConfigStatus').innerHTML =
+                        '<p style="color:var(--green);">✓ Configuration trouvée</p>' +
+                        '<p style="font-size:0.8rem; color:var(--text-dim);">Token : ' + (hasToken ? '✅ renseigné' : '⚠️ manquant') + ' &nbsp;|&nbsp; Login : ' + (hasLogin ? '✅ renseigné' : '⚠️ manquant') + '</p>';
                     if (res.data.last_sync) {
-                        $('lastSyncInfo').innerHTML = '<p>Dernière sync: ' + new Date(res.data.last_sync).toLocaleString('fr-FR') + '</p>';
+                        $('lastSyncInfo').innerHTML = '<p>Dernière sync : ' + new Date(res.data.last_sync).toLocaleString('fr-FR') + '</p>';
                     }
                 } else {
-                    $('apiConfigStatus').innerHTML = '<p style="color: var(--orange);">⚠️ Aucune configuration</p>';
+                    $('tuffigoBaseUrl').value = 'https://api.mytuffigorapidex.com/group/v2/';
+                    $('apiConfigStatus').innerHTML = '<p style="color:var(--orange);">⚠️ Aucune configuration enregistrée</p>';
                 }
             })
             .catch(function(err) {
-                $('apiConfigStatus').innerHTML = '<p style="color: var(--red);">❌ Erreur: ' + err.message + '</p>';
+                $('apiConfigStatus').innerHTML = '<p style="color:var(--red);">❌ Erreur: ' + esc(err.message) + '</p>';
             });
     }
-    
+
     function saveApiConfig() {
-        var apiKey = $('tuffigoApiKey').value.trim();
-        var baseUrl = $('tuffigoBaseUrl').value.trim();
-        
+        var apiKey   = $('tuffigoApiKey').value.trim();
+        var baseUrl  = $('tuffigoBaseUrl').value.trim();
+        var login    = $('tuffigoLogin').value.trim();
+        var password = $('tuffigoPassword').value.trim();
+
         if (!apiKey) {
-            showAlert('apiConfigAlert', 'error', '❌ La clé API est requise');
+            showAlert('apiConfigAlert', 'error', '❌ Le token API est requis');
             return;
         }
-        
+
         showLoading('Enregistrement...');
-        
-        // Check if config exists
+
         supabase.from('api_config').select('id').eq('is_active', true).maybeSingle()
             .then(function(res) {
                 var data = {
-                    api_key: apiKey,
-                    base_url: baseUrl || null,
-                    is_active: true,
-                    updated_at: new Date().toISOString()
+                    api_key:      apiKey,
+                    base_url:     baseUrl || 'https://api.mytuffigorapidex.com/group/v2/',
+                    api_login:    login    || null,
+                    api_password: password || null,
+                    is_active:    true,
+                    updated_at:   new Date().toISOString()
                 };
-                
                 if (res.data) {
                     return supabase.from('api_config').update(data).eq('id', res.data.id);
                 } else {
@@ -883,15 +1811,64 @@
             })
             .then(function(res) {
                 if (res.error) throw res.error;
-                showAlert('apiConfigAlert', 'success', '✓ Configuration enregistrée');
+                showAlert('apiConfigAlert', 'success', '✓ Configuration enregistrée avec succès');
                 loadApiConfig();
             })
             .catch(function(err) {
-                showAlert('apiConfigAlert', 'error', '❌ Erreur: ' + err.message);
+                showAlert('apiConfigAlert', 'error', '❌ Erreur: ' + esc(err.message));
             })
             .finally(function() { hideLoading(); });
     }
-    
+
+    function testApiConnection() {
+        var apiKey  = $('tuffigoApiKey').value.trim();
+        var baseUrl = ($('tuffigoBaseUrl').value.trim() || 'https://api.mytuffigorapidex.com/group/v2/').replace(/\/?$/, '/');
+
+        if (!apiKey) {
+            showAlert('apiConfigAlert', 'error', '❌ Renseignez le token API avant de tester');
+            return;
+        }
+
+        $('btnTestApiConfig').disabled = true;
+        $('btnTestApiConfig').textContent = '⏳ Test en cours...';
+        showAlert('apiConfigAlert', '', '');
+
+        fetch(baseUrl + 'breeders/', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'token ' + apiKey,
+                'Accept': 'application/json'
+            }
+        })
+        .then(function(resp) {
+            if (resp.status === 200) {
+                return resp.json().then(function(data) {
+                    var nb = Array.isArray(data) ? data.length : '?';
+                    showAlert('apiConfigAlert', 'success', '✅ Connexion réussie — ' + nb + ' éleveur(s) accessible(s) via l\'API');
+                });
+            } else if (resp.status === 401 || resp.status === 403) {
+                showAlert('apiConfigAlert', 'error', '❌ Token refusé (HTTP ' + resp.status + ') — vérifiez votre token API');
+            } else {
+                showAlert('apiConfigAlert', 'error', '⚠️ Réponse inattendue : HTTP ' + resp.status);
+            }
+        })
+        .catch(function(err) {
+            // CORS probable si appelé depuis un navigateur non autorisé
+            var msg = err.message || '';
+            if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('cors')) {
+                showAlert('apiConfigAlert', 'error',
+                    '⚠️ Test bloqué par la politique CORS du navigateur. ' +
+                    'Vérifiez le token via N8N (nœud HTTP Request → GET ' + baseUrl + 'breeders/ → header Authorization: token <token>).');
+            } else {
+                showAlert('apiConfigAlert', 'error', '❌ Erreur réseau : ' + esc(msg));
+            }
+        })
+        .finally(function() {
+            $('btnTestApiConfig').disabled = false;
+            $('btnTestApiConfig').textContent = '🧪 Tester la connexion';
+        });
+    }
+
     function toggleApiKeyVisibility() {
         var input = $('tuffigoApiKey');
         var btn = $('btnShowApiKey');
@@ -901,6 +1878,18 @@
         } else {
             input.type = 'password';
             btn.textContent = '👁️ Afficher';
+        }
+    }
+
+    function togglePasswordVisibility() {
+        var input = $('tuffigoPassword');
+        var btn = $('btnShowPassword');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            btn.textContent = '👁️';
         }
     }
     
@@ -928,8 +1917,8 @@
                         var html = '';
                         users.forEach(function(u) {
                             var eleveur = eleveurs.find(function(e) { return e.id === u.eleveur_id; });
-                            var eleveurName = eleveur ? (eleveur.nom + ' ' + (eleveur.prenom || '')) : '-';
-                            
+                            var eleveurName = eleveur ? (esc(eleveur.nom) + ' ' + esc(eleveur.prenom || '')) : '-';
+
                             var statusClass = 'status-inactive';
                             var statusText = 'Inactif';
                             if (u.is_active) {
@@ -941,18 +1930,20 @@
                                     statusText = 'Actif';
                                 }
                             }
-                            
+
                             var expDate = u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('fr-FR') : '-';
-                            
-                            html += '<tr data-id="' + u.id + '">';
-                            html += '<td><strong>' + u.nom + '</strong> ' + (u.prenom || '') + '<br><small style="color:var(--text-dim)">' + u.email + '</small></td>';
-                            html += '<td><span class="session-role ' + u.role + '">' + (u.role || 'eleveur').toUpperCase() + '</span></td>';
+                            var safeRole = esc(u.role || 'eleveur');
+                            var safeId = esc(u.id);
+
+                            html += '<tr data-id="' + safeId + '">';
+                            html += '<td><strong>' + esc(u.nom) + '</strong> ' + esc(u.prenom || '') + '<br><small style="color:var(--text-dim)">' + esc(u.email) + '</small></td>';
+                            html += '<td><span class="session-role ' + safeRole + '">' + safeRole.toUpperCase() + '</span></td>';
                             html += '<td>' + eleveurName + '</td>';
-                            html += '<td>' + expDate + '</td>';
+                            html += '<td>' + esc(expDate) + '</td>';
                             html += '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>';
                             html += '<td><div class="action-btns">';
-                            html += '<button class="action-btn edit-user" data-id="' + u.id + '">✏️</button>';
-                            html += '<button class="action-btn delete delete-user" data-id="' + u.id + '">🗑️</button>';
+                            html += '<button class="action-btn edit-user" data-id="' + safeId + '">✏️</button>';
+                            html += '<button class="action-btn delete delete-user" data-id="' + safeId + '">🗑️</button>';
                             html += '</div></td>';
                             html += '</tr>';
                         });
@@ -973,23 +1964,42 @@
             });
     }
     
+    function populateEleveurSelect(selectEl, selectedId) {
+        selectEl.innerHTML = '<option value="">-- Aucun --</option>';
+        allEleveursList.forEach(function(e) {
+            var opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = (e.nom || '') + ' ' + (e.prenom || '') + ' (' + (e.code_eleveur || '') + ')';
+            if (selectedId && e.id === selectedId) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+    }
+
     function openUserModal(userId) {
         editingUserId = userId || null;
         $('userModalTitle').textContent = userId ? 'Modifier utilisateur' : 'Nouvel utilisateur';
         hideAlert('userModalAlert');
-        
-        // Populate eleveurs dropdown
-        var eleveurSelect = $('userEleveurId');
-        eleveurSelect.innerHTML = '<option value="">-- Aucun --</option>';
-        allEleveursList.forEach(function(e) {
-            var opt = document.createElement('option');
-            opt.value = e.id;
-            opt.textContent = e.nom + ' ' + (e.prenom || '') + ' (' + e.code_eleveur + ')';
-            eleveurSelect.appendChild(opt);
-        });
+
+        // S'assurer que la liste des éleveurs est chargée avant d'ouvrir la modale
+        var openModal = function(selectedEleveurId) {
+            populateEleveurSelect($('userEleveurId'), selectedEleveurId || null);
+            $('userModal').classList.add('show');
+        };
+
+        var loadAndOpen = function(selectedEleveurId) {
+            if (allEleveursList.length > 0) {
+                openModal(selectedEleveurId);
+                return;
+            }
+            supabase.from('eleveurs').select('id, nom, prenom, code_eleveur').eq('is_active', true)
+                .then(function(r) {
+                    allEleveursList = r.data || [];
+                    openModal(selectedEleveurId);
+                })
+                .catch(function() { openModal(selectedEleveurId); });
+        };
         
         if (userId) {
-            // Load user data
             supabase.from('users').select('*').eq('id', userId).single()
                 .then(function(res) {
                     if (res.data) {
@@ -999,25 +2009,25 @@
                         $('userNom').value = res.data.nom || '';
                         $('userPrenom').value = res.data.prenom || '';
                         $('userRole').value = res.data.role || 'eleveur';
-                        $('userEleveurId').value = res.data.eleveur_id || '';
                         $('userExpiration').value = res.data.expiration_date ? res.data.expiration_date.split('T')[0] : '';
                         $('userIsActive').checked = res.data.is_active !== false;
+                        loadAndOpen(res.data.eleveur_id);
+                    } else {
+                        loadAndOpen(null);
                     }
-                });
+                })
+                .catch(function() { loadAndOpen(null); });
         } else {
-            // Reset form
             $('userEmail').value = '';
             $('userPassword').value = '';
             $('userPassword').placeholder = 'Mot de passe';
             $('userNom').value = '';
             $('userPrenom').value = '';
             $('userRole').value = 'eleveur';
-            $('userEleveurId').value = '';
             $('userExpiration').value = '';
             $('userIsActive').checked = true;
+            loadAndOpen(null);
         }
-        
-        $('userModal').classList.add('show');
     }
     
     function closeUserModal() {
@@ -1035,8 +2045,13 @@
         var expiration = $('userExpiration').value || null;
         var isActive = $('userIsActive').checked;
         
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email || !nom) {
             showAlert('userModalAlert', 'error', '❌ Email et nom sont requis');
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            showAlert('userModalAlert', 'error', '❌ Format d\'email invalide');
             return;
         }
         if (!editingUserId && !password) {
@@ -1070,8 +2085,7 @@
         }
         
         promise
-            .then(function(res) {
-                if (res.error) throw res.error;
+            .then(function() {
                 showAlert('usersAlert', 'success', '✓ Utilisateur enregistré');
                 closeUserModal();
                 loadUsers();
@@ -1108,11 +2122,12 @@
     function loadAllEleveurs() {
         if (!supabase) return;
         supabase.from('eleveurs').select('*').eq('is_active', true).order('nom').then(function(r) {
+            allEleveursList = r.data || [];
             var sel = $('selEleveur');
             sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-            (r.data || []).forEach(function(e) {
+            allEleveursList.forEach(function(e) {
                 var opt = document.createElement('option');
-                opt.value = e.id; opt.setAttribute('data-json', JSON.stringify(e));
+                opt.value = e.id;
                 opt.textContent = e.nom + ' ' + (e.prenom || '') + ' (' + e.code_eleveur + ')';
                 sel.appendChild(opt);
             });
@@ -1126,9 +2141,11 @@
             sel.innerHTML = '<option value="">-- Sélectionner --</option>';
             sel.disabled = false;
             var sites = r.data || [];
+            cacheSites = {};
             sites.forEach(function(s) {
+                cacheSites[s.id] = s;
                 var opt = document.createElement('option');
-                opt.value = s.id; opt.setAttribute('data-json', JSON.stringify(s));
+                opt.value = s.id;
                 opt.textContent = s.nom + (s.ville ? ' (' + s.ville + ')' : '');
                 sel.appendChild(opt);
             });
@@ -1138,55 +2155,53 @@
     
     function onEleveurChange() {
         var sel = $('selEleveur');
-        var opt = sel.options[sel.selectedIndex];
-        if (opt && opt.value) {
-            try { currentEleveur = JSON.parse(opt.getAttribute('data-json')); } catch(e) {}
-        }
+        var eleveurId = sel.value;
+        currentEleveur = allEleveursList.find(function(e) { return String(e.id) === String(eleveurId); }) || null;
         resetSelectors('site');
-        if (sel.value) loadSitesForEleveur(sel.value);
+        if (eleveurId) loadSitesForEleveur(eleveurId);
     }
-    
+
     function onSiteChange() {
         var sel = $('selSite');
-        var opt = sel.options[sel.selectedIndex];
-        if (opt && opt.value) {
-            try { currentSite = JSON.parse(opt.getAttribute('data-json')); } catch(e) {}
-        }
+        var siteId = sel.value;
+        currentSite = cacheSites[siteId] || null;
         resetSelectors('batiment');
-        if (!sel.value) return;
-        supabase.from('batiments').select('*').eq('site_id', sel.value).eq('is_active', true).order('nom').then(function(r) {
+        if (!siteId) return;
+        supabase.from('batiments').select('*').eq('site_id', siteId).eq('is_active', true).order('nom').then(function(r) {
             var s = $('selBatiment');
             s.innerHTML = '<option value="">-- Sélectionner --</option>';
             s.disabled = false;
             var bats = r.data || [];
+            cacheBatiments = {};
             bats.forEach(function(b) {
+                cacheBatiments[b.id] = b;
                 var opt = document.createElement('option');
-                opt.value = b.id; opt.setAttribute('data-json', JSON.stringify(b));
+                opt.value = b.id;
                 opt.textContent = b.nom + (b.capacite ? ' (cap.' + b.capacite + ')' : '');
                 s.appendChild(opt);
             });
             if (bats.length === 1) { s.value = bats[0].id; onBatimentChange(); }
         });
     }
-    
+
     function onBatimentChange() {
         var sel = $('selBatiment');
-        var opt = sel.options[sel.selectedIndex];
-        if (opt && opt.value) {
-            try { currentBatiment = JSON.parse(opt.getAttribute('data-json')); } catch(e) {}
-        }
+        var batId = sel.value;
+        currentBatiment = cacheBatiments[batId] || null;
         resetSelectors('lot');
-        if (!sel.value) return;
-        
-        supabase.from('lots').select('*').eq('batiment_id', sel.value).order('date_mise_place', { ascending: false })
+        if (!batId) return;
+
+        supabase.from('lots').select('*').eq('batiment_id', batId).order('date_mise_place', { ascending: false })
             .then(function(r) {
                 var s = $('selLot');
                 s.innerHTML = '<option value="">-- Sélectionner --</option>';
                 s.disabled = false;
                 var lots = r.data || [];
+                cacheLots = {};
                 lots.forEach(function(l) {
+                    cacheLots[l.id] = l;
                     var opt = document.createElement('option');
-                    opt.value = l.id; opt.setAttribute('data-json', JSON.stringify(l));
+                    opt.value = l.id;
                     opt.textContent = (l.statut === 'actif' ? '🟢 ' : '⚪ ') + l.code_lot;
                     s.appendChild(opt);
                 });
@@ -1198,8 +2213,7 @@
     function onLotChange() {
         var id = $('selLot').value;
         if (!id) { hideDataPanels(); return; }
-        var opt = document.querySelector('#selLot option[value="' + id + '"]');
-        var lot = {}; try { lot = JSON.parse(opt.getAttribute('data-json') || '{}'); } catch (e) {}
+        var lot = cacheLots[id] || {};
         currentLotInfo = lot;
         
         $('lotCode').textContent = lot.code_lot || '--';
@@ -1226,12 +2240,16 @@
             supabase.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age')
         ]).then(function(r) {
-            lotData.poids = r[0].data || [];
-            lotData.mortalite = r[1].data || [];
-            lotData.aliment = r[2].data || [];
-            lotData.oeufs = r[3].data || [];
+            lotData.poids = (r[0] && r[0].data) ? r[0].data : [];
+            lotData.mortalite = (r[1] && r[1].data) ? r[1].data : [];
+            lotData.aliment = (r[2] && r[2].data) ? r[2].data : [];
+            lotData.oeufs = (r[3] && r[3].data) ? r[3].data : [];
             if (lot.souche_id) loadStandards(lot.souche_id);
-            else { showDataPanels(); updateUI(); }
+            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [] }; showDataPanels(); updateUI(); }
+        }).catch(function(err) {
+            console.error('Erreur chargement données lot:', err);
+            showDataPanels();
+            updateUI();
         });
     }
     
@@ -1242,11 +2260,16 @@
             supabase.from('standards_aliment').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabase.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age')
         ]).then(function(r) {
-            standardsData.poids = r[0].data || [];
-            standardsData.mortalite = r[1].data || [];
-            standardsData.aliment = r[2].data || [];
-            standardsData.oeufs = r[3].data || [];
-            showDataPanels(); updateUI();
+            standardsData.poids = (r[0] && r[0].data) ? r[0].data : [];
+            standardsData.mortalite = (r[1] && r[1].data) ? r[1].data : [];
+            standardsData.aliment = (r[2] && r[2].data) ? r[2].data : [];
+            standardsData.oeufs = (r[3] && r[3].data) ? r[3].data : [];
+        }).catch(function() {
+            // En cas d'erreur, on affiche quand même les données sans standards
+            standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [] };
+        }).finally(function() {
+            showDataPanels();
+            updateUI();
         });
     }
     
@@ -1531,7 +2554,10 @@
     
     function filterByPeriod(data) {
         if (!data || !data.length || currentPeriod === 'all') return data;
-        return data.slice(-parseInt(currentPeriod));
+        var maxAge = parseInt(currentPeriod);
+        // Filtre sur les N derniers jours du cycle (jour_age), pas sur le nombre de lignes
+        var maxJour = data[data.length - 1].jour_age;
+        return data.filter(function(d) { return d.jour_age > maxJour - maxAge; });
     }
     
     function onIndicatorClick(e) {
@@ -1881,6 +2907,8 @@
         // API Config
         $('btnSaveApiConfig').addEventListener('click', saveApiConfig);
         $('btnShowApiKey').addEventListener('click', toggleApiKeyVisibility);
+        $('btnShowPassword').addEventListener('click', togglePasswordVisibility);
+        $('btnTestApiConfig').addEventListener('click', testApiConnection);
         
         // Users
         $('btnNewUser').addEventListener('click', function() { openUserModal(null); });
@@ -1908,7 +2936,611 @@
         // Exports
         $('btnExportPDF').addEventListener('click', exportPDF);
         $('btnExportExcel').addEventListener('click', exportExcel);
+
+        // Navigation principale
+        document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                switchSection(this.getAttribute('data-section'));
+            });
+        });
+
+        // Section commande
+        $('btnPreviewPDF').addEventListener('click', previewCommandePDF);
+        $('btnEnvoyerCommande').addEventListener('click', envoyerCommande);
+        $('btnRefreshCommandes').addEventListener('click', loadHistoriqueCommandes);
+        $('cmdTypeAliment').addEventListener('change', onTypeAlimentChange);
+        $('btnAddFournisseur').addEventListener('click', openFournisseurModal);
+        $('closeFournisseurModal').addEventListener('click', closeFournisseurModal);
+        $('cancelFournisseurModal').addEventListener('click', closeFournisseurModal);
+        $('saveFournisseurModal').addEventListener('click', saveFournisseur);
+        $('fournisseurModal').addEventListener('click', function(e) {
+            if (e.target === this) closeFournisseurModal();
+        });
+
+        // Panel aliments (admin)
+        $('btnNewAliment').addEventListener('click', function() { openAlimentModal(null); });
+        $('btnDownloadModele').addEventListener('click', downloadModeleExcel);
+        $('closeAlimentModal').addEventListener('click', closeAlimentModal);
+        $('cancelAlimentModal').addEventListener('click', closeAlimentModal);
+        $('saveAlimentModal').addEventListener('click', saveAliment);
+        $('alimentModal').addEventListener('click', function(e) {
+            if (e.target === this) closeAlimentModal();
+        });
+        $('importAlimentsFile').addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                importAlimentsExcel(this.files[0]);
+                this.value = ''; // reset pour permettre un second import du même fichier
+            }
+        });
+
+        // Planning
+        $('calPrev').addEventListener('click', function() { calNavMonth(-1); });
+        $('calNext').addEventListener('click', function() { calNavMonth(1); });
     });
+
+    // =====================================================
+    // NAVIGATION PRINCIPALE
+    // =====================================================
+    var currentSection = 'exploitation';
+
+    function switchSection(sectionName) {
+        currentSection = sectionName;
+        document.querySelectorAll('.main-section').forEach(function(s) { s.classList.remove('show'); });
+        var el = $('section' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1));
+        if (el) el.classList.add('show');
+        document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-section') === sectionName);
+        });
+        if (sectionName === 'commande') initCommandePanel();
+        if (sectionName === 'planning') initPlanningPanel();
+    }
+
+    // =====================================================
+    // SECTION COMMANDE D'ALIMENT
+    // =====================================================
+    var typesAlimentList = [];
+    var commandesLoaded = false;
+
+    var fournisseursEleveurList = [];
+
+    function initCommandePanel() {
+        loadFournisseursEleveur();
+        if (typesAlimentList.length === 0) loadTypesAliment();
+        loadHistoriqueCommandes();
+        // Pré-remplir date minimum = demain
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        $('cmdDateLivraison').min = tomorrow.toISOString().split('T')[0];
+    }
+
+    function loadFournisseursEleveur() {
+        var sel = $('cmdFournisseur');
+        sel.innerHTML = '<option value="">-- Sélectionner un fournisseur --</option>';
+        if (!supabase || !currentEleveur) return;
+        supabase.from('fournisseurs_eleveur')
+            .select('*')
+            .eq('eleveur_id', currentEleveur.id)
+            .eq('is_active', true)
+            .order('nom')
+            .then(function(r) {
+                fournisseursEleveurList = r.data || [];
+                fournisseursEleveurList.forEach(function(f) {
+                    var opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.nom + (f.contact_nom ? ' — ' + f.contact_nom : '') + ' <' + f.email + '>';
+                    sel.appendChild(opt);
+                });
+            })
+            .catch(function(err) { console.error('Erreur chargement fournisseurs:', err); });
+    }
+
+    function openFournisseurModal() {
+        $('fournisseurModalTitle').textContent = '🚚 Ajouter un fournisseur';
+        $('fourn_nom').value = '';
+        $('fourn_rue').value = '';
+        $('fourn_code_postal').value = '';
+        $('fourn_ville').value = '';
+        $('fourn_contact_nom').value = '';
+        $('fourn_email').value = '';
+        $('fournisseurModalAlert').className = 'alert';
+        $('fournisseurModalAlert').textContent = '';
+        $('fournisseurModal').classList.add('show');
+        $('fourn_nom').focus();
+    }
+
+    function closeFournisseurModal() {
+        $('fournisseurModal').classList.remove('show');
+    }
+
+    function saveFournisseur() {
+        var nom = $('fourn_nom').value.trim();
+        var email = $('fourn_email').value.trim();
+        if (!nom) { showAlert('fournisseurModalAlert', 'error', '❌ Le nom est requis'); return; }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showAlert('fournisseurModalAlert', 'error', '❌ Email invalide');
+            return;
+        }
+        if (!currentEleveur) { showAlert('fournisseurModalAlert', 'error', '❌ Aucun éleveur sélectionné'); return; }
+
+        $('saveFournisseurModal').disabled = true;
+        supabase.from('fournisseurs_eleveur').insert({
+            eleveur_id: currentEleveur.id,
+            nom: nom,
+            rue: $('fourn_rue').value.trim() || null,
+            code_postal: $('fourn_code_postal').value.trim() || null,
+            ville: $('fourn_ville').value.trim() || null,
+            contact_nom: $('fourn_contact_nom').value.trim() || null,
+            email: email
+        }).select().single()
+        .then(function(res) {
+            if (res.error) throw res.error;
+            closeFournisseurModal();
+            // Recharger la liste et sélectionner le nouveau fournisseur
+            loadFournisseursEleveur();
+            // Sélectionner après un court délai pour laisser le temps au DOM
+            setTimeout(function() {
+                $('cmdFournisseur').value = res.data.id;
+            }, 300);
+        })
+        .catch(function(err) {
+            showAlert('fournisseurModalAlert', 'error', '❌ Erreur: ' + esc(err.message));
+        })
+        .finally(function() { $('saveFournisseurModal').disabled = false; });
+    }
+
+    function loadTypesAliment() {
+        if (!supabase) return;
+        supabase.from('types_aliment')
+            .select('*')
+            .eq('is_active', true)
+            .order('categorie', { ascending: true })
+            .order('nom', { ascending: true })
+            .then(function(r) {
+                typesAlimentList = r.data || [];
+                var sel = $('cmdTypeAliment');
+                sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+                typesAlimentList.forEach(function(t) {
+                    var opt = document.createElement('option');
+                    opt.value = t.id;
+                    var label = '';
+                    if (t.code_aliment) label += '[' + t.code_aliment + '] ';
+                    label += t.nom;
+                    if (t.categorie) label += ' — ' + t.categorie;
+                    opt.textContent = label;
+                    opt.dataset.unite = t.unite || 'tonnes';
+                    sel.appendChild(opt);
+                });
+            })
+            .catch(function(err) { console.error('Erreur chargement types aliment:', err); });
+    }
+
+    function onTypeAlimentChange() {
+        // Met à jour le badge unité selon l'aliment sélectionné
+        var sel = $('cmdTypeAliment');
+        var opt = sel.options[sel.selectedIndex];
+        var unite = (opt && opt.dataset.unite) ? opt.dataset.unite : 'tonnes';
+        var badge = document.querySelector('.commande-unit-badge');
+        if (badge) badge.textContent = unite;
+    }
+
+    function loadHistoriqueCommandes() {
+        if (!supabase || !currentEleveur) {
+            $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">Sélectionnez un éleveur pour voir les commandes.</div>';
+            return;
+        }
+        supabase.from('v_planning_commandes')
+            .select('*')
+            .eq('eleveur_id', currentEleveur.id)
+            .order('date_livraison_souhaitee', { ascending: false })
+            .limit(20)
+            .then(function(r) {
+                var commandes = r.data || [];
+                if (commandes.length === 0) {
+                    $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">🗒️ Aucune commande pour le moment.</div>';
+                    return;
+                }
+                var html = '';
+                commandes.forEach(function(c) {
+                    var dateRef = c.date_livraison_confirmee || c.date_livraison_souhaitee;
+                    var dateStr = dateRef ? new Date(dateRef).toLocaleDateString('fr-FR') : '--';
+                    var statut = c.statut || 'en_attente';
+                    var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
+                    var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
+                    html += '<div class="commande-item">';
+                    html += '<div class="commande-item-left">';
+                    html += '<div class="commande-item-date">Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR') + '</div>';
+                    html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
+                    html += '<div class="commande-item-qty">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + (heure ? ' · ' + heure : '') + '</div>';
+                    html += '</div>';
+                    html += '<span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span>';
+                    html += '</div>';
+                });
+                $('commandesListContainer').innerHTML = html;
+            })
+            .catch(function(err) {
+                $('commandesListContainer').innerHTML = '<div style="color:var(--red);padding:1rem;">❌ Erreur: ' + esc(err.message) + '</div>';
+            });
+    }
+
+    function buildCommandePDFDoc(commande, logoBase64) {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF('portrait', 'mm', 'a4');
+        var pageWidth = doc.internal.pageSize.getWidth();
+        var margin = 15;
+        var now = new Date();
+
+        // Fond blanc
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F');
+
+        // Logo
+        var titleX = margin;
+        if (logoBase64) {
+            try { doc.addImage(logoBase64, 'PNG', margin, 10, 45, 22); titleX = margin + 50; } catch(e) {}
+        }
+
+        // Titre
+        doc.setFontSize(20); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+        doc.text('BON DE COMMANDE ALIMENT', titleX, 20);
+        doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+        doc.text('N° ' + esc(commande.id || '--') + '   |   ' + now.toLocaleDateString('fr-FR'), titleX, 27);
+
+        // Séparateur
+        doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.5);
+        doc.line(margin, 37, pageWidth - margin, 37);
+
+        // Bloc éleveur
+        var y = 45;
+        doc.setFillColor(241, 245, 249); doc.roundedRect(margin, y, 80, 35, 2, 2, 'FD');
+        doc.setTextColor(100, 116, 139); doc.setFontSize(7); doc.text('ÉLEVEUR', margin + 3, y + 7);
+        doc.setTextColor(30, 41, 59); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+        doc.text(esc((currentEleveur && currentEleveur.nom) ? currentEleveur.nom + ' ' + (currentEleveur.prenom || '') : '--'), margin + 3, y + 15);
+        doc.setFont(undefined, 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+        doc.text('Code: ' + esc((currentEleveur && currentEleveur.code_eleveur) || '--'), margin + 3, y + 22);
+        if (currentEleveur && currentEleveur.raison_sociale) doc.text(esc(currentEleveur.raison_sociale), margin + 3, y + 28);
+
+        // Bloc fournisseur (depuis sélection en cours)
+        var selFourId = $('cmdFournisseur').value;
+        var fourObj = fournisseursEleveurList.find(function(f) { return f.id === selFourId; });
+        var fx = margin + 85;
+        doc.setFillColor(241, 245, 249); doc.roundedRect(fx, y, 100, 35, 2, 2, 'FD');
+        doc.setTextColor(100, 116, 139); doc.setFontSize(7); doc.text('FOURNISSEUR DESTINATAIRE', fx + 3, y + 7);
+        doc.setTextColor(30, 41, 59); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+        doc.text(esc((fourObj && fourObj.nom) || 'Fournisseur'), fx + 3, y + 15);
+        doc.setFont(undefined, 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+        doc.text(esc((fourObj && fourObj.email) || '--'), fx + 3, y + 22);
+        if (fourObj && fourObj.contact_nom) doc.text(esc(fourObj.contact_nom), fx + 3, y + 28);
+
+        // Détails commande
+        y += 45;
+        doc.setDrawColor(203, 213, 225); doc.line(margin, y, pageWidth - margin, y);
+        y += 8;
+
+        var fields = [
+            ['Type d\'aliment', esc(commande.typeAlimentLabel || '--')],
+            ['Quantité', esc(String(commande.quantite || '--')) + ' tonnes'],
+            ['Date de livraison souhaitée', esc(commande.dateLivraison || '--')],
+            ['Notes', esc(commande.notes || 'Aucune')]
+        ];
+        fields.forEach(function(f) {
+            doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.setFont(undefined, 'normal');
+            doc.text(f[0], margin, y);
+            doc.setTextColor(30, 41, 59); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+            doc.text(f[1], margin, y + 7);
+            y += 18;
+        });
+
+        // Footer
+        y = doc.internal.pageSize.getHeight() - 15;
+        doc.setDrawColor(203, 213, 225); doc.line(margin, y - 5, pageWidth - margin, y - 5);
+        doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.setFont(undefined, 'normal');
+        doc.text('Dataferme v16.0 - ADOSI', margin, y);
+        doc.text('Document généré le ' + now.toLocaleString('fr-FR'), pageWidth - margin, y, { align: 'right' });
+
+        return doc;
+    }
+
+    function getCommandeFormData() {
+        var typeId = $('cmdTypeAliment').value;
+        var typeObj = typesAlimentList.find(function(t) { return t.id === typeId; });
+        return {
+            typeAlimentId: typeId,
+            typeAlimentLabel: typeObj ? typeObj.nom : '--',
+            quantite: parseFloat($('cmdQuantite').value),
+            dateLivraison: $('cmdDateLivraison').value,
+            notes: $('cmdNotes').value.trim()
+        };
+    }
+
+    function validateCommandeForm() {
+        var d = getCommandeFormData();
+        if (!d.typeAlimentId) { showAlert('commandeAlert', 'error', '❌ Veuillez choisir un type d\'aliment'); return false; }
+        if (!d.quantite || d.quantite <= 0) { showAlert('commandeAlert', 'error', '❌ Quantité invalide'); return false; }
+        if (!d.dateLivraison) { showAlert('commandeAlert', 'error', '❌ Veuillez indiquer une date de livraison souhaitée'); return false; }
+        if (!currentEleveur) { showAlert('commandeAlert', 'error', '❌ Aucun éleveur sélectionné'); return false; }
+        return d;
+    }
+
+    function previewCommandePDF() {
+        var d = validateCommandeForm();
+        if (!d) return;
+        d.id = 'BROUILLON';
+        d.dateLivraison = new Date(d.dateLivraison).toLocaleDateString('fr-FR');
+        var logoImg = new Image();
+        logoImg.onload = function() {
+            var c = document.createElement('canvas'); c.width = logoImg.width; c.height = logoImg.height;
+            c.getContext('2d').drawImage(logoImg, 0, 0);
+            var doc = buildCommandePDFDoc(d, c.toDataURL('image/png'));
+            window.open(doc.output('bloburl'), '_blank');
+        };
+        logoImg.onerror = function() {
+            var doc = buildCommandePDFDoc(d, null);
+            window.open(doc.output('bloburl'), '_blank');
+        };
+        logoImg.src = 'Logo_Dataferme.png';
+    }
+
+    function envoyerCommande() {
+        var d = validateCommandeForm();
+        if (!d) return;
+        var fournisseurId = $('cmdFournisseur').value;
+        if (!fournisseurId) {
+            showAlert('commandeAlert', 'error', '❌ Veuillez sélectionner un fournisseur');
+            return;
+        }
+
+        showLoading('Enregistrement de la commande...');
+
+        // 1. Sauvegarder en base
+        supabase.from('commandes_aliment').insert({
+            eleveur_id: currentEleveur.id,
+            type_aliment_id: d.typeAlimentId,
+            fournisseur_eleveur_id: fournisseurId,
+            quantite: d.quantite,
+            unite: 'tonnes',
+            date_livraison_souhaitee: d.dateLivraison,
+            notes: d.notes || null
+        }).select().single()
+        .then(function(res) {
+            if (res.error) throw res.error;
+            var commande = res.data;
+            // 2. Générer le PDF en base64
+            var dateFr = new Date(d.dateLivraison).toLocaleDateString('fr-FR');
+            var pdfData = Object.assign({}, d, { id: commande.id, dateLivraison: dateFr });
+            var logoImg = new Image();
+            logoImg.onload = function() {
+                var c = document.createElement('canvas'); c.width = logoImg.width; c.height = logoImg.height;
+                c.getContext('2d').drawImage(logoImg, 0, 0);
+                var doc = buildCommandePDFDoc(pdfData, c.toDataURL('image/png'));
+                var pdfBase64 = doc.output('datauristring');
+                envoyerEmailCommande(commande.id, pdfBase64);
+            };
+            logoImg.onerror = function() {
+                var doc = buildCommandePDFDoc(pdfData, null);
+                envoyerEmailCommande(commande.id, doc.output('datauristring'));
+            };
+            logoImg.src = 'Logo_Dataferme.png';
+        })
+        .catch(function(err) {
+            hideLoading();
+            showAlert('commandeAlert', 'error', '❌ Erreur enregistrement: ' + esc(err.message));
+        });
+    }
+
+    function envoyerEmailCommande(commandeId, pdfBase64) {
+        // Appel de la Supabase Edge Function
+        supabase.functions.invoke('send-commande-email', {
+            body: { commandeId: commandeId, pdfBase64: pdfBase64 }
+        }).then(function(res) {
+            hideLoading();
+            if (res.error) {
+                showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(res.error.message));
+            } else {
+                showAlert('commandeAlert', 'success', '✅ Commande envoyée au fournisseur avec succès !');
+                // Réinitialiser le formulaire
+                $('cmdTypeAliment').value = '';
+                $('cmdQuantite').value = '';
+                $('cmdDateLivraison').value = '';
+                $('cmdNotes').value = '';
+                loadHistoriqueCommandes();
+                if (planningCommandes !== null) initPlanningPanel(); // Rafraîchir le planning si actif
+            }
+        }).catch(function(err) {
+            hideLoading();
+            showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(err.message));
+        });
+    }
+
+    // =====================================================
+    // SECTION PLANNING D'EXPLOITATION
+    // =====================================================
+    var planningCommandes = null;
+    var calYear = new Date().getFullYear();
+    var calMonth = new Date().getMonth(); // 0-based
+    var calSelectedDate = null;
+    var MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    var JOURS_FR = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+
+    function initPlanningPanel() {
+        loadPlanningCommandes();
+    }
+
+    function loadPlanningCommandes() {
+        if (!supabase || !currentEleveur) {
+            $('planningTimeline').innerHTML = '<div class="timeline-empty"><div class="tl-icon">👤</div><div>Sélectionnez un éleveur pour afficher le planning.</div></div>';
+            renderCalendar();
+            return;
+        }
+        supabase.from('v_planning_commandes')
+            .select('*')
+            .eq('eleveur_id', currentEleveur.id)
+            .order('date_livraison_souhaitee', { ascending: true })
+            .then(function(r) {
+                planningCommandes = r.data || [];
+                renderCalendar();
+                renderTimeline(null); // null = tout afficher
+            })
+            .catch(function(err) {
+                console.error('Erreur planning:', err);
+                planningCommandes = [];
+                renderCalendar();
+                renderTimeline(null);
+            });
+    }
+
+    function calNavMonth(delta) {
+        calMonth += delta;
+        if (calMonth > 11) { calMonth = 0; calYear++; }
+        if (calMonth < 0)  { calMonth = 11; calYear--; }
+        calSelectedDate = null;
+        renderCalendar();
+        renderTimeline(null);
+    }
+
+    function renderCalendar() {
+        $('calMonthLabel').textContent = MOIS_FR[calMonth] + ' ' + calYear;
+        var grid = $('calendarGrid');
+        var html = '';
+
+        // En-têtes jours
+        JOURS_FR.forEach(function(j) { html += '<div class="calendar-day-header">' + j + '</div>'; });
+
+        // Premier jour du mois (0=dimanche → adapter pour Lundi=0)
+        var firstDay = new Date(calYear, calMonth, 1).getDay();
+        firstDay = (firstDay === 0) ? 6 : firstDay - 1; // Convertir dimanche(0) en 6
+        var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        var today = new Date(); today.setHours(0,0,0,0);
+
+        // Jours du mois précédent (grisés)
+        var prevDays = new Date(calYear, calMonth, 0).getDate();
+        for (var p = firstDay - 1; p >= 0; p--) {
+            html += '<div class="calendar-day other-month empty"><span class="day-num">' + (prevDays - p) + '</span></div>';
+        }
+
+        // Construire map des événements par date
+        var eventsByDate = {};
+        if (planningCommandes) {
+            planningCommandes.forEach(function(c) {
+                var dateKey = c.date_livraison_confirmee || c.date_livraison_souhaitee;
+                if (!dateKey) return;
+                var d = dateKey.split('T')[0];
+                if (!eventsByDate[d]) eventsByDate[d] = [];
+                eventsByDate[d].push(c.statut || 'en_attente');
+            });
+        }
+
+        // Jours du mois courant
+        for (var day = 1; day <= daysInMonth; day++) {
+            var dateObj = new Date(calYear, calMonth, day);
+            var dateStr = calYear + '-' + String(calMonth + 1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+            var isToday = (dateObj.getTime() === today.getTime());
+            var isSelected = (calSelectedDate === dateStr);
+            var events = eventsByDate[dateStr] || [];
+            var cls = 'calendar-day';
+            if (isToday) cls += ' today';
+            if (isSelected) cls += ' selected';
+            if (events.length > 0) cls += ' has-event';
+
+            html += '<div class="' + cls + '" data-date="' + dateStr + '">';
+            html += '<span class="day-num">' + day + '</span>';
+            if (events.length > 0) {
+                html += '<div class="day-dots">';
+                events.forEach(function(st) { html += '<span class="day-dot dot-' + st + '"></span>'; });
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        // Jours du mois suivant (grisés)
+        var totalCells = firstDay + daysInMonth;
+        var remaining = (7 - (totalCells % 7)) % 7;
+        for (var n = 1; n <= remaining; n++) {
+            html += '<div class="calendar-day other-month empty"><span class="day-num">' + n + '</span></div>';
+        }
+
+        grid.innerHTML = html;
+
+        // Event listeners sur les jours
+        grid.querySelectorAll('.calendar-day:not(.other-month)').forEach(function(dayEl) {
+            dayEl.addEventListener('click', function() {
+                var date = this.getAttribute('data-date');
+                if (calSelectedDate === date) {
+                    calSelectedDate = null;
+                    this.classList.remove('selected');
+                    renderTimeline(null);
+                } else {
+                    calSelectedDate = date;
+                    grid.querySelectorAll('.calendar-day').forEach(function(d) { d.classList.remove('selected'); });
+                    this.classList.add('selected');
+                    renderTimeline(date);
+                }
+            });
+        });
+    }
+
+    function renderTimeline(filterDate) {
+        var container = $('planningTimeline');
+        if (!planningCommandes || planningCommandes.length === 0) {
+            container.innerHTML = '<div class="timeline-empty"><div class="tl-icon">📭</div><div>Aucune commande planifiée.</div></div>';
+            return;
+        }
+
+        var today = new Date(); today.setHours(0,0,0,0);
+        var commandes = planningCommandes;
+
+        // Filtrer par date si sélectionnée
+        if (filterDate) {
+            commandes = commandes.filter(function(c) {
+                var d = (c.date_livraison_confirmee || c.date_livraison_souhaitee || '').split('T')[0];
+                return d === filterDate;
+            });
+            if (commandes.length === 0) {
+                container.innerHTML = '<div class="timeline-empty"><div class="tl-icon">🔍</div><div>Aucune livraison le ' + new Date(filterDate + 'T12:00:00').toLocaleDateString('fr-FR') + '.</div></div>';
+                return;
+            }
+        }
+
+        var aVenir = [], passe = [];
+        commandes.forEach(function(c) {
+            var dateRef = (c.date_livraison_confirmee || c.date_livraison_souhaitee || '').split('T')[0];
+            var d = dateRef ? new Date(dateRef + 'T12:00:00') : null;
+            if (!d || d >= today) aVenir.push(c); else passe.push(c);
+        });
+
+        var statutIcon = { en_attente: '🕐', confirmee: '📦', livree: '✅', annulee: '❌' };
+        var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
+
+        function renderEvent(c) {
+            var statut = c.statut || 'en_attente';
+            var dateRef = c.date_livraison_confirmee || c.date_livraison_souhaitee;
+            var dateStr = dateRef ? new Date(dateRef.split('T')[0] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '--';
+            var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
+            var sub = (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + ' · ' + esc(c.type_aliment || '--');
+            if (c.notes) sub += ' · ' + esc(c.notes);
+            return '<div class="timeline-event ev-' + statut + '">' +
+                '<div class="timeline-event-icon">' + (statutIcon[statut] || '📦') + '</div>' +
+                '<div class="timeline-event-body">' +
+                '<div class="timeline-event-date">' + dateStr + heure + '</div>' +
+                '<div class="timeline-event-sub">' + sub + '</div>' +
+                '<div class="timeline-event-badges"><span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span></div>' +
+                '</div></div>';
+        }
+
+        var html = '';
+        if (aVenir.length > 0) {
+            html += '<div class="timeline-section-sep">À venir</div>';
+            aVenir.forEach(function(c) { html += renderEvent(c); });
+        }
+        if (passe.length > 0) {
+            html += '<div class="timeline-section-sep">Passé</div>';
+            passe.slice().reverse().forEach(function(c) { html += renderEvent(c); });
+        }
+        if (!html) {
+            html = '<div class="timeline-empty"><div class="tl-icon">📭</div><div>Aucune livraison.</div></div>';
+        }
+        container.innerHTML = html;
+    }
+
 })();
 </script>
 </body>
