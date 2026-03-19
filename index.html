@@ -1754,8 +1754,9 @@
     // API CONFIG MANAGEMENT
     // =====================================================
     function loadApiConfig() {
-        // Utilise la fonction RPC SECURITY DEFINER (bypass RLS)
-        supabase.rpc('get_api_config')
+        // Utilise la fonction RPC SECURITY DEFINER (bypass RLS) - passe l'user_id pour vérification rôle
+        var uid = currentUser ? currentUser.id : null;
+        supabase.rpc('get_api_config', { p_user_id: uid })
             .then(function(res) {
                 var d = res.data && res.data[0];
                 if (d) {
@@ -1794,12 +1795,13 @@
 
         showLoading('Enregistrement...');
 
-        // Utilise la fonction RPC SECURITY DEFINER (bypass RLS, vérifie le rôle admin côté serveur)
+        // Utilise la fonction RPC SECURITY DEFINER (bypass RLS, vérifie le rôle admin via user_id)
         supabase.rpc('save_api_config', {
-            p_api_key:      apiKey,
-            p_base_url:     baseUrl || 'https://api.mytuffigorapidex.com/group/v2/',
-            p_api_login:    login    || null,
-            p_api_password: password || null
+            p_user_id:  currentUser ? currentUser.id : null,
+            p_api_key:  apiKey,
+            p_base_url: baseUrl || 'https://api.mytuffigorapidex.com/group/v2/',
+            p_login:    login    || null,
+            p_password: password || null
         })
             .then(function(res) {
                 if (res.error) throw res.error;
