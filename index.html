@@ -1754,20 +1754,22 @@
     // API CONFIG MANAGEMENT
     // =====================================================
     function loadApiConfig() {
-        supabase.from('api_config').select('*').eq('is_active', true).maybeSingle()
+        // Utilise la fonction RPC SECURITY DEFINER (bypass RLS)
+        supabase.rpc('get_api_config')
             .then(function(res) {
-                if (res.data) {
-                    $('tuffigoApiKey').value   = res.data.api_key   || '';
-                    $('tuffigoBaseUrl').value  = res.data.base_url  || 'https://api.mytuffigorapidex.com/group/v2/';
-                    $('tuffigoLogin').value    = res.data.api_login    || '';
-                    $('tuffigoPassword').value = res.data.api_password || '';
-                    var hasToken = !!(res.data.api_key);
-                    var hasLogin = !!(res.data.api_login);
+                var d = res.data && res.data[0];
+                if (d) {
+                    $('tuffigoApiKey').value   = d.api_key      || '';
+                    $('tuffigoBaseUrl').value  = d.base_url     || 'https://api.mytuffigorapidex.com/group/v2/';
+                    $('tuffigoLogin').value    = d.api_login    || '';
+                    $('tuffigoPassword').value = d.api_password || '';
+                    var hasToken = !!(d.api_key);
+                    var hasLogin = !!(d.api_login);
                     $('apiConfigStatus').innerHTML =
                         '<p style="color:var(--green);">✓ Configuration trouvée</p>' +
                         '<p style="font-size:0.8rem; color:var(--text-dim);">Token : ' + (hasToken ? '✅ renseigné' : '⚠️ manquant') + ' &nbsp;|&nbsp; Login : ' + (hasLogin ? '✅ renseigné' : '⚠️ manquant') + '</p>';
-                    if (res.data.last_sync) {
-                        $('lastSyncInfo').innerHTML = '<p>Dernière sync : ' + new Date(res.data.last_sync).toLocaleString('fr-FR') + '</p>';
+                    if (d.last_sync) {
+                        $('lastSyncInfo').innerHTML = '<p>Dernière sync : ' + new Date(d.last_sync).toLocaleString('fr-FR') + '</p>';
                     }
                 } else {
                     $('tuffigoBaseUrl').value = 'https://api.mytuffigorapidex.com/group/v2/';
@@ -1792,23 +1794,13 @@
 
         showLoading('Enregistrement...');
 
-        supabase.from('api_config').select('id').eq('is_active', true).maybeSingle()
-            .then(function(res) {
-                var data = {
-                    api_key:      apiKey,
-                    base_url:     baseUrl || 'https://api.mytuffigorapidex.com/group/v2/',
-                    api_login:    login    || null,
-                    api_password: password || null,
-                    is_active:    true,
-                    updated_at:   new Date().toISOString()
-                };
-                if (res.data) {
-                    return supabase.from('api_config').update(data).eq('id', res.data.id);
-                } else {
-                    data.created_at = new Date().toISOString();
-                    return supabase.from('api_config').insert(data);
-                }
-            })
+        // Utilise la fonction RPC SECURITY DEFINER (bypass RLS, vérifie le rôle admin côté serveur)
+        supabase.rpc('save_api_config', {
+            p_api_key:      apiKey,
+            p_base_url:     baseUrl || 'https://api.mytuffigorapidex.com/group/v2/',
+            p_api_login:    login    || null,
+            p_api_password: password || null
+        })
             .then(function(res) {
                 if (res.error) throw res.error;
                 showAlert('apiConfigAlert', 'success', '✓ Configuration enregistrée avec succès');
