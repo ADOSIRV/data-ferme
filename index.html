@@ -3057,23 +3057,25 @@
         if (!currentEleveur) { showAlert('fournisseurModalAlert', 'error', '❌ Aucun éleveur sélectionné'); return; }
 
         $('saveFournisseurModal').disabled = true;
-        supabase.from('fournisseurs_eleveur').insert({
-            eleveur_id: currentEleveur.id,
-            nom: nom,
-            rue: $('fourn_rue').value.trim() || null,
-            code_postal: $('fourn_code_postal').value.trim() || null,
-            ville: $('fourn_ville').value.trim() || null,
-            contact_nom: $('fourn_contact_nom').value.trim() || null,
-            email: email
-        }).select().single()
+        supabase.rpc('save_fournisseur', {
+            p_user_id:     currentUser ? currentUser.id : null,
+            p_eleveur_id:  currentEleveur.id,
+            p_nom:         nom,
+            p_email:       email,
+            p_rue:         $('fourn_rue').value.trim() || null,
+            p_code_postal: $('fourn_code_postal').value.trim() || null,
+            p_ville:       $('fourn_ville').value.trim() || null,
+            p_contact_nom: $('fourn_contact_nom').value.trim() || null
+        })
         .then(function(res) {
             if (res.error) throw res.error;
+            var newId = res.data && res.data.id;
             closeFournisseurModal();
             // Recharger la liste et sélectionner le nouveau fournisseur
             loadFournisseursEleveur();
             // Sélectionner après un court délai pour laisser le temps au DOM
-            setTimeout(function() {
-                $('cmdFournisseur').value = res.data.id;
+            if (newId) setTimeout(function() {
+                $('cmdFournisseur').value = newId;
             }, 300);
         })
         .catch(function(err) {
