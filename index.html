@@ -3325,23 +3325,29 @@
     }
 
     function envoyerEmailCommande(commandeId, pdfBase64) {
-        // Appel de la Supabase Edge Function
-        supabase.functions.invoke('send-commande-email', {
-            body: { commandeId: commandeId, pdfBase64: pdfBase64 }
-        }).then(function(res) {
-            hideLoading();
-            if (res.error) {
-                showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(res.error.message));
-            } else {
-                showAlert('commandeAlert', 'success', '✅ Commande envoyée au fournisseur avec succès !');
-                // Réinitialiser le formulaire
-                $('cmdTypeAliment').value = '';
-                $('cmdQuantite').value = '';
-                $('cmdDateLivraison').value = '';
-                $('cmdNotes').value = '';
-                loadHistoriqueCommandes();
-                if (planningCommandes !== null) initPlanningPanel(); // Rafraîchir le planning si actif
-            }
+        // Appel du workflow N8N d'envoi email
+        var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-commande-email';
+        fetch(n8nUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commandeId: commandeId, pdfBase64: pdfBase64 })
+        }).then(function(response) {
+            return response.json().then(function(data) {
+                hideLoading();
+                if (!response.ok || data.success === false) {
+                    var msg = data.error || data.message || 'Erreur inconnue';
+                    showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(msg));
+                } else {
+                    showAlert('commandeAlert', 'success', '✅ Commande envoyée au fournisseur avec succès !');
+                    // Réinitialiser le formulaire
+                    $('cmdTypeAliment').value = '';
+                    $('cmdQuantite').value = '';
+                    $('cmdDateLivraison').value = '';
+                    $('cmdNotes').value = '';
+                    loadHistoriqueCommandes();
+                    if (planningCommandes !== null) initPlanningPanel();
+                }
+            });
         }).catch(function(err) {
             hideLoading();
             showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(err.message));
