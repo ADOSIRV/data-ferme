@@ -385,19 +385,13 @@
         btn.disabled = true;
         btn.textContent = 'Enregistrement...';
 
-        var updateData = {
-            statut: 'confirmee',
-            date_livraison_confirmee: date,
-            heure_livraison_confirmee: heure,
-            updated_at: new Date().toISOString()
-        };
-        if (commentaire) updateData.commentaire_fournisseur = commentaire;
-
-        supabase.from('commandes_aliment')
-            .update(updateData)
-            .eq('id', commandeId)
-            .eq('confirmation_token', token)
-            .eq('statut', 'en_attente')
+        // Appel RPC SECURITY DEFINER — contourne le RLS
+        supabase.rpc('confirm_livraison', {
+            p_token:       token,
+            p_date:        date,
+            p_heure:       heure,
+            p_commentaire: commentaire || null
+        })
             .then(function(res) {
                 if (res.error) throw res.error;
                 showState('stateSuccess');
