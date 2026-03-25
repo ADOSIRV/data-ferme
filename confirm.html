@@ -246,6 +246,16 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <label class="form-label">Commentaires pour l'éleveur</label>
+                <textarea class="form-input" id="confirmCommentaire" rows="3"
+                    placeholder="Ex : livraison par camion souffleur, accès par chemin nord, remarques particulières..."
+                    style="resize: vertical; min-height: 80px;"></textarea>
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;">
+                    Ce commentaire sera visible par l'éleveur dans son historique des commandes.
+                </div>
+            </div>
+
             <button class="btn btn-primary" id="btnConfirmer">✅ Confirmer la livraison</button>
         </div>
     </div>
@@ -366,6 +376,7 @@
     function confirmerLivraison() {
         var date = document.getElementById('confirmDate').value;
         var heure = document.getElementById('confirmHeure').value;
+        var commentaire = document.getElementById('confirmCommentaire').value.trim();
 
         if (!date) { showAlert('error', '❌ Veuillez indiquer la date de livraison confirmée'); return; }
         if (!heure) { showAlert('error', '❌ Veuillez indiquer l\'heure prévue'); return; }
@@ -374,15 +385,16 @@
         btn.disabled = true;
         btn.textContent = 'Enregistrement...';
 
-        // Mise à jour via RLS token (on passe le token dans les headers custom)
-        // Note: la policy RLS vérifie confirmation_token dans la requête
+        var updateData = {
+            statut: 'confirmee',
+            date_livraison_confirmee: date,
+            heure_livraison_confirmee: heure,
+            updated_at: new Date().toISOString()
+        };
+        if (commentaire) updateData.commentaire_fournisseur = commentaire;
+
         supabase.from('commandes_aliment')
-            .update({
-                statut: 'confirmee',
-                date_livraison_confirmee: date,
-                heure_livraison_confirmee: heure,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', commandeId)
             .eq('confirmation_token', token)
             .eq('statut', 'en_attente')

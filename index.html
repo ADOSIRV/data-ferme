@@ -3147,6 +3147,10 @@
                     html += '<div class="commande-item-date">Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR') + '</div>';
                     html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
                     html += '<div class="commande-item-qty">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + (heure ? ' · ' + heure : '') + '</div>';
+                    if (c.commentaire_fournisseur) {
+                        html += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(59,130,246,0.1);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">'
+                              + '💬 <em>' + esc(c.commentaire_fournisseur) + '</em></div>';
+                    }
                     html += '</div>';
                     html += '<span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span>';
                     html += '</div>';
