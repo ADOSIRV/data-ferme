@@ -3287,16 +3287,17 @@
 
         showLoading('Enregistrement de la commande...');
 
-        // 1. Sauvegarder en base
-        supabase.from('commandes_aliment').insert({
-            eleveur_id: currentEleveur.id,
-            type_aliment_id: d.typeAlimentId,
-            fournisseur_eleveur_id: fournisseurId,
-            quantite: d.quantite,
-            unite: 'tonnes',
-            date_livraison_souhaitee: d.dateLivraison,
-            notes: d.notes || null
-        }).select().single()
+        // 1. Sauvegarder en base via RPC (bypass RLS auth custom)
+        supabase.rpc('save_commande', {
+            p_user_id:                currentUser ? currentUser.id : null,
+            p_eleveur_id:             currentEleveur.id,
+            p_type_aliment_id:        d.typeAlimentId,
+            p_fournisseur_eleveur_id: fournisseurId,
+            p_quantite:               d.quantite,
+            p_unite:                  'tonnes',
+            p_date_livraison:         d.dateLivraison,
+            p_notes:                  d.notes || null
+        })
         .then(function(res) {
             if (res.error) throw res.error;
             var commande = res.data;
