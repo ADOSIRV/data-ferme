@@ -3675,17 +3675,34 @@
             // 2. Générer le PDF en base64
             var dateFr = new Date(d.dateLivraison).toLocaleDateString('fr-FR');
             var pdfData = Object.assign({}, d, { id: commande.id, dateLivraison: dateFr, codeCommande: commande.code_commande || null });
+            // Construire les données email
+            var fournisseurId = $('cmdFournisseur').value;
+            var fourn = fournisseursEleveurList.find(function(f) { return f.id === fournisseurId; });
+            var emailData = {
+                eleveurNom:         (currentEleveur.nom + ' ' + (currentEleveur.prenom || '')).trim(),
+                eleveurCode:        currentEleveur.code_eleveur || '',
+                fournisseurNom:     fourn ? fourn.nom : '--',
+                typeAlimentLabel:   d.typeAlimentLabel,
+                quantite:           d.quantite,
+                dateLivraisonFr:    dateFr,
+                notes:              d.notes || '',
+                batimentNom:        d.batimentNom || '',
+                lieuNom:            d.lieuNom || '',
+                numeroSilo:         d.numeroSilo || '',
+                codeCommande:       commande.code_commande || '',
+                confirmationToken:  commande.confirmation_token || ''
+            };
             var logoImg = new Image();
             logoImg.onload = function() {
                 var c = document.createElement('canvas'); c.width = logoImg.width; c.height = logoImg.height;
                 c.getContext('2d').drawImage(logoImg, 0, 0);
                 var doc = buildCommandePDFDoc(pdfData, c.toDataURL('image/png'));
                 var pdfBase64 = doc.output('datauristring');
-                envoyerEmailCommande(commande.id, pdfBase64, commande.code_commande);
+                envoyerEmailCommande(commande.id, pdfBase64, emailData);
             };
             logoImg.onerror = function() {
                 var doc = buildCommandePDFDoc(pdfData, null);
-                envoyerEmailCommande(commande.id, doc.output('datauristring'), commande.code_commande);
+                envoyerEmailCommande(commande.id, doc.output('datauristring'), emailData);
             };
             logoImg.src = 'Logo_Dataferme.png';
         })
@@ -3695,13 +3712,99 @@
         });
     }
 
-    function envoyerEmailCommande(commandeId, pdfBase64, codeCommande) {
+    function buildEmailHtml(data) {
+        var baseUrl = getAppBaseUrl();
+        var confirmUrl = data.confirmationToken
+            ? baseUrl + 'confirm.html?token=' + encodeURIComponent(data.confirmationToken)
+            : '';
+        var lieuLine = '';
+        if (data.batimentNom) {
+            lieuLine = data.batimentNom;
+            if (data.lieuNom)    lieuLine += ' › ' + data.lieuNom;
+            if (data.numeroSilo) lieuLine += ' (Silo ' + data.numeroSilo + ')';
+        }
+
+        return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+            + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            + '<title>Commande Dataferme</title></head>'
+            + '<body style="margin:0;padding:0;background:#f1f5f9;font-family:\'Segoe UI\',Arial,sans-serif;color:#1e293b;">'
+            + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 0;">'
+            + '<tr><td align="center">'
+            + '<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">'
+
+            // En-tête bleu
+            + '<tr><td style="background:#1e40af;padding:28px 32px;">'
+            + '<div style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">🌿 Dataferme</div>'
+            + '<div style="font-size:14px;color:#bfdbfe;margin-top:4px;">Nouvelle commande d\'aliment</div>'
+            + '</td></tr>'
+
+            // Bloc vert référence commande
+            + '<tr><td style="padding:24px 32px 0;">'
+            + '<div style="background:#ecfdf5;border:2px solid #16a34a;border-radius:10px;padding:16px 20px;">'
+            + '<div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">📋 Référence de la commande</div>'
+            + '<div style="font-size:26px;font-weight:800;color:#15803d;letter-spacing:1px;">' + (data.codeCommande || '--') + '</div>'
+            + '<div style="font-size:13px;color:#166534;margin-top:8px;line-height:1.5;">'
+            + '⚠️ <strong>À conserver pour la livraison</strong> : le chauffeur devra saisir cette référence lors du scan du QR code sur site.</div>'
+            + '</div>'
+            + '</td></tr>'
+
+            // Infos commande
+            + '<tr><td style="padding:24px 32px 0;">'
+            + '<table width="100%" cellpadding="0" cellspacing="0">'
+            + '<tr><td style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;padding-bottom:12px;" colspan="2">Détails de la commande</td></tr>'
+            + emailRow('Éleveur',         data.eleveurNom + (data.eleveurCode ? ' &nbsp;<span style="font-size:11px;background:#f1f5f9;padding:2px 7px;border-radius:20px;color:#64748b;">' + data.eleveurCode + '</span>' : ''))
+            + emailRow('Type d\'aliment', data.typeAlimentLabel)
+            + emailRow('Quantité',        data.quantite + ' tonnes')
+            + emailRow('Date souhaitée', data.dateLivraisonFr)
+            + (lieuLine ? emailRow('Lieu de livraison', lieuLine) : '')
+            + (data.notes ? emailRow('Notes', '<em style="color:#64748b;">' + data.notes.replace(/\n/g, '<br>') + '</em>') : '')
+            + '</table>'
+            + '</td></tr>'
+
+            // Bouton Confirmer la livraison
+            + (confirmUrl
+                ? '<tr><td style="padding:28px 32px;">'
+                  + '<div style="text-align:center;">'
+                  + '<a href="' + confirmUrl + '" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;letter-spacing:.3px;">✅ Confirmer la livraison</a>'
+                  + '</div>'
+                  + '<div style="text-align:center;margin-top:10px;font-size:12px;color:#94a3b8;">En cliquant, vous pourrez indiquer la date et l\'heure confirmées de livraison.</div>'
+                  + '</td></tr>'
+                : '')
+
+            // Footer
+            + '<tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:16px 32px;text-align:center;">'
+            + '<div style="font-size:12px;color:#94a3b8;">Cet email a été généré automatiquement par Dataferme · ADOSI</div>'
+            + '</td></tr>'
+
+            + '</table>'
+            + '</td></tr></table>'
+            + '</body></html>';
+    }
+
+    function emailRow(label, value) {
+        return '<tr>'
+            + '<td style="padding:6px 0;font-size:13px;color:#64748b;white-space:nowrap;width:160px;vertical-align:top;">' + label + '</td>'
+            + '<td style="padding:6px 0;font-size:13px;color:#1e293b;font-weight:600;">' + value + '</td>'
+            + '</tr>';
+    }
+
+    function envoyerEmailCommande(commandeId, pdfBase64, emailData) {
         // Appel du workflow N8N d'envoi email
         var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-commande-email';
+        var emailHtml = buildEmailHtml(emailData);
+        var codeCommande = emailData.codeCommande || '';
         fetch(n8nUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ commandeId: commandeId, pdfBase64: pdfBase64 })
+            body: JSON.stringify({
+                commandeId:   commandeId,
+                pdfBase64:    pdfBase64,
+                emailHtml:    emailHtml,
+                codeCommande: codeCommande,
+                fournisseur:  emailData.fournisseurNom || '',
+                eleveur:      emailData.eleveurNom || '',
+                subject:      'Commande aliment ' + codeCommande + ' — ' + emailData.eleveurNom
+            })
         }).then(function(response) {
             return response.json().then(function(data) {
                 hideLoading();
