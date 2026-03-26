@@ -3467,9 +3467,15 @@
                     if (lieuParts.length > 0) {
                         html += '<div style="margin-top:0.3rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
                     }
-                    // Livreur (si livraison effectuée)
+                    // Livreur + signature (si livraison effectuée)
                     if (c.statut === 'livree' && c.livreur_nom) {
-                        html += '<div style="margin-top:0.3rem;font-size:0.8rem;color:var(--blue);">🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '') + '</div>';
+                        html += '<div style="margin-top:0.4rem;font-size:0.8rem;color:var(--blue);">🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '') + '</div>';
+                        if (c.livreur_signature) {
+                            html += '<div style="margin-top:0.5rem;">'
+                                  + '<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.2rem;text-transform:uppercase;font-weight:700;">Signature</div>'
+                                  + '<img src="' + c.livreur_signature + '" alt="Signature" style="max-height:60px;max-width:180px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
+                                  + '</div>';
+                        }
                     }
                     if (c.commentaire_fournisseur) {
                         html += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(59,130,246,0.1);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">'

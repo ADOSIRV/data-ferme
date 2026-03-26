@@ -473,46 +473,38 @@
     /* ── Signature canvas ────────────────────────────── */
     var signatureDrawing = false;
     var signatureHasData = false;
+    var signatureCtx = null;
+    var signatureCanvas = null;
+    var signatureArea = null;
+    var signatureReady = false;
 
     function initSignature() {
-        var canvas = document.getElementById('signatureCanvas');
-        var area = document.getElementById('signatureArea');
-        var ctx = canvas.getContext('2d');
-
-        function resize() {
-            var rect = area.getBoundingClientRect();
-            var dpr = window.devicePixelRatio || 1;
-            canvas.width = rect.width * dpr;
-            canvas.height = 150 * dpr;
-            ctx.scale(dpr, dpr);
-            ctx.strokeStyle = '#1e293b';
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-        }
-        resize();
+        signatureCanvas = document.getElementById('signatureCanvas');
+        signatureArea   = document.getElementById('signatureArea');
+        signatureCtx    = signatureCanvas.getContext('2d');
 
         function getPos(e) {
-            var rect = canvas.getBoundingClientRect();
+            var rect = signatureCanvas.getBoundingClientRect();
             var src = e.touches ? e.touches[0] : e;
             return {
-                x: src.clientX - rect.left,
-                y: src.clientY - rect.top
+                x: (src.clientX - rect.left) * (signatureCanvas.width / rect.width),
+                y: (src.clientY - rect.top)  * (signatureCanvas.height / rect.height)
             };
         }
 
         function startDraw(e) {
             e.preventDefault();
+            if (!signatureReady) setupSignatureCanvas();
             signatureDrawing = true;
             var pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
+            signatureCtx.beginPath();
+            signatureCtx.moveTo(pos.x, pos.y);
             if (!signatureHasData) {
                 signatureHasData = true;
                 document.getElementById('signaturePlaceholder').style.display = 'none';
                 document.getElementById('btnClearSignature').style.display = 'block';
-                area.style.borderStyle = 'solid';
-                area.style.borderColor = 'var(--green)';
+                signatureArea.style.borderStyle = 'solid';
+                signatureArea.style.borderColor = 'var(--green)';
             }
         }
 
@@ -520,8 +512,8 @@
             if (!signatureDrawing) return;
             e.preventDefault();
             var pos = getPos(e);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
+            signatureCtx.lineTo(pos.x, pos.y);
+            signatureCtx.stroke();
         }
 
         function endDraw(e) {
@@ -529,26 +521,55 @@
             signatureDrawing = false;
         }
 
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', endDraw);
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', draw, { passive: false });
-        canvas.addEventListener('touchend', endDraw, { passive: false });
+        signatureCanvas.addEventListener('mousedown', startDraw);
+        signatureCanvas.addEventListener('mousemove', draw);
+        signatureCanvas.addEventListener('mouseup', endDraw);
+        document.addEventListener('mouseup', function() { signatureDrawing = false; });
+        signatureCanvas.addEventListener('touchstart', startDraw, { passive: false });
+        signatureCanvas.addEventListener('touchmove', draw, { passive: false });
+        signatureCanvas.addEventListener('touchend', endDraw, { passive: false });
 
-        document.getElementById('btnClearSignature').addEventListener('click', function () {
-            ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), 150);
-            signatureHasData = false;
-            document.getElementById('signaturePlaceholder').style.display = 'block';
-            document.getElementById('btnClearSignature').style.display = 'none';
-            area.style.borderStyle = 'dashed';
-            area.style.borderColor = 'var(--border)';
-        });
+        document.getElementById('btnClearSignature').addEventListener('click', clearSignature);
+    }
+
+    function setupSignatureCanvas() {
+        /* Appelé juste avant que le formulaire livreur devienne visible */
+        var w = signatureArea.offsetWidth || 480;
+        signatureCanvas.width  = w;
+        signatureCanvas.height = 180;
+        signatureCtx.fillStyle = '#ffffff';
+        signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        signatureCtx.strokeStyle = '#000000';
+        signatureCtx.lineWidth   = 3;
+        signatureCtx.lineCap     = 'round';
+        signatureCtx.lineJoin    = 'round';
+        signatureReady = true;
+    }
+
+    function clearSignature() {
+        if (signatureCtx && signatureCanvas) {
+            signatureCtx.fillStyle = '#ffffff';
+            signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        }
+        signatureHasData = false;
+        document.getElementById('signaturePlaceholder').style.display = 'block';
+        document.getElementById('btnClearSignature').style.display = 'none';
+        if (signatureArea) {
+            signatureArea.style.borderStyle = 'dashed';
+            signatureArea.style.borderColor = 'var(--border)';
+        }
+    }
+
+    function resetSignatureState() {
+        signatureReady   = false;
+        signatureHasData = false;
+        signatureDrawing = false;
+        clearSignature();
     }
 
     function getSignatureBase64() {
         if (!signatureHasData) return null;
-        return document.getElementById('signatureCanvas').toDataURL('image/png');
+        return signatureCanvas.toDataURL('image/png');
     }
 
     /* ── Lieu info (via QR token) ────────────────────── */
@@ -664,16 +685,11 @@
 
                 showState('stateFormLivreur');
                 hideAlert('alertLivreur');
-                // Réinitialiser signature
-                signatureHasData = false;
-                document.getElementById('signaturePlaceholder').style.display = 'block';
-                document.getElementById('btnClearSignature').style.display = 'none';
-                var area = document.getElementById('signatureArea');
-                area.style.borderStyle = 'dashed';
-                area.style.borderColor = 'var(--border)';
-                var canvas = document.getElementById('signatureCanvas');
-                var ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Initialiser / réinitialiser la signature APRÈS affichage (élément visible)
+                setTimeout(function () {
+                    resetSignatureState();
+                    setupSignatureCanvas();
+                }, 30);
             })
             .catch(function (e) {
                 showState('stateCodeSaisie');
@@ -780,7 +796,7 @@
             document.getElementById('livreurNom').value = '';
             document.getElementById('livreurPrenom').value = '';
             document.getElementById('livreurSociete').value = '';
-            signatureHasData = false;
+            resetSignatureState();
             commandeCode = null;
             showState('stateCodeSaisie');
             hideAlert('alertCode');
