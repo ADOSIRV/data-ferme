@@ -616,6 +616,58 @@
             .main-nav-btn .nav-icon { font-size: 1rem; }
             .commande-actions { flex-direction: column; }
         }
+
+        /* ============================================================
+           MOBILE : correction chevauchement session-bar / nav-bar
+           ============================================================ */
+        @media (max-width: 768px) {
+
+            /* Session-bar : pleine largeur en haut, sans chevauchement */
+            .session-bar {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                border-radius: 0 !important;
+                justify-content: space-between !important;
+                padding: 0.5rem 0.85rem !important;
+                box-sizing: border-box !important;
+                font-size: 0.75rem !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            }
+
+            /* Décaler toute la page de la hauteur de la session-bar (~3rem) */
+            .page-app {
+                padding-top: 3.2rem !important;
+            }
+
+            /* Nav-bar : colle juste SOUS la session-bar quand on scrolle */
+            .main-nav-bar {
+                top: 3.2rem !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding: 0 !important;
+            }
+
+            /* Scroll horizontal de la nav sans scrollbar visible */
+            .main-nav-buttons { min-width: max-content; }
+            .main-nav-bar::-webkit-scrollbar { display: none; }
+            .main-nav-bar { -ms-overflow-style: none; scrollbar-width: none; }
+
+            /* Bouton Déconnexion plus compact */
+            .session-btn {
+                padding: 0.3rem 0.65rem !important;
+                font-size: 0.7rem !important;
+            }
+
+            /* Nom utilisateur plus court si besoin */
+            .session-user { font-size: 0.78rem !important; }
+            .session-role { font-size: 0.65rem !important; }
+
+            /* Conteneur principal : pas de padding latéral excessif */
+            .container { padding: 1rem 0.75rem !important; }
+        }
     </style>
 </head>
 <body>
