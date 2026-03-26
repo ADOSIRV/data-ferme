@@ -3490,7 +3490,20 @@
                     }
 
                     html += '</div>'; // /commande-item-left
-                    html += '<span class="commande-statut statut-' + statut + '" style="flex-shrink:0;">' + (statutLabel[statut] || statut) + '</span>';
+
+                    // Bloc statut (badge + date/heure livraison réelle si livrée)
+                    html += '<div style="flex-shrink:0;text-align:right;">';
+                    html += '<span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span>';
+                    if (c.statut === 'livree' && c.date_livraison_reelle) {
+                        var dlr = new Date(c.date_livraison_reelle);
+                        var dlrDate = dlr.toLocaleDateString('fr-FR');
+                        var dlrHeure = dlr.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        html += '<div style="font-size:0.72rem;color:var(--blue);margin-top:0.3rem;white-space:nowrap;line-height:1.5;">'
+                              + '📅 ' + dlrDate + '<br>🕐 ' + dlrHeure
+                              + '</div>';
+                    }
+                    html += '</div>';
+
                     html += '</div>'; // /commande-item-top
 
                     // ── Signature (pleine largeur, sous le reste) ──
