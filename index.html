@@ -443,8 +443,13 @@
             border-radius: 10px;
             margin-bottom: 0.6rem;
             display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .commande-item-top {
+            display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             gap: 1rem;
         }
         .commande-item-left { flex: 1; min-width: 0; }
@@ -3445,12 +3450,16 @@
                 }
                 var html = '';
                 commandes.forEach(function(c) {
-                    var dateRef = c.date_livraison_confirmee || c.date_livraison_souhaitee;
                     var statut = c.statut || 'en_attente';
                     var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
                     var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
+
                     html += '<div class="commande-item">';
+
+                    // ── Ligne principale (info + statut) ──
+                    html += '<div class="commande-item-top">';
                     html += '<div class="commande-item-left">';
+
                     // Code commande + date
                     var dateLine = 'Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR');
                     if (c.code_commande) {
@@ -3459,6 +3468,7 @@
                     html += '<div class="commande-item-date">' + dateLine + '</div>';
                     html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
                     html += '<div class="commande-item-qty">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + (heure ? ' · ' + heure : '') + '</div>';
+
                     // Lieu de livraison
                     var lieuParts = [];
                     if (c.batiment_nom) lieuParts.push('🏠 ' + esc(c.batiment_nom));
@@ -3467,23 +3477,32 @@
                     if (lieuParts.length > 0) {
                         html += '<div style="margin-top:0.3rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
                     }
-                    // Livreur + signature (si livraison effectuée)
+
+                    // Livreur
                     if (c.statut === 'livree' && c.livreur_nom) {
-                        html += '<div style="margin-top:0.4rem;font-size:0.8rem;color:var(--blue);">🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '') + '</div>';
-                        if (c.livreur_signature) {
-                            html += '<div style="margin-top:0.5rem;">'
-                                  + '<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.2rem;text-transform:uppercase;font-weight:700;">Signature</div>'
-                                  + '<img src="' + c.livreur_signature + '" alt="Signature" style="max-height:60px;max-width:180px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
-                                  + '</div>';
-                        }
+                        html += '<div style="margin-top:0.35rem;font-size:0.82rem;color:var(--blue);">🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '') + '</div>';
                     }
+
+                    // Commentaire fournisseur
                     if (c.commentaire_fournisseur) {
                         html += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(59,130,246,0.1);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">'
                               + '💬 <em>' + esc(c.commentaire_fournisseur) + '</em></div>';
                     }
-                    html += '</div>';
-                    html += '<span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span>';
-                    html += '</div>';
+
+                    html += '</div>'; // /commande-item-left
+                    html += '<span class="commande-statut statut-' + statut + '" style="flex-shrink:0;">' + (statutLabel[statut] || statut) + '</span>';
+                    html += '</div>'; // /commande-item-top
+
+                    // ── Signature (pleine largeur, sous le reste) ──
+                    if (c.statut === 'livree' && c.livreur_signature) {
+                        html += '<div style="border-top:1px solid var(--border);padding-top:0.5rem;display:flex;align-items:center;gap:0.75rem;">'
+                              + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;white-space:nowrap;">✍️ Signature</div>'
+                              + '<img src="' + c.livreur_signature + '" alt="Signature" '
+                              + 'style="max-height:56px;max-width:220px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
+                              + '</div>';
+                    }
+
+                    html += '</div>'; // /commande-item
                 });
                 $('commandesListContainer').innerHTML = html;
             })
