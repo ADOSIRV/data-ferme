@@ -997,6 +997,9 @@
             <button class="main-nav-btn" data-section="planning">
                 <span class="nav-icon">📅</span><span class="nav-label">Planning</span>
             </button>
+            <button class="main-nav-btn" data-section="parametrage">
+                <span class="nav-icon">⚙️</span><span class="nav-label">Paramétrage</span>
+            </button>
         </div>
     </nav>
 
@@ -1153,24 +1156,6 @@
                 </div>
             </div>
             
-        </div>
-
-        <!-- CARTE LIEUX DE LIVRAISON (visible pour tous dans Exploitation) -->
-        <div class="lieux-section-card" id="lieuxSectionCard" style="display:none;">
-            <div class="lieux-section-header">
-                <div class="lieux-section-title">📍 Lieux de livraison</div>
-                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-                    <select class="selector-select" id="lieuxBatimentSel" style="min-width:180px;">
-                        <option value="">-- Choisir un bâtiment --</option>
-                    </select>
-                    <button class="btn btn-primary btn-sm" id="btnAddLieu">➕ Ajouter un lieu</button>
-                </div>
-            </div>
-            <div id="lieuxListContainer">
-                <div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">
-                    Sélectionnez un bâtiment pour gérer ses lieux de livraison.
-                </div>
-            </div>
         </div>
 
         <!-- PANEL: API Config -->
@@ -1425,7 +1410,7 @@
                             <option value="">-- Sélectionner un lieu --</option>
                         </select>
                         <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;">
-                            Gérez les lieux dans <a href="#" id="lienGererLieux" style="color:var(--blue);">Exploitation → Lieux de livraison</a>
+                            Gérez les lieux dans <a href="#" id="lienGererLieux" style="color:var(--blue);">Paramétrage → Lieux de livraison</a>
                         </div>
                     </div>
 
@@ -1515,6 +1500,41 @@
                 </div>
             </div>
         </div><!-- /sectionPlanning -->
+
+        <!-- ================================================
+             SECTION : PARAMÉTRAGE
+             ================================================ -->
+        <div class="main-section" id="sectionParametrage">
+            <div class="admin-panel-header" style="margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border);">
+                <span class="admin-panel-icon">⚙️</span>
+                <div>
+                    <div class="admin-panel-title">Paramétrage</div>
+                    <div class="admin-panel-subtitle">Configuration de votre exploitation</div>
+                </div>
+            </div>
+
+            <!-- CARTE LIEUX DE LIVRAISON -->
+            <div class="lieux-section-card" id="lieuxSectionCard">
+                <div class="lieux-section-header">
+                    <div class="lieux-section-title">📍 Lieux de livraison</div>
+                    <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                        <select class="selector-select" id="lieuxBatimentSel" style="min-width:180px;">
+                            <option value="">-- Choisir un bâtiment --</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" id="btnAddLieu">➕ Ajouter un lieu</button>
+                    </div>
+                </div>
+                <div style="font-size:0.82rem; color:var(--text-dim); margin-bottom:1rem; line-height:1.5;">
+                    Définissez les lieux précis de livraison (silos, quais…) pour chaque bâtiment. Chaque lieu dispose d'un QR code unique que le livreur peut scanner pour confirmer la livraison.
+                </div>
+                <div id="lieuxListContainer">
+                    <div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">
+                        Sélectionnez un bâtiment pour gérer ses lieux de livraison.
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /sectionParametrage -->
 
         <div class="footer">Dataferme v16.0 - ADOSI</div>
     </div>
@@ -3163,7 +3183,7 @@
         });
         $('lienGererLieux').addEventListener('click', function(e) {
             e.preventDefault();
-            switchSection('exploitation');
+            switchSection('parametrage');
             var batId = $('cmdBatiment').value;
             if (batId) {
                 $('lieuxBatimentSel').value = batId;
@@ -3217,9 +3237,9 @@
         document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-section') === sectionName);
         });
-        if (sectionName === 'exploitation') initLieuxSection();
         if (sectionName === 'commande') initCommandePanel();
         if (sectionName === 'planning') initPlanningPanel();
+        if (sectionName === 'parametrage') initLieuxSection();
     }
 
     // =====================================================
@@ -3697,10 +3717,9 @@
 
     function initLieuxSection() {
         if (!currentEleveur) {
-            $('lieuxSectionCard').style.display = 'none';
+            $('lieuxListContainer').innerHTML = '<div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">⚠️ Aucun éleveur associé à votre compte.</div>';
             return;
         }
-        $('lieuxSectionCard').style.display = 'block';
         loadBatimentsForLieux();
     }
 
