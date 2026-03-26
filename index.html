@@ -1227,6 +1227,18 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label">Bâtiment de livraison</label>
+                        <select class="form-input" id="cmdBatiment">
+                            <option value="">-- Sélectionner un bâtiment --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Numéro de silo</label>
+                        <input type="text" class="form-input" id="cmdNumeroSilo" placeholder="Ex : Silo 1, S2, Nord...">
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Quantité *</label>
                         <div class="commande-unit-row">
                             <div class="form-group">
@@ -3000,11 +3012,34 @@
     function initCommandePanel() {
         loadFournisseursEleveur();
         if (typesAlimentList.length === 0) loadTypesAliment();
+        loadBatimentsEleveur();
         loadHistoriqueCommandes();
         // Pré-remplir date minimum = demain
         var tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         $('cmdDateLivraison').min = tomorrow.toISOString().split('T')[0];
+    }
+
+    function loadBatimentsEleveur() {
+        var sel = $('cmdBatiment');
+        sel.innerHTML = '<option value="">-- Sélectionner un bâtiment --</option>';
+        if (!currentEleveur || !supabase) return;
+        supabase
+            .from('batiments')
+            .select('id, nom, site_id, sites!inner(eleveur_id)')
+            .eq('sites.eleveur_id', currentEleveur.id)
+            .eq('is_active', true)
+            .order('nom')
+            .then(function(r) {
+                if (r.error || !r.data || r.data.length === 0) return;
+                r.data.forEach(function(b) {
+                    var opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.nom;
+                    sel.appendChild(opt);
+                });
+            })
+            .catch(function(err) { console.error('Erreur chargement bâtiments:', err); });
     }
 
     function loadFournisseursEleveur() {
@@ -3147,6 +3182,12 @@
                     html += '<div class="commande-item-date">Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR') + '</div>';
                     html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
                     html += '<div class="commande-item-qty">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + (heure ? ' · ' + heure : '') + '</div>';
+                    if (c.batiment_nom || c.numero_silo) {
+                        var lieuParts = [];
+                        if (c.batiment_nom) lieuParts.push('🏠 ' + esc(c.batiment_nom));
+                        if (c.numero_silo)  lieuParts.push('🗂️ Silo : ' + esc(c.numero_silo));
+                        html += '<div style="margin-top:0.3rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
+                    }
                     if (c.commentaire_fournisseur) {
                         html += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(59,130,246,0.1);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">'
                               + '💬 <em>' + esc(c.commentaire_fournisseur) + '</em></div>';
@@ -3220,6 +3261,8 @@
             ['Type d\'aliment', esc(commande.typeAlimentLabel || '--')],
             ['Quantité', esc(String(commande.quantite || '--')) + ' tonnes'],
             ['Date de livraison souhaitée', esc(commande.dateLivraison || '--')],
+            ['Bâtiment de livraison', esc(commande.batimentNom || 'Non précisé')],
+            ['Numéro de silo', esc(commande.numeroSilo || 'Non précisé')],
             ['Notes', esc(commande.notes || 'Aucune')]
         ];
         fields.forEach(function(f) {
@@ -3243,12 +3286,18 @@
     function getCommandeFormData() {
         var typeId = $('cmdTypeAliment').value;
         var typeObj = typesAlimentList.find(function(t) { return t.id === typeId; });
+        var batId = $('cmdBatiment').value;
+        var batSel = $('cmdBatiment');
+        var batNom = batSel.options[batSel.selectedIndex] ? batSel.options[batSel.selectedIndex].text : '';
         return {
-            typeAlimentId: typeId,
+            typeAlimentId:   typeId,
             typeAlimentLabel: typeObj ? typeObj.nom : '--',
-            quantite: parseFloat($('cmdQuantite').value),
-            dateLivraison: $('cmdDateLivraison').value,
-            notes: $('cmdNotes').value.trim()
+            quantite:        parseFloat($('cmdQuantite').value),
+            dateLivraison:   $('cmdDateLivraison').value,
+            notes:           $('cmdNotes').value.trim(),
+            batimentId:      batId || null,
+            batimentNom:     batId ? batNom : '',
+            numeroSilo:      $('cmdNumeroSilo').value.trim() || null
         };
     }
 
@@ -3300,7 +3349,9 @@
             p_quantite:               d.quantite,
             p_unite:                  'tonnes',
             p_date_livraison:         d.dateLivraison,
-            p_notes:                  d.notes || null
+            p_notes:                  d.notes || null,
+            p_batiment_id:            d.batimentId || null,
+            p_numero_silo:            d.numeroSilo || null
         })
         .then(function(res) {
             if (res.error) throw res.error;
