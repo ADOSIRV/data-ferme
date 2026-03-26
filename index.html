@@ -125,6 +125,7 @@
         }
         .theme-toggle:hover { background: var(--border); transform: rotate(20deg); }
         .session-role.technicien { background: var(--blue-light); color: var(--blue); }
+        .session-role.salarie { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
         .session-btn { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text-dim); font-size: 0.75rem; cursor: pointer; font-family: inherit; }
         .session-btn:hover { background: var(--border); }
         
@@ -693,6 +694,18 @@
             font-weight: 700;
             letter-spacing: 0.04em;
         }
+        /* Salariés */
+        .salaries-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-top: 1.25rem; }
+        .salaries-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .salaries-card-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+        .salarie-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-input); border-radius: 8px; margin-bottom: 0.5rem; gap: 1rem; }
+        .salarie-item-info { flex: 1; min-width: 0; }
+        .salarie-item-nom { font-weight: 600; font-size: 0.92rem; }
+        .salarie-item-email { font-size: 0.8rem; color: var(--text-dim); }
+        .salarie-item-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+        .salarie-badge-actif { background: var(--green-light); color: var(--green); padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .salarie-badge-inactif { background: var(--bg-input); color: var(--text-dim); padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--border); }
+
         /* QR Modal */
         .qr-display { margin: 1rem auto; display: flex; justify-content: center; }
         .qr-display canvas, .qr-display img { border: 6px solid #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
@@ -933,6 +946,42 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="cancelLieuModal">Annuler</button>
             <button class="btn btn-primary" id="saveLieuModal">➕ Créer le lieu</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Salarié -->
+<div class="modal-overlay" id="salariesModal">
+    <div class="modal-box" style="max-width:440px;">
+        <div class="modal-header">
+            <div class="modal-title" id="salariesModalTitle">👷 Nouveau salarié</div>
+            <button class="modal-close" id="closeSalariesModal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="alert" id="salariesModalAlert"></div>
+            <div style="display:grid; gap:0.75rem;">
+                <div>
+                    <label class="form-label">Nom *</label>
+                    <input type="text" class="form-input" id="salNom" placeholder="Nom du salarié">
+                </div>
+                <div>
+                    <label class="form-label">Prénom</label>
+                    <input type="text" class="form-input" id="salPrenom" placeholder="Prénom">
+                </div>
+                <div>
+                    <label class="form-label">Email (identifiant de connexion) *</label>
+                    <input type="email" class="form-input" id="salEmail" placeholder="prenom.nom@email.fr">
+                </div>
+                <div>
+                    <label class="form-label" id="salPasswordLabel">Mot de passe *</label>
+                    <input type="password" class="form-input" id="salPassword" placeholder="Mot de passe">
+                    <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;" id="salPasswordHint"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelSalariesModal">Annuler</button>
+            <button class="btn btn-primary" id="saveSalariesModal">Enregistrer</button>
         </div>
     </div>
 </div>
@@ -1539,6 +1588,20 @@
                 </div>
             </div>
 
+            <!-- CARTE SALARIÉS -->
+            <div class="salaries-card" id="salariesCard">
+                <div class="salaries-card-header">
+                    <div class="salaries-card-title">👷 Salariés de l'exploitation</div>
+                    <button class="btn btn-primary btn-sm" id="btnAddSalarie">➕ Ajouter un salarié</button>
+                </div>
+                <div style="font-size:0.82rem; color:var(--text-dim); margin-bottom:1rem; line-height:1.5;">
+                    Créez des comptes pour vos salariés. Ils pourront consulter les données et passer des commandes, sans accès au paramétrage.
+                </div>
+                <div id="salariesListContainer">
+                    <div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">Chargement...</div>
+                </div>
+            </div>
+
         </div><!-- /sectionParametrage -->
 
         <div class="footer">Dataferme v16.0 - ADOSI</div>
@@ -1676,6 +1739,16 @@
                     currentEleveur = null;
                     setupAdminMode();
                     showPage('pageApp');
+                } else if (role === 'salarie') {
+                    $('adminMenuBar').classList.remove('show');
+                    // Masquer Paramétrage pour les salariés
+                    var navParametrage = document.querySelector('.main-nav-btn[data-section="parametrage"]');
+                    if (navParametrage) navParametrage.style.display = 'none';
+                    switchSection('exploitation');
+                    return findEleveurForUser(res.data).then(function(eleveur) {
+                        if (eleveur) { currentEleveur = eleveur; setupEleveurMode(eleveur); }
+                        else { showPage('pageApp'); }
+                    }).then(function() { showPage('pageApp'); });
                 } else {
                     // Technicien : navigation principale seulement
                     $('adminMenuBar').classList.remove('show');
@@ -1715,6 +1788,9 @@
     
     function doLogout() {
         currentUser = null; currentEleveur = null;
+        // Réafficher Paramétrage (peut avoir été masqué pour un salarié)
+        var navParametrage = document.querySelector('.main-nav-btn[data-section="parametrage"]');
+        if (navParametrage) navParametrage.style.display = '';
         planningCommandes = null;
         $('sessionBar').style.display = 'none';
         $('mainNavBar').classList.remove('show');
@@ -3196,6 +3272,13 @@
             }
         });
 
+        // Salariés
+        $('btnAddSalarie').addEventListener('click', function() { openSalariesModal(null); });
+        $('closeSalariesModal').addEventListener('click', closeSalariesModal);
+        $('cancelSalariesModal').addEventListener('click', closeSalariesModal);
+        $('saveSalariesModal').addEventListener('click', saveSalarieForm);
+        $('salariesModal').addEventListener('click', function(e) { if (e.target === this) closeSalariesModal(); });
+
         // Lieux de livraison
         $('btnAddLieu').addEventListener('click', openLieuModal);
         $('closeLieuModal').addEventListener('click', closeLieuModal);
@@ -3244,7 +3327,7 @@
         });
         if (sectionName === 'commande') initCommandePanel();
         if (sectionName === 'planning') initPlanningPanel();
-        if (sectionName === 'parametrage') initLieuxSection();
+        if (sectionName === 'parametrage') { initLieuxSection(); initSalariesSection(); }
     }
 
     // =====================================================
@@ -3841,6 +3924,144 @@
         }).catch(function(err) {
             hideLoading();
             showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(err.message));
+        });
+    }
+
+    // =====================================================
+    // SALARIÉS — GESTION
+    // =====================================================
+    var editingSalarieId = null;
+
+    function initSalariesSection() {
+        if (!currentEleveur) {
+            $('salariesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:1.5rem;font-size:0.9rem;">⚠️ Aucun éleveur associé.</div>';
+            return;
+        }
+        loadSalaries();
+    }
+
+    function loadSalaries() {
+        if (!supabase || !currentEleveur) return;
+        $('salariesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:1rem;">Chargement...</div>';
+        supabase.from('users')
+            .select('id, nom, prenom, email, is_active, created_at')
+            .eq('eleveur_id', currentEleveur.id)
+            .eq('role', 'salarie')
+            .order('nom')
+            .then(function(r) {
+                var salaries = r.data || [];
+                if (salaries.length === 0) {
+                    $('salariesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:1.5rem;font-size:0.9rem;">Aucun salarié enregistré. Cliquez sur «\u00a0Ajouter un salarié\u00a0» pour en créer un.</div>';
+                    return;
+                }
+                var html = '';
+                salaries.forEach(function(s) {
+                    var nomComplet = esc((s.prenom || '') + (s.prenom ? ' ' : '') + s.nom);
+                    var badgeClass = s.is_active ? 'salarie-badge-actif' : 'salarie-badge-inactif';
+                    var badgeLabel = s.is_active ? 'Actif' : 'Inactif';
+                    var toggleLabel = s.is_active ? '⏸ Désactiver' : '▶ Réactiver';
+                    html += '<div class="salarie-item">';
+                    html += '<div class="salarie-item-info">';
+                    html += '<div class="salarie-item-nom">👤 ' + nomComplet + ' <span class="' + badgeClass + '">' + badgeLabel + '</span></div>';
+                    html += '<div class="salarie-item-email">' + esc(s.email) + '</div>';
+                    html += '</div>';
+                    html += '<div class="salarie-item-actions">';
+                    html += '<button class="btn btn-secondary btn-sm sal-edit-btn" data-id="' + esc(s.id) + '">✏️ Modifier</button>';
+                    html += '<button class="btn btn-sm sal-toggle-btn" style="background:' + (s.is_active ? 'var(--orange-light)' : 'var(--green-light)') + ';color:' + (s.is_active ? 'var(--orange)' : 'var(--green)') + ';border:1px solid ' + (s.is_active ? 'var(--orange)' : 'var(--green)') + ';" data-id="' + esc(s.id) + '" data-nom="' + nomComplet + '">' + toggleLabel + '</button>';
+                    html += '</div></div>';
+                });
+                $('salariesListContainer').innerHTML = html;
+                // Bind
+                document.querySelectorAll('.sal-edit-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() { openSalariesModal(this.getAttribute('data-id')); });
+                });
+                document.querySelectorAll('.sal-toggle-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() { toggleSalarie(this.getAttribute('data-id'), this.getAttribute('data-nom')); });
+                });
+            })
+            .catch(function(err) {
+                $('salariesListContainer').innerHTML = '<div style="color:var(--red);padding:1rem;">❌ ' + esc(err.message) + '</div>';
+            });
+    }
+
+    function openSalariesModal(salarieId) {
+        editingSalarieId = salarieId || null;
+        $('salariesModalAlert').className = 'alert';
+        $('salariesModalAlert').textContent = '';
+        if (salarieId) {
+            $('salariesModalTitle').textContent = '👷 Modifier le salarié';
+            $('salPasswordLabel').textContent = 'Nouveau mot de passe (laisser vide = inchangé)';
+            $('salPasswordHint').textContent = 'Laissez vide pour conserver le mot de passe actuel.';
+            $('salPassword').required = false;
+            supabase.from('users').select('nom, prenom, email').eq('id', salarieId).single()
+                .then(function(r) {
+                    if (r.data) {
+                        $('salNom').value    = r.data.nom    || '';
+                        $('salPrenom').value = r.data.prenom || '';
+                        $('salEmail').value  = r.data.email  || '';
+                        $('salPassword').value = '';
+                    }
+                });
+        } else {
+            $('salariesModalTitle').textContent = '👷 Nouveau salarié';
+            $('salPasswordLabel').textContent = 'Mot de passe *';
+            $('salPasswordHint').textContent = 'Ce mot de passe sera communiqué au salarié pour sa première connexion.';
+            $('salPassword').required = true;
+            $('salNom').value = '';
+            $('salPrenom').value = '';
+            $('salEmail').value = '';
+            $('salPassword').value = '';
+        }
+        $('salariesModal').classList.add('show');
+        $('salNom').focus();
+    }
+
+    function closeSalariesModal() {
+        $('salariesModal').classList.remove('show');
+        editingSalarieId = null;
+    }
+
+    function saveSalarieForm() {
+        var nom     = $('salNom').value.trim();
+        var prenom  = $('salPrenom').value.trim();
+        var email   = $('salEmail').value.trim();
+        var password = $('salPassword').value;
+        if (!nom)   { showAlert('salariesModalAlert', 'error', '❌ Le nom est requis'); return; }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAlert('salariesModalAlert', 'error', '❌ Email invalide'); return; }
+        if (!editingSalarieId && !password) { showAlert('salariesModalAlert', 'error', '❌ Le mot de passe est requis'); return; }
+        if (!currentEleveur) { showAlert('salariesModalAlert', 'error', '❌ Aucun éleveur sélectionné'); return; }
+
+        $('saveSalariesModal').disabled = true;
+        supabase.rpc('save_salarie', {
+            p_user_id:    currentUser ? currentUser.id : null,
+            p_eleveur_id: currentEleveur.id,
+            p_nom:        nom,
+            p_prenom:     prenom || null,
+            p_email:      email,
+            p_password:   password || '',
+            p_salarie_id: editingSalarieId || null
+        }).then(function(res) {
+            $('saveSalariesModal').disabled = false;
+            if (res.error) throw res.error;
+            if (res.data && res.data.success === false) throw new Error(res.data.error || 'Erreur');
+            closeSalariesModal();
+            loadSalaries();
+        }).catch(function(err) {
+            $('saveSalariesModal').disabled = false;
+            showAlert('salariesModalAlert', 'error', '❌ ' + esc(err.message));
+        });
+    }
+
+    function toggleSalarie(salarieId, nomSalarie) {
+        if (!confirm('Voulez-vous changer le statut du salarié ' + nomSalarie + ' ?')) return;
+        supabase.rpc('toggle_salarie', {
+            p_user_id:    currentUser ? currentUser.id : null,
+            p_salarie_id: salarieId
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            loadSalaries();
+        }).catch(function(err) {
+            alert('❌ ' + err.message);
         });
     }
 
