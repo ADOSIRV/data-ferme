@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Theme Dark (default) */
@@ -617,6 +618,81 @@
             .commande-actions { flex-direction: column; }
         }
 
+        /* =====================================================
+           LIEUX DE LIVRAISON
+           ===================================================== */
+        .lieux-section-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
+        }
+        .lieux-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .lieux-section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .lieu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.85rem 1rem;
+            background: var(--bg-input);
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+        }
+        .lieu-item-info { flex: 1; min-width: 0; }
+        .lieu-item-nom { font-weight: 600; font-size: 0.95rem; }
+        .lieu-item-desc { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.15rem; }
+        .lieu-item-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+        .lieu-qr-btn {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--green);
+            background: var(--green-light);
+            color: var(--green);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+        }
+        .lieu-del-btn {
+            padding: 0.4rem 0.65rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .lieu-del-btn:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+        .code-commande-badge {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: var(--orange-light);
+            color: var(--orange);
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        /* QR Modal */
+        .qr-display { margin: 1rem auto; display: flex; justify-content: center; }
+        .qr-display canvas, .qr-display img { border: 6px solid #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .qr-url-box { background: var(--bg-input); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 1rem; }
+
         /* ============================================================
            MOBILE : correction chevauchement session-bar / nav-bar
            ============================================================ */
@@ -833,6 +909,46 @@
     </div>
 </div>
 
+<!-- MODALE LIEU DE LIVRAISON -->
+<div class="modal-overlay" id="lieuModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">📍 Nouveau lieu de livraison</span>
+            <button class="modal-close" id="closeLieuModal">&times;</button>
+        </div>
+        <div class="alert" id="lieuModalAlert"></div>
+        <div class="form-group">
+            <label class="form-label">Nom du lieu *</label>
+            <input type="text" class="form-input" id="lieuNom" placeholder="Ex : Silo 1, Quai Nord, Soufflerie Est...">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="lieuDesc" rows="2" placeholder="Accès, instructions particulières..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelLieuModal">Annuler</button>
+            <button class="btn btn-primary" id="saveLieuModal">➕ Créer le lieu</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE QR CODE -->
+<div class="modal-overlay" id="qrModal">
+    <div class="modal-content" style="max-width:420px; text-align:center;">
+        <div class="modal-header" style="justify-content:flex-end; margin-bottom:0;">
+            <button class="modal-close" id="closeQrModal">&times;</button>
+        </div>
+        <div style="font-size:1.1rem; font-weight:700; margin-bottom:0.25rem;" id="qrLieuNom">--</div>
+        <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:1rem;" id="qrBatimentNom">--</div>
+        <div class="qr-display" id="qrCodeContainer"></div>
+        <div class="qr-url-box" id="qrUrlText"></div>
+        <div style="display:flex; gap:0.75rem; flex-direction:column;">
+            <button class="btn btn-primary btn-full" id="btnPrintQR">🖨️ Imprimer le QR code</button>
+            <button class="btn btn-secondary btn-full" id="closeQrModalBtn">Fermer</button>
+        </div>
+    </div>
+</div>
+
 <!-- PAGE LOGIN -->
 <div class="page active" id="pageLogin">
     <div class="login-box">
@@ -1038,7 +1154,25 @@
             </div>
             
         </div>
-        
+
+        <!-- CARTE LIEUX DE LIVRAISON (visible pour tous dans Exploitation) -->
+        <div class="lieux-section-card" id="lieuxSectionCard" style="display:none;">
+            <div class="lieux-section-header">
+                <div class="lieux-section-title">📍 Lieux de livraison</div>
+                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                    <select class="selector-select" id="lieuxBatimentSel" style="min-width:180px;">
+                        <option value="">-- Choisir un bâtiment --</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" id="btnAddLieu">➕ Ajouter un lieu</button>
+                </div>
+            </div>
+            <div id="lieuxListContainer">
+                <div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">
+                    Sélectionnez un bâtiment pour gérer ses lieux de livraison.
+                </div>
+            </div>
+        </div>
+
         <!-- PANEL: API Config -->
         <div class="admin-panel" id="panelApiConfig">
             <div class="admin-panel-header">
@@ -1285,8 +1419,18 @@
                         </select>
                     </div>
 
+                    <div class="form-group" id="groupCmdLieu" style="display:none;">
+                        <label class="form-label">Lieu de livraison</label>
+                        <select class="form-input" id="cmdLieuLivraison">
+                            <option value="">-- Sélectionner un lieu --</option>
+                        </select>
+                        <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;">
+                            Gérez les lieux dans <a href="#" id="lienGererLieux" style="color:var(--blue);">Exploitation → Lieux de livraison</a>
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label class="form-label">Numéro de silo</label>
+                        <label class="form-label">Numéro de silo <span style="font-weight:400; color:var(--text-dim);">(si pas de lieu défini)</span></label>
                         <input type="text" class="form-input" id="cmdNumeroSilo" placeholder="Ex : Silo 1, S2, Nord...">
                     </div>
 
@@ -3007,6 +3151,9 @@
         $('btnEnvoyerCommande').addEventListener('click', envoyerCommande);
         $('btnRefreshCommandes').addEventListener('click', loadHistoriqueCommandes);
         $('cmdTypeAliment').addEventListener('change', onTypeAlimentChange);
+        $('cmdBatiment').addEventListener('change', function() {
+            loadLieuxPourCommande(this.value);
+        });
         $('btnAddFournisseur').addEventListener('click', openFournisseurModal);
         $('closeFournisseurModal').addEventListener('click', closeFournisseurModal);
         $('cancelFournisseurModal').addEventListener('click', closeFournisseurModal);
@@ -3014,6 +3161,27 @@
         $('fournisseurModal').addEventListener('click', function(e) {
             if (e.target === this) closeFournisseurModal();
         });
+        $('lienGererLieux').addEventListener('click', function(e) {
+            e.preventDefault();
+            switchSection('exploitation');
+            var batId = $('cmdBatiment').value;
+            if (batId) {
+                $('lieuxBatimentSel').value = batId;
+                loadLieuxForBatiment(batId);
+            }
+        });
+
+        // Lieux de livraison
+        $('btnAddLieu').addEventListener('click', openLieuModal);
+        $('closeLieuModal').addEventListener('click', closeLieuModal);
+        $('cancelLieuModal').addEventListener('click', closeLieuModal);
+        $('saveLieuModal').addEventListener('click', saveLieu);
+        $('lieuModal').addEventListener('click', function(e) { if (e.target === this) closeLieuModal(); });
+        $('lieuxBatimentSel').addEventListener('change', function() { loadLieuxForBatiment(this.value); });
+        $('closeQrModal').addEventListener('click', closeQRModal);
+        $('closeQrModalBtn').addEventListener('click', closeQRModal);
+        $('btnPrintQR').addEventListener('click', printQRCode);
+        $('qrModal').addEventListener('click', function(e) { if (e.target === this) closeQRModal(); });
 
         // Panel aliments (admin)
         $('btnNewAliment').addEventListener('click', function() { openAlimentModal(null); });
@@ -3049,6 +3217,7 @@
         document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-section') === sectionName);
         });
+        if (sectionName === 'exploitation') initLieuxSection();
         if (sectionName === 'commande') initCommandePanel();
         if (sectionName === 'planning') initPlanningPanel();
     }
@@ -3072,9 +3241,41 @@
         $('cmdDateLivraison').min = tomorrow.toISOString().split('T')[0];
     }
 
+    function loadLieuxPourCommande(batimentId) {
+        var sel = $('cmdLieuLivraison');
+        var grp = $('groupCmdLieu');
+        sel.innerHTML = '<option value="">-- Sélectionner un lieu --</option>';
+        if (!batimentId || !supabase || !currentEleveur) {
+            grp.style.display = 'none';
+            return;
+        }
+        supabase.from('lieux_livraison')
+            .select('id, nom, description')
+            .eq('batiment_id', batimentId)
+            .eq('eleveur_id', currentEleveur.id)
+            .eq('is_active', true)
+            .order('nom')
+            .then(function(r) {
+                var lieux = r.data || [];
+                if (lieux.length === 0) {
+                    grp.style.display = 'none';
+                    return;
+                }
+                lieux.forEach(function(l) {
+                    var opt = document.createElement('option');
+                    opt.value = l.id;
+                    opt.textContent = l.nom + (l.description ? ' — ' + l.description : '');
+                    sel.appendChild(opt);
+                });
+                grp.style.display = 'block';
+            })
+            .catch(function() { grp.style.display = 'none'; });
+    }
+
     function loadBatimentsEleveur() {
         var sel = $('cmdBatiment');
         sel.innerHTML = '<option value="">-- Sélectionner un bâtiment --</option>';
+        $('groupCmdLieu').style.display = 'none';
         if (!currentEleveur || !supabase) return;
         supabase
             .from('batiments')
@@ -3225,20 +3426,30 @@
                 var html = '';
                 commandes.forEach(function(c) {
                     var dateRef = c.date_livraison_confirmee || c.date_livraison_souhaitee;
-                    var dateStr = dateRef ? new Date(dateRef).toLocaleDateString('fr-FR') : '--';
                     var statut = c.statut || 'en_attente';
                     var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
                     var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
                     html += '<div class="commande-item">';
                     html += '<div class="commande-item-left">';
-                    html += '<div class="commande-item-date">Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR') + '</div>';
+                    // Code commande + date
+                    var dateLine = 'Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR');
+                    if (c.code_commande) {
+                        dateLine = '<span class="code-commande-badge">' + esc(c.code_commande) + '</span> &nbsp;' + dateLine;
+                    }
+                    html += '<div class="commande-item-date">' + dateLine + '</div>';
                     html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
                     html += '<div class="commande-item-qty">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + (heure ? ' · ' + heure : '') + '</div>';
-                    if (c.batiment_nom || c.numero_silo) {
-                        var lieuParts = [];
-                        if (c.batiment_nom) lieuParts.push('🏠 ' + esc(c.batiment_nom));
-                        if (c.numero_silo)  lieuParts.push('🗂️ Silo : ' + esc(c.numero_silo));
+                    // Lieu de livraison
+                    var lieuParts = [];
+                    if (c.batiment_nom) lieuParts.push('🏠 ' + esc(c.batiment_nom));
+                    if (c.lieu_livraison_nom) lieuParts.push('📍 ' + esc(c.lieu_livraison_nom));
+                    else if (c.numero_silo)   lieuParts.push('🗂️ Silo : ' + esc(c.numero_silo));
+                    if (lieuParts.length > 0) {
                         html += '<div style="margin-top:0.3rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
+                    }
+                    // Livreur (si livraison effectuée)
+                    if (c.statut === 'livree' && c.livreur_nom) {
+                        html += '<div style="margin-top:0.3rem;font-size:0.8rem;color:var(--blue);">🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '') + '</div>';
                     }
                     if (c.commentaire_fournisseur) {
                         html += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(59,130,246,0.1);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">'
@@ -3276,7 +3487,8 @@
         doc.setFontSize(20); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
         doc.text('BON DE COMMANDE ALIMENT', titleX, 20);
         doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
-        doc.text('N° ' + esc(commande.id || '--') + '   |   ' + now.toLocaleDateString('fr-FR'), titleX, 27);
+        var codeRef = commande.codeCommande ? commande.codeCommande : ('N° ' + esc(commande.id || '--'));
+        doc.text(codeRef + '   |   ' + now.toLocaleDateString('fr-FR'), titleX, 27);
 
         // Séparateur
         doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.5);
@@ -3314,7 +3526,7 @@
             ['Quantité', esc(String(commande.quantite || '--')) + ' tonnes'],
             ['Date de livraison souhaitée', esc(commande.dateLivraison || '--')],
             ['Bâtiment de livraison', esc(commande.batimentNom || 'Non précisé')],
-            ['Numéro de silo', esc(commande.numeroSilo || 'Non précisé')],
+            ['Lieu de livraison', esc(commande.lieuNom || commande.numeroSilo || 'Non précisé')],
             ['Notes', esc(commande.notes || 'Aucune')]
         ];
         fields.forEach(function(f) {
@@ -3341,15 +3553,20 @@
         var batId = $('cmdBatiment').value;
         var batSel = $('cmdBatiment');
         var batNom = batSel.options[batSel.selectedIndex] ? batSel.options[batSel.selectedIndex].text : '';
+        var lieuId = $('cmdLieuLivraison').value || null;
+        var lieuSel = $('cmdLieuLivraison');
+        var lieuNom = (lieuId && lieuSel.options[lieuSel.selectedIndex]) ? lieuSel.options[lieuSel.selectedIndex].text : '';
         return {
-            typeAlimentId:   typeId,
+            typeAlimentId:    typeId,
             typeAlimentLabel: typeObj ? typeObj.nom : '--',
-            quantite:        parseFloat($('cmdQuantite').value),
-            dateLivraison:   $('cmdDateLivraison').value,
-            notes:           $('cmdNotes').value.trim(),
-            batimentId:      batId || null,
-            batimentNom:     batId ? batNom : '',
-            numeroSilo:      $('cmdNumeroSilo').value.trim() || null
+            quantite:         parseFloat($('cmdQuantite').value),
+            dateLivraison:    $('cmdDateLivraison').value,
+            notes:            $('cmdNotes').value.trim(),
+            batimentId:       batId || null,
+            batimentNom:      batId ? batNom : '',
+            lieuLivraisonId:  lieuId,
+            lieuNom:          lieuNom,
+            numeroSilo:       $('cmdNumeroSilo').value.trim() || null
         };
     }
 
@@ -3366,6 +3583,7 @@
         var d = validateCommandeForm();
         if (!d) return;
         d.id = 'BROUILLON';
+        d.codeCommande = null;
         d.dateLivraison = new Date(d.dateLivraison).toLocaleDateString('fr-FR');
         var logoImg = new Image();
         logoImg.onload = function() {
@@ -3403,25 +3621,26 @@
             p_date_livraison:         d.dateLivraison,
             p_notes:                  d.notes || null,
             p_batiment_id:            d.batimentId || null,
-            p_numero_silo:            d.numeroSilo || null
+            p_numero_silo:            d.numeroSilo || null,
+            p_lieu_livraison_id:      d.lieuLivraisonId || null
         })
         .then(function(res) {
             if (res.error) throw res.error;
             var commande = res.data;
             // 2. Générer le PDF en base64
             var dateFr = new Date(d.dateLivraison).toLocaleDateString('fr-FR');
-            var pdfData = Object.assign({}, d, { id: commande.id, dateLivraison: dateFr });
+            var pdfData = Object.assign({}, d, { id: commande.id, dateLivraison: dateFr, codeCommande: commande.code_commande || null });
             var logoImg = new Image();
             logoImg.onload = function() {
                 var c = document.createElement('canvas'); c.width = logoImg.width; c.height = logoImg.height;
                 c.getContext('2d').drawImage(logoImg, 0, 0);
                 var doc = buildCommandePDFDoc(pdfData, c.toDataURL('image/png'));
                 var pdfBase64 = doc.output('datauristring');
-                envoyerEmailCommande(commande.id, pdfBase64);
+                envoyerEmailCommande(commande.id, pdfBase64, commande.code_commande);
             };
             logoImg.onerror = function() {
                 var doc = buildCommandePDFDoc(pdfData, null);
-                envoyerEmailCommande(commande.id, doc.output('datauristring'));
+                envoyerEmailCommande(commande.id, doc.output('datauristring'), commande.code_commande);
             };
             logoImg.src = 'Logo_Dataferme.png';
         })
@@ -3431,7 +3650,7 @@
         });
     }
 
-    function envoyerEmailCommande(commandeId, pdfBase64) {
+    function envoyerEmailCommande(commandeId, pdfBase64, codeCommande) {
         // Appel du workflow N8N d'envoi email
         var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-commande-email';
         fetch(n8nUrl, {
@@ -3445,12 +3664,15 @@
                     var msg = data.error || data.message || 'Erreur inconnue';
                     showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(msg));
                 } else {
-                    showAlert('commandeAlert', 'success', '✅ Commande envoyée au fournisseur avec succès !');
+                    var codeMsg = codeCommande ? ' — Code : <strong>' + esc(codeCommande) + '</strong>' : '';
+                    showAlert('commandeAlert', 'success', '✅ Commande envoyée au fournisseur avec succès !' + codeMsg);
                     // Réinitialiser le formulaire
                     $('cmdTypeAliment').value = '';
                     $('cmdQuantite').value = '';
                     $('cmdDateLivraison').value = '';
                     $('cmdNotes').value = '';
+                    $('cmdNumeroSilo').value = '';
+                    $('cmdLieuLivraison').value = '';
                     loadHistoriqueCommandes();
                     if (planningCommandes !== null) initPlanningPanel();
                 }
@@ -3459,6 +3681,211 @@
             hideLoading();
             showAlert('commandeAlert', 'error', '⚠️ Commande enregistrée mais email non envoyé: ' + esc(err.message));
         });
+    }
+
+    // =====================================================
+    // LIEUX DE LIVRAISON — GESTION
+    // =====================================================
+    var lieuxBatimentActuel = null;
+    var lieuxBatimentsList  = [];
+    var qrCurrentLieu       = null;
+
+    function getAppBaseUrl() {
+        var p = window.location.pathname;
+        return window.location.origin + p.substring(0, p.lastIndexOf('/') + 1);
+    }
+
+    function initLieuxSection() {
+        if (!currentEleveur) {
+            $('lieuxSectionCard').style.display = 'none';
+            return;
+        }
+        $('lieuxSectionCard').style.display = 'block';
+        loadBatimentsForLieux();
+    }
+
+    function loadBatimentsForLieux() {
+        var sel = $('lieuxBatimentSel');
+        sel.innerHTML = '<option value="">-- Choisir un bâtiment --</option>';
+        if (!supabase || !currentEleveur) return;
+        supabase.from('batiments')
+            .select('id, nom, site_id, sites!inner(eleveur_id)')
+            .eq('sites.eleveur_id', currentEleveur.id)
+            .eq('is_active', true)
+            .order('nom')
+            .then(function(r) {
+                lieuxBatimentsList = r.data || [];
+                lieuxBatimentsList.forEach(function(b) {
+                    var opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.nom;
+                    sel.appendChild(opt);
+                });
+            });
+    }
+
+    function loadLieuxForBatiment(batimentId) {
+        lieuxBatimentActuel = batimentId;
+        var container = $('lieuxListContainer');
+        if (!batimentId) {
+            container.innerHTML = '<div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">Sélectionnez un bâtiment pour gérer ses lieux de livraison.</div>';
+            return;
+        }
+        container.innerHTML = '<div style="text-align:center; color:var(--text-dim); padding:1rem;">Chargement...</div>';
+        supabase.from('lieux_livraison')
+            .select('id, nom, description, qr_token, is_active')
+            .eq('batiment_id', batimentId)
+            .eq('eleveur_id', currentEleveur.id)
+            .eq('is_active', true)
+            .order('nom')
+            .then(function(r) {
+                var lieux = r.data || [];
+                if (lieux.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; color:var(--text-dim); padding:1.5rem; font-size:0.9rem;">Aucun lieu de livraison. Cliquez sur «&nbsp;Ajouter un lieu&nbsp;» pour en créer un.</div>';
+                    return;
+                }
+                var html = '';
+                lieux.forEach(function(l) {
+                    html += '<div class="lieu-item">';
+                    html += '<div class="lieu-item-info">';
+                    html += '<div class="lieu-item-nom">📍 ' + esc(l.nom) + '</div>';
+                    if (l.description) html += '<div class="lieu-item-desc">' + esc(l.description) + '</div>';
+                    html += '</div>';
+                    html += '<div class="lieu-item-actions">';
+                    html += '<button class="lieu-qr-btn" data-lieu-id="' + esc(l.id) + '" data-lieu-nom="' + esc(l.nom) + '" data-qr-token="' + esc(l.qr_token) + '">📱 QR Code</button>';
+                    html += '<button class="lieu-del-btn" data-lieu-id="' + esc(l.id) + '" data-lieu-nom="' + esc(l.nom) + '">🗑️</button>';
+                    html += '</div></div>';
+                });
+                container.innerHTML = html;
+
+                // Bind buttons
+                container.querySelectorAll('.lieu-qr-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var sel = $('lieuxBatimentSel');
+                        var batNom = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+                        showQRModal({
+                            id: this.getAttribute('data-lieu-id'),
+                            nom: this.getAttribute('data-lieu-nom'),
+                            qr_token: this.getAttribute('data-qr-token')
+                        }, batNom);
+                    });
+                });
+                container.querySelectorAll('.lieu-del-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        deleteLieu(this.getAttribute('data-lieu-id'), this.getAttribute('data-lieu-nom'));
+                    });
+                });
+            })
+            .catch(function(err) {
+                container.innerHTML = '<div style="color:var(--red); padding:1rem;">❌ Erreur: ' + esc(err.message) + '</div>';
+            });
+    }
+
+    function openLieuModal() {
+        if (!currentEleveur) { alert('Aucun éleveur sélectionné.'); return; }
+        if (!lieuxBatimentActuel) { alert('Sélectionnez d\'abord un bâtiment.'); return; }
+        $('lieuNom').value = '';
+        $('lieuDesc').value = '';
+        $('lieuModalAlert').className = 'alert';
+        $('lieuModalAlert').textContent = '';
+        $('lieuModal').classList.add('show');
+        $('lieuNom').focus();
+    }
+
+    function closeLieuModal() { $('lieuModal').classList.remove('show'); }
+
+    function saveLieu() {
+        var nom = $('lieuNom').value.trim();
+        var desc = $('lieuDesc').value.trim();
+        if (!nom) { showAlert('lieuModalAlert', 'error', '❌ Le nom du lieu est requis'); return; }
+
+        $('saveLieuModal').disabled = true;
+        supabase.rpc('save_lieu_livraison', {
+            p_user_id:    currentUser ? currentUser.id : null,
+            p_batiment_id: lieuxBatimentActuel,
+            p_eleveur_id:  currentEleveur.id,
+            p_nom:         nom,
+            p_description: desc || null
+        })
+        .then(function(res) {
+            if (res.error) throw res.error;
+            closeLieuModal();
+            loadLieuxForBatiment(lieuxBatimentActuel);
+        })
+        .catch(function(err) { showAlert('lieuModalAlert', 'error', '❌ ' + esc(err.message)); })
+        .finally(function() { $('saveLieuModal').disabled = false; });
+    }
+
+    function deleteLieu(lieuId, lieuNom) {
+        if (!confirm('Désactiver le lieu «\u00a0' + lieuNom + '\u00a0» ? Il ne sera plus disponible à la commande.')) return;
+        supabase.rpc('delete_lieu_livraison', {
+            p_user_id: currentUser ? currentUser.id : null,
+            p_lieu_id: lieuId
+        })
+        .then(function(res) {
+            if (res.error) throw res.error;
+            loadLieuxForBatiment(lieuxBatimentActuel);
+        })
+        .catch(function(err) { alert('Erreur: ' + err.message); });
+    }
+
+    function showQRModal(lieu, batimentNom) {
+        qrCurrentLieu = lieu;
+        $('qrLieuNom').textContent = lieu.nom;
+        $('qrBatimentNom').textContent = batimentNom ? '🏠 ' + batimentNom : '';
+
+        var url = getAppBaseUrl() + 'livraison-publique.html?token=' + lieu.qr_token;
+        $('qrUrlText').textContent = url;
+
+        // Clear and generate QR
+        var container = $('qrCodeContainer');
+        container.innerHTML = '';
+        try {
+            new QRCode(container, {
+                text: url,
+                width: 220,
+                height: 220,
+                colorDark: '#0f172a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } catch(e) {
+            container.innerHTML = '<div style="color:var(--red); font-size:0.85rem;">Erreur génération QR: ' + esc(e.message) + '</div>';
+        }
+
+        $('qrModal').classList.add('show');
+    }
+
+    function closeQRModal() { $('qrModal').classList.remove('show'); }
+
+    function printQRCode() {
+        var url = $('qrUrlText').textContent;
+        var nom = $('qrLieuNom').textContent;
+        var batNom = $('qrBatimentNom').textContent;
+        var container = $('qrCodeContainer');
+        var imgEl = container.querySelector('img') || container.querySelector('canvas');
+        var imgSrc = imgEl ? (imgEl.tagName === 'CANVAS' ? imgEl.toDataURL() : imgEl.src) : '';
+
+        var win = window.open('', '_blank', 'width=600,height=700');
+        if (!win) { alert('Veuillez autoriser les pop-ups pour imprimer.'); return; }
+        win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR Code - ' + nom + '</title><style>');
+        win.document.write('body{font-family:Inter,Arial,sans-serif;text-align:center;padding:2rem;background:#fff;color:#1e293b;}');
+        win.document.write('h2{font-size:1.4rem;margin-bottom:0.25rem;}');
+        win.document.write('.sub{color:#64748b;font-size:0.9rem;margin-bottom:1.5rem;}');
+        win.document.write('img{width:220px;height:220px;border:4px solid #0f172a;border-radius:8px;}');
+        win.document.write('.url{margin-top:1.5rem;font-size:0.75rem;color:#64748b;word-break:break-all;}');
+        win.document.write('.instruction{margin-top:1rem;font-size:0.85rem;color:#334155;}');
+        win.document.write('@media print{button{display:none;}}');
+        win.document.write('</style></head><body>');
+        win.document.write('<img src="' + imgSrc + '" alt="QR Code">');
+        win.document.write('<h2>' + nom + '</h2>');
+        win.document.write('<div class="sub">' + batNom + '</div>');
+        win.document.write('<div class="instruction">📱 Scannez ce QR code pour enregistrer la livraison</div>');
+        win.document.write('<div class="url">' + url + '</div>');
+        win.document.write('</body></html>');
+        win.document.close();
+        win.focus();
+        setTimeout(function() { win.print(); }, 600);
     }
 
     // =====================================================

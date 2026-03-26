@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataferme — Livraison</title>
+    <link rel="icon" type="image/png" href="Logo_Dataferme.png">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --green: #22c55e;
+            --green-light: rgba(34,197,94,0.15);
+            --orange: #f97316;
+            --orange-light: rgba(249,115,22,0.15);
+            --blue: #3b82f6;
+            --blue-light: rgba(59,130,246,0.15);
+            --red: #ef4444;
+            --red-light: rgba(239,68,68,0.15);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #475569;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .page-box {
+            width: 100%;
+            max-width: 560px;
+            padding-top: 1rem;
+        }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .logo-area img { width: 160px; height: auto; }
+        .page-title {
+            font-size: 1rem;
+            color: var(--text-dim);
+            margin-top: 0.5rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+        .card-subtitle {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-item {
+            background: var(--bg-input);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+        }
+        .info-item.full { grid-column: 1 / -1; }
+        .info-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .info-value.highlight { color: var(--green); }
+        .info-value.code {
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: var(--orange);
+            letter-spacing: 0.05em;
+        }
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1.5rem 0;
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus { outline: none; border-color: var(--blue); }
+        .form-input.code-input {
+            font-family: monospace;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-align: center;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+        .btn {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; }
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            margin-top: 0.75rem;
+        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .alert {
+            padding: 0.9rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .alert.show { display: block; }
+        .alert-error { background: var(--red-light); border: 1px solid var(--red); color: var(--red); }
+        .alert-success { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+        .alert-info { background: var(--blue-light); border: 1px solid var(--blue); color: var(--blue); }
+
+        /* Spinner */
+        .spinner {
+            width: 36px; height: 36px;
+            border: 4px solid var(--border);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Lieu info badge */
+        .lieu-badge {
+            background: var(--green-light);
+            border: 1px solid var(--green);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .lieu-badge-icon { font-size: 1.5rem; }
+        .lieu-badge-name { font-weight: 700; font-size: 1rem; color: var(--green); }
+        .lieu-badge-sub { font-size: 0.8rem; color: var(--text-dim); }
+
+        /* Signature canvas */
+        .signature-area {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            background: #fff;
+            position: relative;
+            cursor: crosshair;
+            overflow: hidden;
+        }
+        .signature-area canvas {
+            display: block;
+            width: 100%;
+            height: 150px;
+            touch-action: none;
+        }
+        .signature-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #94a3b8;
+            font-size: 0.85rem;
+            pointer-events: none;
+            text-align: center;
+        }
+        .signature-clear {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--red-light);
+            border: 1px solid var(--red);
+            border-radius: 6px;
+            color: var(--red);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        /* États globaux */
+        .state { display: none; }
+        .state.active { display: block; }
+
+        /* État succès */
+        .success-screen { text-align: center; padding: 1rem 0; }
+        .success-icon-big { font-size: 4.5rem; margin-bottom: 1rem; }
+        .success-title { font-size: 1.4rem; font-weight: 700; color: var(--green); margin-bottom: 0.5rem; }
+        .success-sub { color: var(--text-dim); font-size: 0.9rem; line-height: 1.6; }
+
+        .footer { text-align: center; margin-top: 1.5rem; color: var(--text-dim); font-size: 0.75rem; }
+
+        /* Badge statut */
+        .statut-badge {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .statut-confirmee { background: var(--blue-light); color: var(--blue); }
+        .statut-en_attente { background: var(--orange-light); color: var(--orange); }
+        .statut-livree { background: var(--green-light); color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="page-box">
+    <div class="logo-area">
+        <img src="Logo_Dataferme.png" alt="Dataferme">
+        <div class="page-title">Confirmation de livraison</div>
+    </div>
+
+    <div class="card">
+
+        <!-- ÉTAT : Chargement init -->
+        <div class="state active" id="stateInitLoading" style="text-align:center; padding:2rem 0;">
+            <div class="spinner"></div>
+            <div style="color:var(--text-dim); margin-top:1rem;">Chargement...</div>
+        </div>
+
+        <!-- ÉTAT : Saisie code commande -->
+        <div class="state" id="stateCodeSaisie">
+            <div class="card-title">📦 Livraison à enregistrer</div>
+            <div class="card-subtitle">Saisissez le code de commande indiqué sur votre bon de livraison.</div>
+
+            <div id="lieuBadgeContainer"></div>
+
+            <div class="alert" id="alertCode"></div>
+
+            <div class="form-group">
+                <label class="form-label">Code commande *</label>
+                <input type="text" class="form-input code-input" id="inputCode"
+                    placeholder="CMD-2026-0001"
+                    maxlength="20"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false">
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.4rem;">
+                    Format : CMD-ANNÉE-NUMÉRO (ex : CMD-2026-0042)
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnRechercher">🔍 Rechercher la commande</button>
+        </div>
+
+        <!-- ÉTAT : Chargement commande -->
+        <div class="state" id="stateCommandeLoading" style="text-align:center; padding:2rem 0;">
+            <div class="spinner"></div>
+            <div style="color:var(--text-dim); margin-top:1rem;">Recherche de la commande...</div>
+        </div>
+
+        <!-- ÉTAT : Formulaire livreur -->
+        <div class="state" id="stateFormLivreur">
+            <div class="card-title">✅ Confirmer la livraison</div>
+            <div class="card-subtitle">Commande trouvée. Complétez vos informations pour valider la livraison.</div>
+
+            <!-- Détails commande -->
+            <div class="section-title">📋 Commande</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">N° Commande</div>
+                    <div class="info-value code" id="dispCodeCommande">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Statut</div>
+                    <div class="info-value" id="dispStatut">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Éleveur</div>
+                    <div class="info-value" id="dispEleveur">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Type d'aliment</div>
+                    <div class="info-value highlight" id="dispTypeAliment">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Quantité</div>
+                    <div class="info-value" id="dispQuantite">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Date souhaitée</div>
+                    <div class="info-value" id="dispDateSouhaitee">--</div>
+                </div>
+                <div class="info-item" id="dispBatimentContainer" style="display:none;">
+                    <div class="info-label">Bâtiment</div>
+                    <div class="info-value" id="dispBatiment">--</div>
+                </div>
+                <div class="info-item" id="dispLieuContainer" style="display:none;">
+                    <div class="info-label">Lieu de livraison</div>
+                    <div class="info-value highlight" id="dispLieu">--</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Infos livreur -->
+            <div class="section-title">🚚 Informations du livreur</div>
+            <div class="alert" id="alertLivreur"></div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Nom *</label>
+                    <input type="text" class="form-input" id="livreurNom" placeholder="Dupont" autocomplete="family-name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prénom *</label>
+                    <input type="text" class="form-input" id="livreurPrenom" placeholder="Jean" autocomplete="given-name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Société *</label>
+                <input type="text" class="form-input" id="livreurSociete" placeholder="Transports Durand SA" autocomplete="organization">
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Signature -->
+            <div class="section-title">✍️ Signature</div>
+            <div class="form-group">
+                <div class="signature-area" id="signatureArea">
+                    <canvas id="signatureCanvas"></canvas>
+                    <div class="signature-placeholder" id="signaturePlaceholder">
+                        Signez ici avec votre doigt ou la souris
+                    </div>
+                    <button type="button" class="signature-clear" id="btnClearSignature" style="display:none;">✕ Effacer</button>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.4rem;">
+                    Tracez votre signature dans la zone ci-dessus.
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="btnValiderLivraison">✅ Valider la livraison</button>
+            <button class="btn btn-secondary" id="btnRetour">← Saisir un autre code</button>
+        </div>
+
+        <!-- ÉTAT : Succès -->
+        <div class="state" id="stateSuccess">
+            <div class="success-screen">
+                <div class="success-icon-big">✅</div>
+                <div class="success-title">Livraison enregistrée !</div>
+                <div class="success-sub" id="successText">
+                    La livraison a bien été confirmée. L'éleveur en sera notifié.
+                </div>
+                <button class="btn btn-secondary" id="btnNouvelleCommande" style="margin-top:2rem;">
+                    📦 Enregistrer une autre livraison
+                </button>
+            </div>
+        </div>
+
+        <!-- ÉTAT : Erreur fatale -->
+        <div class="state" id="stateError">
+            <div style="text-align:center; padding:1rem 0;">
+                <div style="font-size:3.5rem; margin-bottom:1rem;">❌</div>
+                <div style="font-size:1.2rem; font-weight:700; color:var(--red); margin-bottom:0.5rem;">Erreur</div>
+                <div style="color:var(--text-dim); font-size:0.9rem;" id="erreurText">Une erreur est survenue.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer">Dataferme v16.12 — ADOSI · Plateforme de gestion avicole</div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var supabase = null;
+    var qrToken = null;
+    var lieuInfo = null;
+    var commandeCode = null;
+
+    /* ── Utilitaires ─────────────────────────────────── */
+    function showState(id) {
+        document.querySelectorAll('.state').forEach(function (el) {
+            el.classList.remove('active');
+        });
+        var el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }
+
+    function showAlert(alertId, type, msg) {
+        var el = document.getElementById(alertId);
+        if (!el) return;
+        el.className = 'alert alert-' + type + ' show';
+        el.textContent = msg;
+    }
+
+    function hideAlert(alertId) {
+        var el = document.getElementById(alertId);
+        if (el) { el.className = 'alert'; el.textContent = ''; }
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '--';
+        var d = new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
+        return d.toLocaleDateString('fr-FR', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+    }
+
+    function statutBadge(statut) {
+        var labels = {
+            en_attente: 'En attente',
+            confirmee: 'Confirmée',
+            livree: 'Livrée',
+            annulee: 'Annulée'
+        };
+        return '<span class="statut-badge statut-' + statut + '">' + (labels[statut] || statut) + '</span>';
+    }
+
+    /* ── Signature canvas ────────────────────────────── */
+    var signatureDrawing = false;
+    var signatureHasData = false;
+
+    function initSignature() {
+        var canvas = document.getElementById('signatureCanvas');
+        var area = document.getElementById('signatureArea');
+        var ctx = canvas.getContext('2d');
+
+        function resize() {
+            var rect = area.getBoundingClientRect();
+            var dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 150 * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        resize();
+
+        function getPos(e) {
+            var rect = canvas.getBoundingClientRect();
+            var src = e.touches ? e.touches[0] : e;
+            return {
+                x: src.clientX - rect.left,
+                y: src.clientY - rect.top
+            };
+        }
+
+        function startDraw(e) {
+            e.preventDefault();
+            signatureDrawing = true;
+            var pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            if (!signatureHasData) {
+                signatureHasData = true;
+                document.getElementById('signaturePlaceholder').style.display = 'none';
+                document.getElementById('btnClearSignature').style.display = 'block';
+                area.style.borderStyle = 'solid';
+                area.style.borderColor = 'var(--green)';
+            }
+        }
+
+        function draw(e) {
+            if (!signatureDrawing) return;
+            e.preventDefault();
+            var pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function endDraw(e) {
+            if (signatureDrawing) { e.preventDefault(); }
+            signatureDrawing = false;
+        }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', endDraw, { passive: false });
+
+        document.getElementById('btnClearSignature').addEventListener('click', function () {
+            ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), 150);
+            signatureHasData = false;
+            document.getElementById('signaturePlaceholder').style.display = 'block';
+            document.getElementById('btnClearSignature').style.display = 'none';
+            area.style.borderStyle = 'dashed';
+            area.style.borderColor = 'var(--border)';
+        });
+    }
+
+    function getSignatureBase64() {
+        if (!signatureHasData) return null;
+        return document.getElementById('signatureCanvas').toDataURL('image/png');
+    }
+
+    /* ── Lieu info (via QR token) ────────────────────── */
+    function loadLieuInfo() {
+        if (!qrToken) {
+            showState('stateCodeSaisie');
+            return;
+        }
+
+        supabase.rpc('get_lieu_by_qr_token', { p_token: qrToken })
+            .then(function (res) {
+                if (res.error) throw res.error;
+                var data = res.data;
+                if (!data || !data.found) {
+                    // Token inconnu → on affiche quand même la saisie sans badge
+                    showState('stateCodeSaisie');
+                    return;
+                }
+                lieuInfo = data;
+                // Afficher le badge lieu
+                var container = document.getElementById('lieuBadgeContainer');
+                container.innerHTML =
+                    '<div class="lieu-badge">' +
+                    '  <div class="lieu-badge-icon">📍</div>' +
+                    '  <div>' +
+                    '    <div class="lieu-badge-name">' + escHtml(data.nom) + '</div>' +
+                    '    <div class="lieu-badge-sub">' + escHtml(data.batiment_nom) + ' · ' + escHtml(data.eleveur_nom) + '</div>' +
+                    '  </div>' +
+                    '</div>';
+                showState('stateCodeSaisie');
+            })
+            .catch(function (e) {
+                console.warn('get_lieu_by_qr_token error:', e);
+                showState('stateCodeSaisie');
+            });
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /* ── Recherche commande ──────────────────────────── */
+    function rechercherCommande() {
+        var code = document.getElementById('inputCode').value.trim().toUpperCase();
+        hideAlert('alertCode');
+
+        if (!code) {
+            showAlert('alertCode', 'error', '❌ Veuillez saisir un code de commande.');
+            return;
+        }
+        if (!/^CMD-\d{4}-\d{4}$/.test(code)) {
+            showAlert('alertCode', 'error', '❌ Format invalide. Exemple : CMD-2026-0042');
+            return;
+        }
+
+        commandeCode = code;
+        showState('stateCommandeLoading');
+
+        supabase.rpc('get_commande_publique', { p_code_commande: code })
+            .then(function (res) {
+                if (res.error) throw res.error;
+                var data = res.data;
+                if (!data || !data.found) {
+                    showState('stateCodeSaisie');
+                    showAlert('alertCode', 'error', '❌ Commande introuvable. Vérifiez le code et réessayez.');
+                    return;
+                }
+
+                // Commande déjà livrée ?
+                if (data.statut === 'livree') {
+                    showState('stateCodeSaisie');
+                    showAlert('alertCode', 'info', 'ℹ️ Cette commande (' + code + ') est déjà enregistrée comme livrée.');
+                    return;
+                }
+                if (data.statut === 'annulee') {
+                    showState('stateCodeSaisie');
+                    showAlert('alertCode', 'error', '❌ Cette commande a été annulée.');
+                    return;
+                }
+
+                // Remplir les infos
+                document.getElementById('dispCodeCommande').textContent = data.code_commande;
+                document.getElementById('dispStatut').innerHTML = statutBadge(data.statut);
+                document.getElementById('dispEleveur').textContent = data.eleveur_nom || '--';
+                document.getElementById('dispTypeAliment').textContent = data.type_aliment || '--';
+                document.getElementById('dispQuantite').textContent = (data.quantite || '--') + ' ' + (data.unite || 'tonnes');
+                document.getElementById('dispDateSouhaitee').textContent = formatDate(data.date_livraison_souhaitee);
+
+                var batimentEl = document.getElementById('dispBatimentContainer');
+                if (data.batiment_nom) {
+                    document.getElementById('dispBatiment').textContent = data.batiment_nom;
+                    batimentEl.style.display = 'block';
+                } else {
+                    batimentEl.style.display = 'none';
+                }
+
+                var lieuEl = document.getElementById('dispLieuContainer');
+                if (data.lieu_nom) {
+                    document.getElementById('dispLieu').textContent = data.lieu_nom;
+                    lieuEl.style.display = 'block';
+                } else if (lieuInfo) {
+                    // Renseigner depuis le QR
+                    document.getElementById('dispLieu').textContent = lieuInfo.nom;
+                    lieuEl.style.display = 'block';
+                } else {
+                    lieuEl.style.display = 'none';
+                }
+
+                showState('stateFormLivreur');
+                hideAlert('alertLivreur');
+                // Réinitialiser signature
+                signatureHasData = false;
+                document.getElementById('signaturePlaceholder').style.display = 'block';
+                document.getElementById('btnClearSignature').style.display = 'none';
+                var area = document.getElementById('signatureArea');
+                area.style.borderStyle = 'dashed';
+                area.style.borderColor = 'var(--border)';
+                var canvas = document.getElementById('signatureCanvas');
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            })
+            .catch(function (e) {
+                showState('stateCodeSaisie');
+                showAlert('alertCode', 'error', '❌ Erreur: ' + e.message);
+            });
+    }
+
+    /* ── Validation livraison ────────────────────────── */
+    function validerLivraison() {
+        hideAlert('alertLivreur');
+
+        var nom = document.getElementById('livreurNom').value.trim();
+        var prenom = document.getElementById('livreurPrenom').value.trim();
+        var societe = document.getElementById('livreurSociete').value.trim();
+        var signature = getSignatureBase64();
+
+        if (!nom) { showAlert('alertLivreur', 'error', '❌ Veuillez saisir votre nom.'); return; }
+        if (!prenom) { showAlert('alertLivreur', 'error', '❌ Veuillez saisir votre prénom.'); return; }
+        if (!societe) { showAlert('alertLivreur', 'error', '❌ Veuillez saisir le nom de votre société.'); return; }
+        if (!signature) { showAlert('alertLivreur', 'error', '❌ Veuillez apposer votre signature.'); return; }
+
+        var btn = document.getElementById('btnValiderLivraison');
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement...';
+
+        supabase.rpc('confirmer_livraison_livreur', {
+            p_code_commande:    commandeCode,
+            p_livreur_nom:      nom,
+            p_livreur_prenom:   prenom,
+            p_livreur_societe:  societe,
+            p_livreur_signature: signature
+        })
+            .then(function (res) {
+                if (res.error) throw res.error;
+                var data = res.data;
+                if (!data || !data.success) {
+                    throw new Error(data && data.error ? data.error : 'Erreur inconnue');
+                }
+
+                document.getElementById('successText').innerHTML =
+                    'La livraison de la commande <strong>' + escHtml(commandeCode) + '</strong> ' +
+                    'a bien été enregistrée.<br>' +
+                    '<span style="color:var(--text-dim); font-size:0.85rem;">Livreur : ' +
+                    escHtml(prenom) + ' ' + escHtml(nom) + ' (' + escHtml(societe) + ')</span>';
+
+                showState('stateSuccess');
+            })
+            .catch(function (e) {
+                showAlert('alertLivreur', 'error', '❌ ' + e.message);
+                btn.disabled = false;
+                btn.textContent = '✅ Valider la livraison';
+            });
+    }
+
+    /* ── Init ────────────────────────────────────────── */
+    function init() {
+        var params = new URLSearchParams(window.location.search);
+        qrToken = params.get('token') || null;
+
+        fetch('config.json')
+            .then(function (r) {
+                if (!r.ok) throw new Error('config.json non trouvé');
+                return r.json();
+            })
+            .then(function (cfg) {
+                if (!cfg.supabase_url || !cfg.supabase_anon_key) throw new Error('Config incomplète');
+                supabase = window.supabase.createClient(cfg.supabase_url, cfg.supabase_anon_key);
+                initSignature();
+                bindEvents();
+                if (qrToken) {
+                    loadLieuInfo();
+                } else {
+                    showState('stateCodeSaisie');
+                }
+            })
+            .catch(function (e) {
+                document.getElementById('erreurText').textContent = 'Erreur de configuration : ' + e.message;
+                showState('stateError');
+            });
+    }
+
+    function bindEvents() {
+        document.getElementById('btnRechercher').addEventListener('click', rechercherCommande);
+
+        document.getElementById('inputCode').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') rechercherCommande();
+        });
+
+        // Auto-format pendant la saisie
+        document.getElementById('inputCode').addEventListener('input', function () {
+            var v = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            this.value = v;
+        });
+
+        document.getElementById('btnValiderLivraison').addEventListener('click', validerLivraison);
+
+        document.getElementById('btnRetour').addEventListener('click', function () {
+            showState('stateCodeSaisie');
+            hideAlert('alertCode');
+        });
+
+        document.getElementById('btnNouvelleCommande').addEventListener('click', function () {
+            document.getElementById('inputCode').value = '';
+            document.getElementById('livreurNom').value = '';
+            document.getElementById('livreurPrenom').value = '';
+            document.getElementById('livreurSociete').value = '';
+            signatureHasData = false;
+            commandeCode = null;
+            showState('stateCodeSaisie');
+            hideAlert('alertCode');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
