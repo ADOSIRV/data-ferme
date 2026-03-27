@@ -4079,9 +4079,8 @@
     }
 
     function envoyerEmailBienveneSalarie(nom, prenom, email, password, eleveurNom) {
-        var n8nUrl  = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-welcome-salarie';
+        var n8nUrl   = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-welcome-salarie';
         var loginUrl = window.location.origin + window.location.pathname;
-        var nomComplet = prenom ? (prenom + ' ' + nom) : nom;
         var emailHtml = buildEmailBienvenueHtml(nom, prenom, email, password, eleveurNom, loginUrl);
         fetch(n8nUrl, {
             method: 'POST',
@@ -4091,9 +4090,32 @@
                 subject:   'Bienvenue sur Dataferme — vos identifiants de connexion',
                 emailHtml: emailHtml
             })
-        }).catch(function() {
-            // L'email est non-bloquant : le salarié est créé même si l'email échoue
-            console.warn('Email de bienvenue non envoyé pour', email);
+        }).then(function(response) {
+            if (!response.ok) {
+                return response.text().then(function(txt) {
+                    throw new Error('HTTP ' + response.status + ' — ' + txt.substring(0, 120));
+                });
+            }
+            return response.json();
+        }).then(function(data) {
+            if (data && data.success === false) {
+                throw new Error(data.error || 'Erreur workflow n8n');
+            }
+            // Email envoyé avec succès — afficher une confirmation discrète
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#15803d;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);';
+            toast.textContent = '📧 Email de bienvenue envoyé à ' + email;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 5000);
+        }).catch(function(err) {
+            // L'email est non-bloquant mais on affiche un avertissement visible
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#b45309;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer;max-width:360px;';
+            toast.innerHTML = '⚠️ Salarié créé mais email non envoyé<br><span style="font-size:11px;font-weight:400;opacity:.9;">' + err.message + '</span>';
+            toast.onclick = function() { toast.remove(); };
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 10000);
+            console.error('Email bienvenue salarié:', err);
         });
     }
 
