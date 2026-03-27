@@ -4021,7 +4021,8 @@
         editingSalarieId = null;
     }
 
-    function buildEmailBienvenueHtml(nom, prenom, email, password, eleveurNom, loginUrl) {
+    function buildEmailBienvenueHtml(nom, prenom, email, password, eleveurNom, loginUrl, logoBase64) {
+        logoBase64 = logoBase64 || 'https://dataferme.com/Logo_Dataferme.png';
         var nomComplet = prenom ? (prenom + ' ' + nom) : nom;
         return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">'
             + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">'
@@ -4029,8 +4030,8 @@
             + '<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);max-width:600px;">'
 
             // En-tête
-            + '<tr><td style="background:#0f172a;padding:20px 32px;">'
-            + '<img src="https://dataferme.com/Logo_Dataferme.png" alt="Dataferme" style="height:32px;width:auto;display:inline-block;vertical-align:middle;">'
+            + '<tr><td style="background:#0f172a;padding:16px 32px;">'
+            + '<img src="' + logoBase64 + '" alt="Dataferme" style="height:36px;width:auto;display:inline-block;vertical-align:middle;">'
             + '</td></tr>'
 
             // Titre
@@ -4077,18 +4078,36 @@
             + '</body></html>';
     }
 
+    function chargerLogoBase64(url) {
+        return fetch(url)
+            .then(function(r) { return r.blob(); })
+            .then(function(blob) {
+                return new Promise(function(resolve) {
+                    var reader = new FileReader();
+                    reader.onloadend = function() { resolve(reader.result); };
+                    reader.onerror   = function() { resolve(null); };
+                    reader.readAsDataURL(blob);
+                });
+            })
+            .catch(function() { return null; });
+    }
+
     function envoyerEmailBienveneSalarie(nom, prenom, email, password, eleveurNom) {
         var n8nUrl   = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-welcome-salarie';
         var loginUrl = window.location.origin + window.location.pathname;
-        var emailHtml = buildEmailBienvenueHtml(nom, prenom, email, password, eleveurNom, loginUrl);
-        fetch(n8nUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email:     email,
-                subject:   'Bienvenue sur Dataferme — vos identifiants de connexion',
-                emailHtml: emailHtml
-            })
+        var logoUrl  = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'Logo_Dataferme.png';
+
+        chargerLogoBase64(logoUrl).then(function(logoBase64) {
+            var emailHtml = buildEmailBienvenueHtml(nom, prenom, email, password, eleveurNom, loginUrl, logoBase64);
+            return fetch(n8nUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email:     email,
+                    subject:   'Bienvenue sur Dataferme — vos identifiants de connexion',
+                    emailHtml: emailHtml
+                })
+            });
         }).then(function(response) {
             if (!response.ok) {
                 return response.text().then(function(txt) {
@@ -4097,17 +4116,13 @@
             }
             return response.json();
         }).then(function(data) {
-            if (data && data.success === false) {
-                throw new Error(data.error || 'Erreur workflow n8n');
-            }
-            // Email envoyé avec succès — afficher une confirmation discrète
+            if (data && data.success === false) throw new Error(data.error || 'Erreur workflow n8n');
             var toast = document.createElement('div');
             toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#15803d;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);';
             toast.textContent = '📧 Email de bienvenue envoyé à ' + email;
             document.body.appendChild(toast);
             setTimeout(function() { toast.remove(); }, 5000);
         }).catch(function(err) {
-            // L'email est non-bloquant mais on affiche un avertissement visible
             var toast = document.createElement('div');
             toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#b45309;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer;max-width:360px;';
             toast.innerHTML = '⚠️ Salarié créé mais email non envoyé<br><span style="font-size:11px;font-weight:400;opacity:.9;">' + err.message + '</span>';
