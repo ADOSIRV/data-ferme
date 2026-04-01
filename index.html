@@ -1051,6 +1051,9 @@
             <button class="main-nav-btn" data-section="planning">
                 <span class="nav-icon">📅</span><span class="nav-label">Planning</span>
             </button>
+            <button class="main-nav-btn" data-section="equarrissage">
+                <span class="nav-icon">🐄</span><span class="nav-label">Équarrissage</span>
+            </button>
             <button class="main-nav-btn" data-section="parametrage">
                 <span class="nav-icon">⚙️</span><span class="nav-label">Paramétrage</span>
             </button>
@@ -1602,6 +1605,29 @@
                 </div>
             </div>
 
+            <!-- CARTE ÉQUARRISSAGE -->
+            <div class="lieux-section-card" id="equarrissageCard">
+                <div class="lieux-section-header">
+                    <div class="lieux-section-title">🐄 Équarrissage</div>
+                </div>
+                <div style="font-size:0.82rem; color:var(--text-dim); margin-bottom:1.2rem; line-height:1.5;">
+                    Configurez l'URL de redirection vers le portail d'équarrissage. Cette URL sera utilisée pour tous les utilisateurs de votre exploitation lorsqu'ils cliqueront sur le menu <strong>Équarrissage</strong>.
+                </div>
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <label style="font-size:0.78rem; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em;">
+                        URL du portail équarrissage
+                    </label>
+                    <input type="url" id="inputUrlEquarrissage"
+                        placeholder="https://..."
+                        style="width:100%; padding:0.65rem 0.9rem; border:1px solid var(--border); border-radius:8px; font-size:0.88rem; background:var(--bg-card); color:var(--text); box-sizing:border-box; font-family:monospace;">
+                    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" id="btnSaveUrlEquarrissage">💾 Enregistrer l'URL</button>
+                        <button class="btn btn-secondary btn-sm" id="btnTestUrlEquarrissage">🔗 Tester l'URL</button>
+                    </div>
+                    <div id="equarrissageAlert" style="display:none;"></div>
+                </div>
+            </div>
+
         </div><!-- /sectionParametrage -->
 
         <div class="footer">Dataferme v16.0 - ADOSI</div>
@@ -1763,6 +1789,13 @@
     }
     
     function findEleveurForUser(user) {
+        // Cas salarié : lien direct via eleveur_id dans la table users
+        if (user.eleveur_id) {
+            return supabase.from('eleveurs').select('*').eq('id', user.eleveur_id).eq('is_active', true).maybeSingle()
+                .then(function(r) { return (r && r.data) ? r.data : null; })
+                .catch(function() { return null; });
+        }
+        // Cas éleveur : cherche via user_id puis email
         return supabase.from('eleveurs').select('*').eq('user_id', user.id).eq('is_active', true).maybeSingle()
             .then(function(r) {
                 if (r.data) return r.data;
@@ -3318,6 +3351,15 @@
     var currentSection = 'exploitation';
 
     function switchSection(sectionName) {
+        // Cas spécial : Équarrissage → ouvre l'URL externe sans changer de section
+        if (sectionName === 'equarrissage') {
+            var url = (currentEleveur && currentEleveur.url_equarrissage && currentEleveur.url_equarrissage.trim())
+                ? currentEleveur.url_equarrissage.trim()
+                : 'https://account.agri-maker.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dagrimaker%26redirect_uri%3Dhttps%253A%252F%252Fwww.agri-maker.com%252Fhome-connected%26response_type%3Dcode%26code_challenge%3DKjXxyzg3EcBUh2bgi3umgYXHFLitwyR0yWkTUAgsXIc%26code_challenge_method%3DS256%26scope%3Dopenid%2520profile%2520agrimaker';
+            window.open(url, '_blank', 'noopener,noreferrer');
+            return; // Ne pas changer de section
+        }
+
         currentSection = sectionName;
         document.querySelectorAll('.main-section').forEach(function(s) { s.classList.remove('show'); });
         var el = $('section' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1));
@@ -3327,7 +3369,7 @@
         });
         if (sectionName === 'commande') initCommandePanel();
         if (sectionName === 'planning') initPlanningPanel();
-        if (sectionName === 'parametrage') { initLieuxSection(); initSalariesSection(); }
+        if (sectionName === 'parametrage') { initLieuxSection(); initSalariesSection(); initEquarrissageCard(); }
     }
 
     // =====================================================
@@ -4167,6 +4209,78 @@
         }).catch(function(err) {
             $('saveSalariesModal').disabled = false;
             showAlert('salariesModalAlert', 'error', '❌ ' + esc(err.message));
+        });
+    }
+
+    // =====================================================
+    // SECTION ÉQUARRISSAGE
+    // =====================================================
+    function initEquarrissageCard() {
+        var input = $('inputUrlEquarrissage');
+        var alertEl = $('equarrissageAlert');
+        if (!input) return;
+
+        // Pré-remplir avec l'URL actuelle de l'éleveur
+        var currentUrl = (currentEleveur && currentEleveur.url_equarrissage)
+            ? currentEleveur.url_equarrissage
+            : 'https://account.agri-maker.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dagrimaker%26redirect_uri%3Dhttps%253A%252F%252Fwww.agri-maker.com%252Fhome-connected%26response_type%3Dcode%26code_challenge%3DKjXxyzg3EcBUh2bgi3umgYXHFLitwyR0yWkTUAgsXIc%26code_challenge_method%3DS256%26scope%3Dopenid%2520profile%2520agrimaker';
+        input.value = currentUrl;
+        if (alertEl) alertEl.style.display = 'none';
+
+        // Bouton Enregistrer
+        var btnSave = $('btnSaveUrlEquarrissage');
+        if (btnSave) {
+            btnSave.onclick = function() { saveUrlEquarrissage(); };
+        }
+
+        // Bouton Tester
+        var btnTest = $('btnTestUrlEquarrissage');
+        if (btnTest) {
+            btnTest.onclick = function() {
+                var url = (input.value || '').trim();
+                if (!url) { return; }
+                window.open(url, '_blank', 'noopener,noreferrer');
+            };
+        }
+    }
+
+    function saveUrlEquarrissage() {
+        if (!currentUser || !currentEleveur) return;
+        var input = $('inputUrlEquarrissage');
+        var alertEl = $('equarrissageAlert');
+        var btn = $('btnSaveUrlEquarrissage');
+        var url = (input.value || '').trim();
+
+        if (!url || url.length < 4) {
+            alertEl.style.display = 'block';
+            alertEl.innerHTML = '<div style="background:var(--red-light,#fee2e2);color:var(--red,#dc2626);border:1px solid var(--red,#dc2626);border-radius:8px;padding:0.65rem 1rem;font-size:0.85rem;">❌ Veuillez saisir une URL valide.</div>';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Enregistrement...';
+        alertEl.style.display = 'none';
+
+        supabase.rpc('save_url_equarrissage', {
+            p_user_id:    currentUser.id,
+            p_eleveur_id: currentEleveur.id,
+            p_url:        url
+        }).then(function(res) {
+            btn.disabled = false;
+            btn.textContent = '💾 Enregistrer l\'URL';
+            if (res.error) throw res.error;
+            var data = res.data;
+            if (data && data.success === false) throw new Error(data.error || 'Erreur inconnue');
+            // Mettre à jour currentEleveur en mémoire
+            currentEleveur.url_equarrissage = url;
+            alertEl.style.display = 'block';
+            alertEl.innerHTML = '<div style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;padding:0.65rem 1rem;font-size:0.85rem;">✅ URL enregistrée avec succès.</div>';
+            setTimeout(function() { alertEl.style.display = 'none'; }, 3000);
+        }).catch(function(err) {
+            btn.disabled = false;
+            btn.textContent = '💾 Enregistrer l\'URL';
+            alertEl.style.display = 'block';
+            alertEl.innerHTML = '<div style="background:var(--red-light,#fee2e2);color:var(--red,#dc2626);border:1px solid var(--red,#dc2626);border-radius:8px;padding:0.65rem 1rem;font-size:0.85rem;">❌ ' + esc(err.message) + '</div>';
         });
     }
 
