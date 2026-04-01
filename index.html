@@ -3667,18 +3667,25 @@
                         html += '<div style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
                     }
 
-                    // Créateur de la commande
-                    if (c.created_by_nom) {
-                        var createur = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
-                        var roleLabel = c.created_by_role === 'salarie' ? ' · Salarié'
+                    // Créateur de la commande (repli sur l'éleveur si non renseigné)
+                    (function() {
+                        var createur, roleLabel, roleColor;
+                        if (c.created_by_nom) {
+                            createur  = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
+                            roleLabel = c.created_by_role === 'salarie' ? ' · Salarié'
                                       : c.created_by_role === 'eleveur' ? ' · Éleveur'
                                       : '';
-                        var roleColor = c.created_by_role === 'salarie' ? 'var(--orange)' : 'var(--text-dim)';
+                            roleColor = c.created_by_role === 'salarie' ? 'var(--orange)' : 'var(--text-dim)';
+                        } else {
+                            createur  = ((c.eleveur_prenom || '') + ' ' + (c.eleveur_nom || '')).trim() || 'Éleveur';
+                            roleLabel = ' · Éleveur';
+                            roleColor = 'var(--text-dim)';
+                        }
                         html += '<div style="margin-top:0.3rem;font-size:0.78rem;color:var(--text-dim);">'
                               + '👤 Commandé par&nbsp;: <strong style="color:' + roleColor + ';">' + esc(createur) + '</strong>'
                               + '<span style="font-size:0.72rem;">' + roleLabel + '</span>'
                               + '</div>';
-                    }
+                    })();
 
                     // ══ SECTION 2 — CONFIRMATION FOURNISSEUR ══
                     if (c.date_livraison_confirmee || c.heure_livraison_confirmee) {
@@ -4892,18 +4899,25 @@
                 html += '<div style="margin-top:0.2rem;font-size:0.8rem;color:var(--text-dim);font-style:italic;">📝 ' + esc(c.notes) + '</div>';
             }
 
-            // Créateur de la commande
-            if (c.created_by_nom) {
-                var createur = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
-                var roleLabel = c.created_by_role === 'salarie' ? ' · Salarié'
+            // Créateur de la commande (repli sur l'éleveur si non renseigné)
+            (function() {
+                var createur, roleLabel, roleColor;
+                if (c.created_by_nom) {
+                    createur  = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
+                    roleLabel = c.created_by_role === 'salarie' ? ' · Salarié'
                               : c.created_by_role === 'eleveur' ? ' · Éleveur'
                               : '';
-                var roleColor = c.created_by_role === 'salarie' ? 'var(--orange)' : 'var(--text-dim)';
+                    roleColor = c.created_by_role === 'salarie' ? 'var(--orange)' : 'var(--text-dim)';
+                } else {
+                    createur  = ((c.eleveur_prenom || '') + ' ' + (c.eleveur_nom || '')).trim() || 'Éleveur';
+                    roleLabel = ' · Éleveur';
+                    roleColor = 'var(--text-dim)';
+                }
                 html += '<div style="margin-top:0.3rem;font-size:0.78rem;color:var(--text-dim);">'
                       + '👤 Commandé par&nbsp;: <strong style="color:' + roleColor + ';">' + esc(createur) + '</strong>'
                       + '<span style="font-size:0.72rem;">' + roleLabel + '</span>'
                       + '</div>';
-            }
+            })();
 
             // ══ SECTION 2 — CONFIRMATION FOURNISSEUR ══
             if (c.date_livraison_confirmee || c.heure_livraison_confirmee) {
