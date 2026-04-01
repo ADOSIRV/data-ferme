@@ -469,6 +469,48 @@
         .statut-livree     { background: var(--blue-light); color: var(--blue); }
         .statut-annulee    { background: var(--red-light); color: var(--red); }
 
+        /* Pagination historique commandes */
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.9rem 0 0.3rem;
+            flex-wrap: wrap;
+        }
+        .pagination-btn {
+            padding: 0.45rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .pagination-btn:hover:not(:disabled) { background: var(--green); border-color: var(--green); color: #fff; }
+        .pagination-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .pagination-info {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .pagination-pages {
+            display: flex;
+            gap: 0.3rem;
+        }
+        .pagination-page-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--border);
+            display: inline-block;
+            transition: background 0.15s;
+        }
+        .pagination-page-dot.active { background: var(--green); }
+
         /* Sections dans la carte commande */
         .cmd-sep {
             height: 1px;
@@ -1528,6 +1570,7 @@
                     <div id="commandesListContainer">
                         <div style="text-align:center; color:var(--text-dim); padding:2rem;">Chargement...</div>
                     </div>
+                    <div id="commandesPagination"></div>
                 </div>
             </div>
         </div><!-- /sectionCommande -->
@@ -3367,6 +3410,11 @@
     // =====================================================
     var currentSection = 'exploitation';
 
+    // ── Pagination historique commandes ──
+    var allCommandesHistorique = [];
+    var commandesCurrentPage   = 1;
+    var COMMANDES_PAR_PAGE     = 4;
+
     function switchSection(sectionName) {
         // Cas spécial : Équarrissage → ouvre l'URL externe sans changer de section
         if (sectionName === 'equarrissage') {
@@ -3574,24 +3622,9 @@
         if (badge) badge.textContent = unite;
     }
 
-    function loadHistoriqueCommandes() {
-        if (!supabase || !currentEleveur) {
-            $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">Sélectionnez un éleveur pour voir les commandes.</div>';
-            return;
-        }
-        supabase.from('v_planning_commandes')
-            .select('*')
-            .eq('eleveur_id', currentEleveur.id)
-            .order('date_livraison_souhaitee', { ascending: false })
-            .limit(20)
-            .then(function(r) {
-                var commandes = r.data || [];
-                if (commandes.length === 0) {
-                    $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">🗒️ Aucune commande pour le moment.</div>';
-                    return;
-                }
-                var html = '';
-                commandes.forEach(function(c) {
+    // ── Construit le HTML d'une carte commande ──────────
+    function buildCommandeHtml(c) {
+        var html = '';
                     var statut = c.statut || 'en_attente';
                     var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
 
@@ -3713,8 +3746,72 @@
                     }
 
                     html += '</div>'; // /commande-item
-                });
-                $('commandesListContainer').innerHTML = html;
+        return html;
+    }
+
+    // ── Affiche la page N de l'historique (4 commandes/page) ──
+    function renderCommandesPage(page) {
+        commandesCurrentPage = page;
+        var total      = allCommandesHistorique.length;
+        var totalPages = Math.ceil(total / COMMANDES_PAR_PAGE);
+        var start      = (page - 1) * COMMANDES_PAR_PAGE;
+        var pageItems  = allCommandesHistorique.slice(start, start + COMMANDES_PAR_PAGE);
+
+        // Rendu des cartes
+        var html = '';
+        pageItems.forEach(function(c) { html += buildCommandeHtml(c); });
+        $('commandesListContainer').innerHTML = html;
+
+        // Rendu de la barre de pagination
+        var pagEl = $('commandesPagination');
+        if (!pagEl) return;
+        if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+
+        var dots = '';
+        for (var i = 1; i <= totalPages; i++) {
+            dots += '<span class="pagination-page-dot' + (i === page ? ' active' : '') + '"></span>';
+        }
+        pagEl.innerHTML = '<div class="pagination-bar">'
+            + '<button class="pagination-btn" id="btnPrevPage"' + (page <= 1 ? ' disabled' : '') + '>← Précédent</button>'
+            + '<div class="pagination-pages">' + dots + '</div>'
+            + '<span class="pagination-info">Page ' + page + ' sur ' + totalPages
+            + ' <span style="color:var(--text-dim);font-weight:400;">(' + total + ' commande' + (total > 1 ? 's' : '') + ')</span></span>'
+            + '<button class="pagination-btn" id="btnNextPage"' + (page >= totalPages ? ' disabled' : '') + '>Suivant →</button>'
+            + '</div>';
+
+        var btnPrev = $('btnPrevPage');
+        var btnNext = $('btnNextPage');
+        if (btnPrev) btnPrev.addEventListener('click', function() {
+            renderCommandesPage(commandesCurrentPage - 1);
+            $('commandesListContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        if (btnNext) btnNext.addEventListener('click', function() {
+            renderCommandesPage(commandesCurrentPage + 1);
+            $('commandesListContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    // ── Charge toutes les commandes depuis Supabase ──────
+    function loadHistoriqueCommandes() {
+        if (!supabase || !currentEleveur) {
+            $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">Sélectionnez un éleveur pour voir les commandes.</div>';
+            if ($('commandesPagination')) $('commandesPagination').innerHTML = '';
+            return;
+        }
+        $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">⏳ Chargement...</div>';
+        supabase.from('v_planning_commandes')
+            .select('*')
+            .eq('eleveur_id', currentEleveur.id)
+            .order('date_livraison_souhaitee', { ascending: false })
+            .then(function(r) {
+                allCommandesHistorique = r.data || [];
+                commandesCurrentPage   = 1;
+                if (allCommandesHistorique.length === 0) {
+                    $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">🗒️ Aucune commande pour le moment.</div>';
+                    if ($('commandesPagination')) $('commandesPagination').innerHTML = '';
+                    return;
+                }
+                renderCommandesPage(1);
             })
             .catch(function(err) {
                 $('commandesListContainer').innerHTML = '<div style="color:var(--red);padding:1rem;">❌ Erreur: ' + esc(err.message) + '</div>';
