@@ -469,6 +469,23 @@
         .statut-livree     { background: var(--blue-light); color: var(--blue); }
         .statut-annulee    { background: var(--red-light); color: var(--red); }
 
+        /* Sections dans la carte commande */
+        .cmd-sep {
+            height: 1px;
+            background: var(--border);
+            margin: 0.6rem 0;
+        }
+        .cmd-section-lbl {
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 0.3rem;
+        }
+        .cmd-section-lbl.lbl-commande    { color: var(--text-dim); }
+        .cmd-section-lbl.lbl-confirm     { color: var(--orange); }
+        .cmd-section-lbl.lbl-livraison   { color: var(--green); }
+
         /* =====================================================
            SECTION PLANNING D'EXPLOITATION
            ===================================================== */
@@ -3577,80 +3594,13 @@
                 commandes.forEach(function(c) {
                     var statut = c.statut || 'en_attente';
                     var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
-                    var heure = '';
-                    if (c.heure_livraison_confirmee) {
-                        var dateConf = c.date_livraison_confirmee
-                            ? new Date(c.date_livraison_confirmee.length === 10
-                                ? c.date_livraison_confirmee + 'T12:00:00'
-                                : c.date_livraison_confirmee).toLocaleDateString('fr-FR')
-                            : '';
-                        heure = (dateConf ? dateConf + ' ' : '') + 'à ' + c.heure_livraison_confirmee;
-                    }
 
-                    html += '<div class="commande-item">';
-
-                    // ── Ligne principale (info + statut) ──
-                    html += '<div class="commande-item-top">';
-                    html += '<div class="commande-item-left">';
-
-                    // Code commande + date
-                    var dateLine = 'Souhaitée le ' + new Date(c.date_livraison_souhaitee).toLocaleDateString('fr-FR');
-                    if (c.code_commande) {
-                        dateLine = '<span class="code-commande-badge">' + esc(c.code_commande) + '</span> &nbsp;' + dateLine;
-                    }
-                    html += '<div class="commande-item-date">' + dateLine + '</div>';
-                    html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
-                    html += '<div class="commande-item-qty">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + (heure ? ' · ' + heure : '') + '</div>';
-
-                    // Lieu de livraison
-                    var lieuParts = [];
-                    if (c.batiment_nom) lieuParts.push('🏠 ' + esc(c.batiment_nom));
-                    if (c.lieu_livraison_nom) lieuParts.push('📍 ' + esc(c.lieu_livraison_nom));
-                    else if (c.numero_silo)   lieuParts.push('🗂️ Silo : ' + esc(c.numero_silo));
-                    if (lieuParts.length > 0) {
-                        html += '<div style="margin-top:0.3rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
-                    }
-
-                    // Livreur + quantité réelle livrée
-                    if (c.statut === 'livree' && c.livreur_nom) {
-                        var livreurLine = '🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '');
-                        if (c.quantite_reelle !== null && c.quantite_reelle !== undefined) {
-                            livreurLine += ' &nbsp;·&nbsp; <strong style="color:var(--green);">📦 ' + c.quantite_reelle + ' ' + esc(c.unite_livraison || 'Tonnes') + ' livrées</strong>';
-                        }
-                        html += '<div style="margin-top:0.35rem;font-size:0.82rem;color:var(--blue);">' + livreurLine + '</div>';
-                    }
-
-                    // Commentaire fournisseur
-                    if (c.commentaire_fournisseur) {
-                        html += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(59,130,246,0.1);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">'
-                              + '💬 <em>' + esc(c.commentaire_fournisseur) + '</em></div>';
-                    }
-
-                    html += '</div>'; // /commande-item-left
-
-                    // Bloc statut (badge + date/heure livraison réelle si livrée)
-                    html += '<div style="flex-shrink:0;text-align:right;">';
-                    html += '<span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span>';
-                    if (c.statut === 'livree' && c.date_livraison_reelle) {
-                        var dlr = new Date(c.date_livraison_reelle);
-                        var dlrDate = dlr.toLocaleDateString('fr-FR');
-                        var dlrHeure = dlr.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                        html += '<div style="font-size:0.72rem;color:var(--blue);margin-top:0.3rem;white-space:nowrap;line-height:1.5;">'
-                              + '📅 ' + dlrDate + '<br>🕐 ' + dlrHeure
-                              + '</div>';
-                    }
-                    html += '</div>';
-
-                    html += '</div>'; // /commande-item-top
-
-                    // ── Signature + Photos (pleine largeur, sous le reste) ──
-                    // parsePhotos : normalise TEXT[] qu'il soit tableau JS, string JSON ou format PG
+                    // Normalise TEXT[] Supabase → tableau JS
                     var photoUrls = (function(val) {
                         if (!val) return [];
                         if (Array.isArray(val)) return val.filter(Boolean);
                         if (typeof val === 'string') {
                             try { var p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch(e) {}
-                            // format PostgreSQL {url1,url2}
                             if (val.charAt(0) === '{' && val.charAt(val.length-1) === '}') {
                                 return val.slice(1,-1).split(',').map(function(s){ return s.trim().replace(/^"|"$/g,''); }).filter(Boolean);
                             }
@@ -3658,37 +3608,108 @@
                         return [];
                     })(c.photos_livraison);
 
-                    var hasSignature = (c.statut === 'livree' && c.livreur_signature);
-                    var hasPhotos    = (c.statut === 'livree' && photoUrls.length > 0);
+                    html += '<div class="commande-item">';
 
-                    if (hasSignature || hasPhotos) {
-                        html += '<div style="border-top:1px solid var(--border);padding-top:0.6rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">';
+                    // ══ EN-TÊTE : code commande + date souhaitée + badge statut ══
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.55rem;flex-wrap:wrap;gap:0.4rem;">';
+                    var dateSouhaitee = c.date_livraison_souhaitee
+                        ? new Date(c.date_livraison_souhaitee.length === 10 ? c.date_livraison_souhaitee + 'T12:00:00' : c.date_livraison_souhaitee).toLocaleDateString('fr-FR')
+                        : '--';
+                    html += '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">';
+                    if (c.code_commande) html += '<span class="code-commande-badge">' + esc(c.code_commande) + '</span>';
+                    html += '<span class="commande-item-date" style="margin:0;">Souhaitée le ' + dateSouhaitee + '</span>';
+                    html += '</div>';
+                    html += '<span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span>';
+                    html += '</div>';
 
-                        // Signature
-                        if (hasSignature) {
-                            html += '<div style="display:flex;align-items:center;gap:0.6rem;">'
-                                  + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;white-space:nowrap;">✍️ Signature</div>'
-                                  + '<img src="' + c.livreur_signature + '" alt="Signature" '
-                                  + 'style="max-height:56px;max-width:200px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
+                    // ══ SECTION 1 — COMMANDE INITIALE ══
+                    html += '<div class="cmd-section-lbl lbl-commande">📋 Commande</div>';
+                    html += '<div class="commande-item-type">' + esc(c.type_aliment || '--') + '</div>';
+                    html += '<div class="commande-item-qty" style="margin-top:0.1rem;">' + (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + '</div>';
+                    var lieuParts = [];
+                    if (c.batiment_nom)       lieuParts.push('🏠 ' + esc(c.batiment_nom));
+                    if (c.lieu_livraison_nom) lieuParts.push('📍 ' + esc(c.lieu_livraison_nom));
+                    else if (c.numero_silo)   lieuParts.push('🗂️ Silo : ' + esc(c.numero_silo));
+                    if (lieuParts.length > 0) {
+                        html += '<div style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
+                    }
+
+                    // ══ SECTION 2 — CONFIRMATION FOURNISSEUR ══
+                    if (c.date_livraison_confirmee || c.heure_livraison_confirmee) {
+                        html += '<div class="cmd-sep"></div>';
+                        html += '<div class="cmd-section-lbl lbl-confirm">✅ Confirmation fournisseur</div>';
+                        var dcf = c.date_livraison_confirmee
+                            ? new Date(c.date_livraison_confirmee.length === 10 ? c.date_livraison_confirmee + 'T12:00:00' : c.date_livraison_confirmee).toLocaleDateString('fr-FR')
+                            : '';
+                        var hcf = c.heure_livraison_confirmee || '';
+                        html += '<div style="font-size:0.85rem;color:var(--text);">'
+                              + (dcf ? '📅 ' + dcf : '')
+                              + (dcf && hcf ? ' &nbsp;à&nbsp;' : '')
+                              + (hcf ? hcf : '')
+                              + '</div>';
+                        if (c.commentaire_fournisseur) {
+                            html += '<div style="margin-top:0.35rem;padding:0.35rem 0.6rem;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">💬 <em>' + esc(c.commentaire_fournisseur) + '</em></div>';
+                        }
+                    }
+
+                    // ══ SECTION 3 — LIVRAISON RÉALISÉE ══
+                    if (statut === 'livree') {
+                        html += '<div class="cmd-sep"></div>';
+                        html += '<div class="cmd-section-lbl lbl-livraison">🚚 Livraison réalisée</div>';
+
+                        // Date + heure réelle
+                        if (c.date_livraison_reelle) {
+                            var dlr = new Date(c.date_livraison_reelle);
+                            html += '<div style="font-size:0.85rem;color:var(--blue);font-weight:600;">'
+                                  + '📅 ' + dlr.toLocaleDateString('fr-FR')
+                                  + ' &nbsp;à&nbsp; ' + dlr.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
                                   + '</div>';
                         }
 
-                        // Photos
-                        if (hasPhotos) {
-                            html += '<div>'
-                                  + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;margin-bottom:0.4rem;">📸 Photos (' + photoUrls.length + ')</div>'
-                                  + '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">';
-                            photoUrls.forEach(function(url) {
-                                var safeUrl = String(url).replace(/"/g, '%22');
-                                html += '<a href="' + safeUrl + '" target="_blank" rel="noopener" title="Agrandir la photo">'
-                                      + '<img src="' + safeUrl + '" alt="Photo livraison" loading="lazy" '
-                                      + 'style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;">'
-                                      + '</a>';
-                            });
-                            html += '</div></div>';
+                        // Quantité réelle (sous la date)
+                        if (c.quantite_reelle !== null && c.quantite_reelle !== undefined) {
+                            html += '<div style="font-size:0.88rem;font-weight:700;color:var(--green);margin-top:0.15rem;">'
+                                  + '📦 ' + c.quantite_reelle + ' ' + esc(c.unite_livraison || 'Tonnes') + ' livrées'
+                                  + '</div>';
                         }
 
-                        html += '</div>';
+                        // Livreur
+                        if (c.livreur_nom) {
+                            html += '<div style="font-size:0.82rem;color:var(--text-dim);margin-top:0.25rem;">'
+                                  + '👤 ' + esc((c.livreur_prenom || '') + ' ' + c.livreur_nom).trim()
+                                  + (c.livreur_societe ? ' &nbsp;·&nbsp; ' + esc(c.livreur_societe) : '')
+                                  + '</div>';
+                        }
+
+                        // Commentaire fournisseur (si pas encore affiché en section 2)
+                        if (c.commentaire_fournisseur && !c.date_livraison_confirmee && !c.heure_livraison_confirmee) {
+                            html += '<div style="margin-top:0.35rem;padding:0.35rem 0.6rem;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:4px;font-size:0.8rem;color:var(--text-dim);">💬 <em>' + esc(c.commentaire_fournisseur) + '</em></div>';
+                        }
+
+                        // Signature + Photos
+                        var hasSig    = !!c.livreur_signature;
+                        var hasPhotos = photoUrls.length > 0;
+                        if (hasSig || hasPhotos) {
+                            html += '<div style="margin-top:0.6rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">';
+                            if (hasSig) {
+                                html += '<div style="display:flex;align-items:center;gap:0.5rem;">'
+                                      + '<span class="cmd-section-lbl lbl-commande" style="margin-bottom:0;white-space:nowrap;">✍️ Signature</span>'
+                                      + '<img src="' + c.livreur_signature + '" alt="Signature" style="max-height:54px;max-width:190px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
+                                      + '</div>';
+                            }
+                            if (hasPhotos) {
+                                html += '<div><span class="cmd-section-lbl lbl-commande" style="display:block;margin-bottom:0.3rem;">📸 Photos (' + photoUrls.length + ')</span>'
+                                      + '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">';
+                                photoUrls.forEach(function(url) {
+                                    var su = String(url).replace(/"/g,'%22');
+                                    html += '<a href="' + su + '" target="_blank" rel="noopener" title="Agrandir">'
+                                          + '<img src="' + su + '" alt="Photo" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;">'
+                                          + '</a>';
+                                });
+                                html += '</div></div>';
+                            }
+                            html += '</div>';
+                        }
                     }
 
                     html += '</div>'; // /commande-item
