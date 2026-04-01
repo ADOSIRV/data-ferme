@@ -3667,6 +3667,19 @@
                         html += '<div style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
                     }
 
+                    // Créateur de la commande
+                    if (c.created_by_nom) {
+                        var createur = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
+                        var roleLabel = c.created_by_role === 'salarie' ? ' · Salarié'
+                                      : c.created_by_role === 'eleveur' ? ' · Éleveur'
+                                      : '';
+                        var roleColor = c.created_by_role === 'salarie' ? 'var(--orange)' : 'var(--text-dim)';
+                        html += '<div style="margin-top:0.3rem;font-size:0.78rem;color:var(--text-dim);">'
+                              + '👤 Commandé par&nbsp;: <strong style="color:' + roleColor + ';">' + esc(createur) + '</strong>'
+                              + '<span style="font-size:0.72rem;">' + roleLabel + '</span>'
+                              + '</div>';
+                    }
+
                     // ══ SECTION 2 — CONFIRMATION FOURNISSEUR ══
                     if (c.date_livraison_confirmee || c.heure_livraison_confirmee) {
                         html += '<div class="cmd-sep"></div>';
@@ -3974,7 +3987,10 @@
             p_notes:                  d.notes || null,
             p_batiment_id:            d.batimentId || null,
             p_numero_silo:            d.numeroSilo || null,
-            p_lieu_livraison_id:      d.lieuLivraisonId || null
+            p_lieu_livraison_id:      d.lieuLivraisonId || null,
+            p_created_by_nom:         currentUser ? (currentUser.nom || null) : null,
+            p_created_by_prenom:      currentUser ? (currentUser.prenom || null) : null,
+            p_created_by_role:        currentUser ? (currentUser.role || null) : null
         })
         .then(function(res) {
             if (res.error) throw res.error;
@@ -4836,11 +4852,24 @@
             var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
             var sub = (c.quantite || '--') + ' ' + (c.unite || 'tonnes') + ' · ' + esc(c.type_aliment || '--');
             if (c.notes) sub += ' · ' + esc(c.notes);
+
+            // Créateur (affiché seulement si salarié pour le planning)
+            var creatLine = '';
+            if (c.created_by_nom) {
+                var creatNom = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
+                var creatColor = c.created_by_role === 'salarie' ? 'var(--orange)' : 'var(--text-dim)';
+                creatLine = '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.2rem;">'
+                          + '👤 <span style="color:' + creatColor + ';">' + esc(creatNom) + '</span>'
+                          + (c.created_by_role === 'salarie' ? ' <em>(salarié)</em>' : '')
+                          + '</div>';
+            }
+
             return '<div class="timeline-event ev-' + statut + '">' +
                 '<div class="timeline-event-icon">' + (statutIcon[statut] || '📦') + '</div>' +
                 '<div class="timeline-event-body">' +
                 '<div class="timeline-event-date">' + dateStr + heure + '</div>' +
                 '<div class="timeline-event-sub">' + sub + '</div>' +
+                creatLine +
                 '<div class="timeline-event-badges"><span class="commande-statut statut-' + statut + '">' + (statutLabel[statut] || statut) + '</span></div>' +
                 '</div></div>';
         }
