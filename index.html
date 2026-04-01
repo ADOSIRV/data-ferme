@@ -3603,9 +3603,13 @@
                         html += '<div style="margin-top:0.3rem;font-size:0.82rem;color:var(--text-dim);">' + lieuParts.join(' &nbsp;·&nbsp; ') + '</div>';
                     }
 
-                    // Livreur
+                    // Livreur + quantité réelle livrée
                     if (c.statut === 'livree' && c.livreur_nom) {
-                        html += '<div style="margin-top:0.35rem;font-size:0.82rem;color:var(--blue);">🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '') + '</div>';
+                        var livreurLine = '🚚 ' + esc(c.livreur_prenom || '') + ' ' + esc(c.livreur_nom) + (c.livreur_societe ? ' · ' + esc(c.livreur_societe) : '');
+                        if (c.quantite_reelle !== null && c.quantite_reelle !== undefined) {
+                            livreurLine += ' &nbsp;·&nbsp; <strong style="color:var(--green);">📦 ' + c.quantite_reelle + ' ' + esc(c.unite_livraison || 'Tonnes') + ' livrées</strong>';
+                        }
+                        html += '<div style="margin-top:0.35rem;font-size:0.82rem;color:var(--blue);">' + livreurLine + '</div>';
                     }
 
                     // Commentaire fournisseur
@@ -3631,13 +3635,37 @@
 
                     html += '</div>'; // /commande-item-top
 
-                    // ── Signature (pleine largeur, sous le reste) ──
-                    if (c.statut === 'livree' && c.livreur_signature) {
-                        html += '<div style="border-top:1px solid var(--border);padding-top:0.5rem;display:flex;align-items:center;gap:0.75rem;">'
-                              + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;white-space:nowrap;">✍️ Signature</div>'
-                              + '<img src="' + c.livreur_signature + '" alt="Signature" '
-                              + 'style="max-height:56px;max-width:220px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
-                              + '</div>';
+                    // ── Signature + Photos (pleine largeur, sous le reste) ──
+                    var hasSignature = (c.statut === 'livree' && c.livreur_signature);
+                    var hasPhotos    = (c.statut === 'livree' && c.photos_livraison && c.photos_livraison.length > 0);
+
+                    if (hasSignature || hasPhotos) {
+                        html += '<div style="border-top:1px solid var(--border);padding-top:0.6rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">';
+
+                        // Signature
+                        if (hasSignature) {
+                            html += '<div style="display:flex;align-items:center;gap:0.6rem;">'
+                                  + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;white-space:nowrap;">✍️ Signature</div>'
+                                  + '<img src="' + c.livreur_signature + '" alt="Signature" '
+                                  + 'style="max-height:56px;max-width:200px;border:1px solid var(--border);border-radius:6px;background:#fff;display:block;">'
+                                  + '</div>';
+                        }
+
+                        // Photos
+                        if (hasPhotos) {
+                            html += '<div>'
+                                  + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;margin-bottom:0.4rem;">📸 Photos (' + c.photos_livraison.length + ')</div>'
+                                  + '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">';
+                            c.photos_livraison.forEach(function(url) {
+                                html += '<a href="' + esc(url) + '" target="_blank" rel="noopener" title="Agrandir la photo">'
+                                      + '<img src="' + esc(url) + '" alt="Photo livraison" loading="lazy" '
+                                      + 'style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;">'
+                                      + '</a>';
+                            });
+                            html += '</div></div>';
+                        }
+
+                        html += '</div>';
                     }
 
                     html += '</div>'; // /commande-item

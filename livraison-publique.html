@@ -252,6 +252,43 @@
 
         .footer { text-align: center; margin-top: 1.5rem; color: var(--text-dim); font-size: 0.75rem; }
 
+        /* Photos livraison */
+        .photo-preview {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+        }
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .photo-remove {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: rgba(239,68,68,0.92);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            width: 22px;
+            height: 22px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            line-height: 1;
+            font-family: inherit;
+        }
+        #photosContainer { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+
         /* Badge statut */
         .statut-badge {
             display: inline-block;
@@ -375,6 +412,46 @@
 
             <div class="divider"></div>
 
+            <!-- Quantité réelle livrée -->
+            <div class="section-title">📦 Quantité réellement livrée</div>
+            <div style="background:var(--bg-input);border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:var(--text-dim);">
+                Quantité commandée : <strong id="refQuantiteCommandee" style="color:var(--text);">--</strong>
+            </div>
+            <div style="display:flex;gap:0.75rem;align-items:flex-start;margin-bottom:0.5rem;">
+                <div style="flex:1;">
+                    <label class="form-label">Quantité livrée *</label>
+                    <input type="number" class="form-input" id="inputQuantiteReelle"
+                        placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+                </div>
+                <div style="width:130px;">
+                    <label class="form-label">Unité</label>
+                    <select class="form-input" id="selectUniteReelle">
+                        <option value="Tonnes" selected>Tonnes</option>
+                        <option value="kg">kg</option>
+                        <option value="Sacs">Sacs</option>
+                        <option value="L">Litres</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Photos de livraison -->
+            <div class="section-title">📸 Photos de livraison <span style="font-weight:400;font-size:0.75rem;text-transform:none;letter-spacing:0;">(optionnel · max 3)</span></div>
+            <div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.9rem;line-height:1.5;">
+                Prenez des photos directement avec l'appareil photo de votre mobile pour documenter la livraison.
+            </div>
+            <div id="photosContainer"></div>
+            <div id="addPhotoZone">
+                <input type="file" id="inputPhoto" accept="image/*" capture="environment" style="display:none;">
+                <button type="button" class="btn btn-secondary" id="btnAjouterPhoto" style="margin-top:0;">
+                    📷 Prendre / Ajouter une photo
+                </button>
+                <div id="photoProgress" style="display:none;font-size:0.8rem;color:var(--text-dim);margin-top:0.5rem;text-align:center;"></div>
+            </div>
+
+            <div class="divider"></div>
+
             <!-- Signature -->
             <div class="section-title">✍️ Signature</div>
             <div class="form-group">
@@ -430,6 +507,9 @@
     var qrToken = null;
     var lieuInfo = null;
     var commandeCode = null;
+    var commandeId = null;       // UUID de la commande (pour le chemin Storage)
+    var commandeQuantiteRef = null; // Quantité commandée (référence)
+    var photos = [];             // [{blob, localUrl}, ...] max 3
 
     /* ── Utilitaires ─────────────────────────────────── */
     function showState(id) {
@@ -572,6 +652,99 @@
         return signatureCanvas.toDataURL('image/png');
     }
 
+    /* ── Photos : compression + upload + preview ─────── */
+    function compressImage(file, maxPx, quality) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            var objUrl = URL.createObjectURL(file);
+            img.onload = function () {
+                URL.revokeObjectURL(objUrl);
+                var w = img.naturalWidth, h = img.naturalHeight;
+                var ratio = Math.min(maxPx / w, maxPx / h, 1);
+                var cw = Math.round(w * ratio);
+                var ch = Math.round(h * ratio);
+                var canvas = document.createElement('canvas');
+                canvas.width = cw;
+                canvas.height = ch;
+                canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+                canvas.toBlob(function (blob) {
+                    if (!blob) { reject(new Error('Compression échouée')); return; }
+                    resolve(blob);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = function () { reject(new Error('Image invalide')); };
+            img.src = objUrl;
+        });
+    }
+
+    function renderPhotos() {
+        var container = document.getElementById('photosContainer');
+        var addZone   = document.getElementById('addPhotoZone');
+        if (!container) return;
+        var html = '';
+        photos.forEach(function (p, i) {
+            html += '<div class="photo-preview">'
+                  + '<img src="' + p.localUrl + '" alt="Photo ' + (i + 1) + '">'
+                  + '<button class="photo-remove" data-index="' + i + '" title="Supprimer">×</button>'
+                  + '</div>';
+        });
+        container.innerHTML = html;
+        // Bind boutons suppression
+        container.querySelectorAll('.photo-remove').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var idx = parseInt(this.getAttribute('data-index'));
+                URL.revokeObjectURL(photos[idx].localUrl);
+                photos.splice(idx, 1);
+                renderPhotos();
+            });
+        });
+        // Afficher/masquer le bouton ajout (max 3)
+        if (addZone) addZone.style.display = photos.length >= 3 ? 'none' : '';
+    }
+
+    function handlePhotoInput(e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (photos.length >= 3) return;
+        var progress = document.getElementById('photoProgress');
+        if (progress) { progress.textContent = '⏳ Compression en cours...'; progress.style.display = 'block'; }
+        compressImage(file, 1200, 0.70)
+            .then(function (blob) {
+                photos.push({ blob: blob, localUrl: URL.createObjectURL(blob) });
+                renderPhotos();
+                if (progress) progress.style.display = 'none';
+                e.target.value = '';
+            })
+            .catch(function (err) {
+                if (progress) { progress.textContent = '❌ ' + err.message; progress.style.display = 'block'; }
+                e.target.value = '';
+            });
+    }
+
+    function uploadPhotos() {
+        if (photos.length === 0) return Promise.resolve([]);
+        var id = commandeId || 'unknown';
+        var promises = photos.map(function (p, i) {
+            var path = 'livraisons/' + id + '/photo_' + (i + 1) + '_' + Date.now() + '.jpg';
+            return supabase.storage
+                .from('livraisons-photos')
+                .upload(path, p.blob, { contentType: 'image/jpeg', upsert: true })
+                .then(function (res) {
+                    if (res.error) throw res.error;
+                    return supabase.storage.from('livraisons-photos').getPublicUrl(path).data.publicUrl;
+                });
+        });
+        return Promise.all(promises);
+    }
+
+    function resetPhotos() {
+        photos.forEach(function (p) { URL.revokeObjectURL(p.localUrl); });
+        photos = [];
+        renderPhotos();
+        var progress = document.getElementById('photoProgress');
+        if (progress) progress.style.display = 'none';
+    }
+
     /* ── Lieu info (via QR token) ────────────────────── */
     function loadLieuInfo() {
         if (!qrToken) {
@@ -655,6 +828,10 @@
                     return;
                 }
 
+                // Stocker l'id et la quantité de référence
+                commandeId = data.id || null;
+                commandeQuantiteRef = data.quantite ? (data.quantite + ' ' + (data.unite || 'tonnes')) : null;
+
                 // Remplir les infos
                 document.getElementById('dispCodeCommande').textContent = data.code_commande;
                 document.getElementById('dispStatut').innerHTML = statutBadge(data.statut);
@@ -662,6 +839,22 @@
                 document.getElementById('dispTypeAliment').textContent = data.type_aliment || '--';
                 document.getElementById('dispQuantite').textContent = (data.quantite || '--') + ' ' + (data.unite || 'tonnes');
                 document.getElementById('dispDateSouhaitee').textContent = formatDate(data.date_livraison_souhaitee);
+
+                // Référence quantité commandée dans la section "quantité réelle"
+                var refEl = document.getElementById('refQuantiteCommandee');
+                if (refEl) refEl.textContent = commandeQuantiteRef || '--';
+
+                // Pré-sélectionner l'unité selon celle commandée
+                var uniteCmd = (data.unite || 'tonnes').toLowerCase();
+                var selectUnite = document.getElementById('selectUniteReelle');
+                if (selectUnite) {
+                    for (var i = 0; i < selectUnite.options.length; i++) {
+                        if (selectUnite.options[i].value.toLowerCase() === uniteCmd) {
+                            selectUnite.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
 
                 var batimentEl = document.getElementById('dispBatimentContainer');
                 if (data.batiment_nom) {
@@ -701,27 +894,43 @@
     function validerLivraison() {
         hideAlert('alertLivreur');
 
-        var nom = document.getElementById('livreurNom').value.trim();
-        var prenom = document.getElementById('livreurPrenom').value.trim();
-        var societe = document.getElementById('livreurSociete').value.trim();
+        var nom       = document.getElementById('livreurNom').value.trim();
+        var prenom    = document.getElementById('livreurPrenom').value.trim();
+        var societe   = document.getElementById('livreurSociete').value.trim();
+        var qtStr     = document.getElementById('inputQuantiteReelle').value.trim();
+        var unite     = document.getElementById('selectUniteReelle').value;
+        var quantite  = parseFloat(qtStr);
         var signature = getSignatureBase64();
 
-        if (!nom) { showAlert('alertLivreur', 'error', '❌ Veuillez saisir votre nom.'); return; }
+        if (!nom)    { showAlert('alertLivreur', 'error', '❌ Veuillez saisir votre nom.'); return; }
         if (!prenom) { showAlert('alertLivreur', 'error', '❌ Veuillez saisir votre prénom.'); return; }
-        if (!societe) { showAlert('alertLivreur', 'error', '❌ Veuillez saisir le nom de votre société.'); return; }
+        if (!societe){ showAlert('alertLivreur', 'error', '❌ Veuillez saisir le nom de votre société.'); return; }
+        if (!qtStr || isNaN(quantite) || quantite < 0) {
+            showAlert('alertLivreur', 'error', '❌ Veuillez saisir la quantité réellement livrée.');
+            return;
+        }
         if (!signature) { showAlert('alertLivreur', 'error', '❌ Veuillez apposer votre signature.'); return; }
 
         var btn = document.getElementById('btnValiderLivraison');
         btn.disabled = true;
-        btn.textContent = 'Enregistrement...';
 
-        supabase.rpc('confirmer_livraison_livreur', {
-            p_code_commande:    commandeCode,
-            p_livreur_nom:      nom,
-            p_livreur_prenom:   prenom,
-            p_livreur_societe:  societe,
-            p_livreur_signature: signature
-        })
+        // Étape 1 : upload photos (si présentes)
+        btn.textContent = photos.length > 0 ? '⏳ Envoi des photos (' + photos.length + ')...' : '⏳ Enregistrement...';
+
+        uploadPhotos()
+            .then(function (photoUrls) {
+                btn.textContent = '⏳ Enregistrement...';
+                return supabase.rpc('confirmer_livraison_livreur', {
+                    p_code_commande:    commandeCode,
+                    p_livreur_nom:      nom,
+                    p_livreur_prenom:   prenom,
+                    p_livreur_societe:  societe,
+                    p_livreur_signature: signature,
+                    p_quantite_reelle:  quantite,
+                    p_unite_livraison:  unite,
+                    p_photos_livraison: photoUrls
+                });
+            })
             .then(function (res) {
                 if (res.error) throw res.error;
                 var data = res.data;
@@ -730,10 +939,15 @@
                 }
 
                 document.getElementById('successText').innerHTML =
-                    'La livraison de la commande <strong>' + escHtml(commandeCode) + '</strong> ' +
-                    'a bien été enregistrée.<br>' +
-                    '<span style="color:var(--text-dim); font-size:0.85rem;">Livreur : ' +
-                    escHtml(prenom) + ' ' + escHtml(nom) + ' (' + escHtml(societe) + ')</span>';
+                    'La livraison de la commande <strong>' + escHtml(commandeCode) + '</strong> '
+                  + 'a bien été enregistrée.<br>'
+                  + '<span style="color:var(--text-dim); font-size:0.85rem;">'
+                  + 'Livreur : ' + escHtml(prenom) + ' ' + escHtml(nom)
+                  + (societe ? ' (' + escHtml(societe) + ')' : '')
+                  + '<br>Quantité livrée : <strong style="color:var(--green);">'
+                  + quantite + ' ' + escHtml(unite) + '</strong>'
+                  + (photos.length > 0 ? ' · ' + photos.length + ' photo(s) jointe(s)' : '')
+                  + '</span>';
 
                 showState('stateSuccess');
             })
@@ -791,13 +1005,24 @@
             hideAlert('alertCode');
         });
 
+        // Photo : ouverture du sélecteur fichier
+        document.getElementById('btnAjouterPhoto').addEventListener('click', function () {
+            document.getElementById('inputPhoto').click();
+        });
+        document.getElementById('inputPhoto').addEventListener('change', handlePhotoInput);
+
         document.getElementById('btnNouvelleCommande').addEventListener('click', function () {
-            document.getElementById('inputCode').value = '';
-            document.getElementById('livreurNom').value = '';
-            document.getElementById('livreurPrenom').value = '';
-            document.getElementById('livreurSociete').value = '';
+            document.getElementById('inputCode').value       = '';
+            document.getElementById('livreurNom').value      = '';
+            document.getElementById('livreurPrenom').value   = '';
+            document.getElementById('livreurSociete').value  = '';
+            document.getElementById('inputQuantiteReelle').value = '';
+            document.getElementById('selectUniteReelle').selectedIndex = 0;
             resetSignatureState();
+            resetPhotos();
             commandeCode = null;
+            commandeId   = null;
+            commandeQuantiteRef = null;
             showState('stateCodeSaisie');
             hideAlert('alertCode');
         });
