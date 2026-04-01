@@ -3577,7 +3577,15 @@
                 commandes.forEach(function(c) {
                     var statut = c.statut || 'en_attente';
                     var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
-                    var heure = c.heure_livraison_confirmee ? ' à ' + c.heure_livraison_confirmee : '';
+                    var heure = '';
+                    if (c.heure_livraison_confirmee) {
+                        var dateConf = c.date_livraison_confirmee
+                            ? new Date(c.date_livraison_confirmee.length === 10
+                                ? c.date_livraison_confirmee + 'T12:00:00'
+                                : c.date_livraison_confirmee).toLocaleDateString('fr-FR')
+                            : '';
+                        heure = (dateConf ? dateConf + ' ' : '') + 'à ' + c.heure_livraison_confirmee;
+                    }
 
                     html += '<div class="commande-item">';
 
