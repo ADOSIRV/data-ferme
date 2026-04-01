@@ -3636,8 +3636,22 @@
                     html += '</div>'; // /commande-item-top
 
                     // ── Signature + Photos (pleine largeur, sous le reste) ──
+                    // parsePhotos : normalise TEXT[] qu'il soit tableau JS, string JSON ou format PG
+                    var photoUrls = (function(val) {
+                        if (!val) return [];
+                        if (Array.isArray(val)) return val.filter(Boolean);
+                        if (typeof val === 'string') {
+                            try { var p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch(e) {}
+                            // format PostgreSQL {url1,url2}
+                            if (val.charAt(0) === '{' && val.charAt(val.length-1) === '}') {
+                                return val.slice(1,-1).split(',').map(function(s){ return s.trim().replace(/^"|"$/g,''); }).filter(Boolean);
+                            }
+                        }
+                        return [];
+                    })(c.photos_livraison);
+
                     var hasSignature = (c.statut === 'livree' && c.livreur_signature);
-                    var hasPhotos    = (c.statut === 'livree' && c.photos_livraison && c.photos_livraison.length > 0);
+                    var hasPhotos    = (c.statut === 'livree' && photoUrls.length > 0);
 
                     if (hasSignature || hasPhotos) {
                         html += '<div style="border-top:1px solid var(--border);padding-top:0.6rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">';
@@ -3654,11 +3668,12 @@
                         // Photos
                         if (hasPhotos) {
                             html += '<div>'
-                                  + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;margin-bottom:0.4rem;">📸 Photos (' + c.photos_livraison.length + ')</div>'
+                                  + '<div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;margin-bottom:0.4rem;">📸 Photos (' + photoUrls.length + ')</div>'
                                   + '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">';
-                            c.photos_livraison.forEach(function(url) {
-                                html += '<a href="' + esc(url) + '" target="_blank" rel="noopener" title="Agrandir la photo">'
-                                      + '<img src="' + esc(url) + '" alt="Photo livraison" loading="lazy" '
+                            photoUrls.forEach(function(url) {
+                                var safeUrl = String(url).replace(/"/g, '%22');
+                                html += '<a href="' + safeUrl + '" target="_blank" rel="noopener" title="Agrandir la photo">'
+                                      + '<img src="' + safeUrl + '" alt="Photo livraison" loading="lazy" '
                                       + 'style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;">'
                                       + '</a>';
                             });
