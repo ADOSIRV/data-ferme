@@ -4516,6 +4516,8 @@
         var c = allCommandesHistorique.find(function(x) { return x.id === commandeId; });
         if (!c) { alert('Commande introuvable.'); return; }
 
+        var now = new Date(); // date de génération (utilisée pour le nom de fichier)
+
         // Feedback sur le bouton
         var btn = document.querySelector('.btn-pdf-recap[data-pdf-id="' + commandeId + '"]');
         if (btn) { btn.disabled = true; btn.textContent = '\u23F3 Generation...'; }
