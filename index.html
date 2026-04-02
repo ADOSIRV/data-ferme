@@ -511,6 +511,114 @@
         }
         .pagination-page-dot.active { background: var(--green); }
 
+        /* ── Filtres historique commandes ── */
+        .btn-filtrer {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.35rem 0.8rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            color: var(--text);
+            transition: background 0.15s, border-color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .btn-filtrer:hover { background: var(--green-light); border-color: var(--green); color: var(--green); }
+        .btn-filtrer.active { background: var(--green-light); border-color: var(--green); color: var(--green); }
+        .filtre-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--green);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 3px;
+        }
+        .filtres-panel {
+            display: none;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .filtres-panel.show { display: flex; }
+        .filtre-groupe { display: flex; flex-direction: column; gap: 0.45rem; }
+        .filtre-groupe-lbl {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+        }
+        .filtre-statuts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .filtre-statut-lbl {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0.28rem 0.65rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            user-select: none;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .filtre-statut-lbl:has(input:checked) { border-color: var(--green); background: var(--green-light); color: var(--green); font-weight: 600; }
+        .filtre-statut-lbl input[type=checkbox] { display: none; }
+        .filtre-date-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .filtre-date-row input[type=date] {
+            padding: 0.3rem 0.55rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: 0.8rem;
+            font-family: inherit;
+        }
+        .filtre-date-lbl { font-size: 0.8rem; color: var(--text-dim); }
+        select.filtre-select {
+            padding: 0.32rem 0.65rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: 0.8rem;
+            font-family: inherit;
+            min-width: 180px;
+        }
+        .filtre-reset-btn {
+            padding: 0.3rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            cursor: pointer;
+            font-family: inherit;
+            align-self: flex-end;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            margin-left: auto;
+        }
+        .filtre-reset-btn:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+
         /* Sections dans la carte commande */
         .cmd-sep {
             height: 1px;
@@ -1565,8 +1673,48 @@
                 <div class="historique-card">
                     <div class="historique-title">
                         <span>📋 Historique des commandes</span>
-                        <button class="btn btn-secondary btn-sm" id="btnRefreshCommandes">↻ Actualiser</button>
+                        <div style="display:flex;gap:0.5rem;align-items:center;">
+                            <button class="btn-filtrer" id="btnToggleFiltres">
+                                🔍 Filtrer
+                                <span id="filtreBadge" class="filtre-badge" style="display:none;"></span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnRefreshCommandes">↻ Actualiser</button>
+                        </div>
                     </div>
+
+                    <!-- Panneau de filtres -->
+                    <div id="filtresPanel" class="filtres-panel">
+                        <!-- Statut -->
+                        <div class="filtre-groupe">
+                            <div class="filtre-groupe-lbl">Statut</div>
+                            <div class="filtre-statuts">
+                                <label class="filtre-statut-lbl"><input type="checkbox" class="cb-statut" value="en_attente"> ⏳ En attente</label>
+                                <label class="filtre-statut-lbl"><input type="checkbox" class="cb-statut" value="confirmee"> ✅ Confirmée</label>
+                                <label class="filtre-statut-lbl"><input type="checkbox" class="cb-statut" value="livree"> 🚚 Livrée</label>
+                                <label class="filtre-statut-lbl"><input type="checkbox" class="cb-statut" value="annulee"> ❌ Annulée</label>
+                            </div>
+                        </div>
+                        <!-- Créateur -->
+                        <div class="filtre-groupe">
+                            <div class="filtre-groupe-lbl">Commandé par</div>
+                            <select id="filtreCreateur" class="filtre-select">
+                                <option value="">— Tous —</option>
+                            </select>
+                        </div>
+                        <!-- Plage de dates -->
+                        <div class="filtre-groupe">
+                            <div class="filtre-groupe-lbl">Date de livraison souhaitée</div>
+                            <div class="filtre-date-row">
+                                <span class="filtre-date-lbl">Du</span>
+                                <input type="date" id="filtreDateDebut">
+                                <span class="filtre-date-lbl">au</span>
+                                <input type="date" id="filtreDateFin">
+                            </div>
+                        </div>
+                        <!-- Réinitialiser -->
+                        <button class="filtre-reset-btn" id="btnResetFiltres">↺ Réinitialiser</button>
+                    </div>
+
                     <div id="commandesListContainer">
                         <div style="text-align:center; color:var(--text-dim); padding:2rem;">Chargement...</div>
                     </div>
@@ -3344,6 +3492,26 @@
         $('btnPreviewPDF').addEventListener('click', previewCommandePDF);
         $('btnEnvoyerCommande').addEventListener('click', envoyerCommande);
         $('btnRefreshCommandes').addEventListener('click', loadHistoriqueCommandes);
+
+        // ── Filtres historique commandes ──
+        $('btnToggleFiltres').addEventListener('click', function() {
+            var panel = $('filtresPanel');
+            if (!panel) return;
+            var isOpen = panel.classList.toggle('show');
+            this.classList.toggle('active', isOpen || (filtreStatuts.length > 0 || filtreCreateur || filtreDateDebut || filtreDateFin));
+        });
+        $('btnResetFiltres').addEventListener('click', function() {
+            resetFiltres();
+        });
+        // Filtres en temps réel : statuts (checkboxes)
+        document.querySelectorAll('.cb-statut').forEach(function(cb) {
+            cb.addEventListener('change', appliquerFiltres);
+        });
+        // Filtres en temps réel : créateur
+        $('filtreCreateur').addEventListener('change', appliquerFiltres);
+        // Filtres en temps réel : dates
+        $('filtreDateDebut').addEventListener('input', appliquerFiltres);
+        $('filtreDateFin').addEventListener('input', appliquerFiltres);
         $('cmdTypeAliment').addEventListener('change', onTypeAlimentChange);
         $('cmdBatiment').addEventListener('change', function() {
             loadLieuxPourCommande(this.value);
@@ -3414,6 +3582,127 @@
     var allCommandesHistorique = [];
     var commandesCurrentPage   = 1;
     var COMMANDES_PAR_PAGE     = 4;
+
+    // ── État des filtres ──
+    var filtreStatuts   = [];   // tableau de valeurs cochées
+    var filtreCreateur  = '';   // nom sélectionné (value du select)
+    var filtreDateDebut = '';   // YYYY-MM-DD
+    var filtreDateFin   = '';   // YYYY-MM-DD
+
+    // Retourne la liste filtrée selon l'état courant des filtres
+    function getCommandesFiltrees() {
+        return allCommandesHistorique.filter(function(c) {
+            // — Statut —
+            if (filtreStatuts.length > 0) {
+                var statut = c.statut || 'en_attente';
+                if (filtreStatuts.indexOf(statut) === -1) return false;
+            }
+            // — Créateur —
+            if (filtreCreateur) {
+                var nom;
+                if (c.created_by_nom) {
+                    nom = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
+                } else {
+                    nom = ((c.eleveur_prenom || '') + ' ' + (c.eleveur_nom || '')).trim();
+                }
+                if (nom.toLowerCase() !== filtreCreateur.toLowerCase()) return false;
+            }
+            // — Plage de dates (date_livraison_souhaitee) —
+            if (c.date_livraison_souhaitee) {
+                var d = c.date_livraison_souhaitee.substring(0, 10);
+                if (filtreDateDebut && d < filtreDateDebut) return false;
+                if (filtreDateFin   && d > filtreDateFin)   return false;
+            }
+            return true;
+        });
+    }
+
+    // Met à jour le badge du bouton Filtrer
+    function updateFiltreBadge() {
+        var count = filtreStatuts.length
+                  + (filtreCreateur  ? 1 : 0)
+                  + (filtreDateDebut ? 1 : 0)
+                  + (filtreDateFin   ? 1 : 0);
+        var badge = $('filtreBadge');
+        var btn   = $('btnToggleFiltres');
+        if (!badge || !btn) return;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = '';
+            btn.classList.add('active');
+        } else {
+            badge.style.display = 'none';
+            btn.classList.remove('active');
+        }
+    }
+
+    // Charge la liste déroulante Créateur (éleveur courant + ses salariés)
+    function loadCreateursList() {
+        var select = $('filtreCreateur');
+        if (!select || !currentEleveur) return;
+        select.innerHTML = '<option value="">— Tous —</option>';
+
+        // L'éleveur lui-même
+        var eleveurNom = ((currentEleveur.prenom || '') + ' ' + (currentEleveur.nom || '')).trim();
+        if (!eleveurNom) eleveurNom = 'Éleveur';
+        var optEl = document.createElement('option');
+        optEl.value = eleveurNom;
+        optEl.textContent = eleveurNom + ' · Éleveur';
+        select.appendChild(optEl);
+
+        // Les salariés rattachés à cet éleveur
+        supabase.from('users')
+            .select('nom, prenom')
+            .eq('eleveur_id', currentEleveur.id)
+            .eq('role', 'salarie')
+            .then(function(r) {
+                if (r.data && r.data.length > 0) {
+                    r.data.forEach(function(u) {
+                        var n = ((u.prenom || '') + ' ' + (u.nom || '')).trim();
+                        if (!n) return;
+                        var o = document.createElement('option');
+                        o.value = n;
+                        o.textContent = n + ' · Salarié';
+                        select.appendChild(o);
+                    });
+                }
+            });
+    }
+
+    // Applique les filtres et revient à la page 1
+    function appliquerFiltres() {
+        // Lire les statuts cochés
+        filtreStatuts = [];
+        document.querySelectorAll('.cb-statut:checked').forEach(function(cb) {
+            filtreStatuts.push(cb.value);
+        });
+        // Lire le créateur
+        var selCreateur = $('filtreCreateur');
+        filtreCreateur = selCreateur ? selCreateur.value : '';
+        // Lire les dates
+        var dDebut = $('filtreDateDebut');
+        var dFin   = $('filtreDateFin');
+        filtreDateDebut = dDebut ? dDebut.value : '';
+        filtreDateFin   = dFin   ? dFin.value   : '';
+        // Re-render depuis la page 1
+        renderCommandesPage(1);
+    }
+
+    // Remet tous les filtres à zéro
+    function resetFiltres() {
+        document.querySelectorAll('.cb-statut').forEach(function(cb) { cb.checked = false; });
+        var selCreateur = $('filtreCreateur');
+        if (selCreateur) selCreateur.value = '';
+        var dDebut = $('filtreDateDebut');
+        var dFin   = $('filtreDateFin');
+        if (dDebut) dDebut.value = '';
+        if (dFin)   dFin.value   = '';
+        filtreStatuts   = [];
+        filtreCreateur  = '';
+        filtreDateDebut = '';
+        filtreDateFin   = '';
+        renderCommandesPage(1);
+    }
 
     function switchSection(sectionName) {
         // Cas spécial : Équarrissage → ouvre l'URL externe sans changer de section
@@ -3772,15 +4061,27 @@
     // ── Affiche la page N de l'historique (4 commandes/page) ──
     function renderCommandesPage(page) {
         commandesCurrentPage = page;
-        var total      = allCommandesHistorique.length;
+        var filtered   = getCommandesFiltrees();
+        var total      = filtered.length;
         var totalPages = Math.ceil(total / COMMANDES_PAR_PAGE);
+        if (totalPages < 1) totalPages = 1;
         var start      = (page - 1) * COMMANDES_PAR_PAGE;
-        var pageItems  = allCommandesHistorique.slice(start, start + COMMANDES_PAR_PAGE);
+        var pageItems  = filtered.slice(start, start + COMMANDES_PAR_PAGE);
 
         // Rendu des cartes
         var html = '';
-        pageItems.forEach(function(c) { html += buildCommandeHtml(c); });
+        if (total === 0) {
+            var msgVide = allCommandesHistorique.length === 0
+                ? '🗒️ Aucune commande pour le moment.'
+                : '🔍 Aucune commande ne correspond aux filtres sélectionnés.';
+            html = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">' + msgVide + '</div>';
+        } else {
+            pageItems.forEach(function(c) { html += buildCommandeHtml(c); });
+        }
         $('commandesListContainer').innerHTML = html;
+
+        // Mise à jour du badge filtres actifs
+        updateFiltreBadge();
 
         // Rendu de la barre de pagination
         var pagEl = $('commandesPagination');
@@ -3791,11 +4092,15 @@
         for (var i = 1; i <= totalPages; i++) {
             dots += '<span class="pagination-page-dot' + (i === page ? ' active' : '') + '"></span>';
         }
+        var totalLabel = total + ' commande' + (total > 1 ? 's' : '')
+                       + (filtreStatuts.length || filtreCreateur || filtreDateDebut || filtreDateFin
+                          ? ' <span style="color:var(--orange);font-weight:600;">filtrée' + (total > 1 ? 's' : '') + '</span>'
+                          : '');
         pagEl.innerHTML = '<div class="pagination-bar">'
             + '<button class="pagination-btn" id="btnPrevPage"' + (page <= 1 ? ' disabled' : '') + '>← Précédent</button>'
             + '<div class="pagination-pages">' + dots + '</div>'
             + '<span class="pagination-info">Page ' + page + ' sur ' + totalPages
-            + ' <span style="color:var(--text-dim);font-weight:400;">(' + total + ' commande' + (total > 1 ? 's' : '') + ')</span></span>'
+            + ' <span style="color:var(--text-dim);font-weight:400;">(' + totalLabel + ')</span></span>'
             + '<button class="pagination-btn" id="btnNextPage"' + (page >= totalPages ? ' disabled' : '') + '>Suivant →</button>'
             + '</div>';
 
@@ -3826,11 +4131,7 @@
             .then(function(r) {
                 allCommandesHistorique = r.data || [];
                 commandesCurrentPage   = 1;
-                if (allCommandesHistorique.length === 0) {
-                    $('commandesListContainer').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">🗒️ Aucune commande pour le moment.</div>';
-                    if ($('commandesPagination')) $('commandesPagination').innerHTML = '';
-                    return;
-                }
+                loadCreateursList();
                 renderCommandesPage(1);
             })
             .catch(function(err) {
