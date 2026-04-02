@@ -1337,6 +1337,7 @@
                         <button class="indicator-btn" data-type="eau_animal"><span class="icon">💧</span>Conso. eau/poule<span class="axis-tag"></span></button>
                         <button class="indicator-btn" data-type="eau_ratio"><span class="icon">⚖️</span>Ratio eau/aliment<span class="axis-tag"></span></button>
                         <button class="indicator-btn" data-type="eau_conso"><span class="icon">🚿</span>Conso. eau totale<span class="axis-tag"></span></button>
+                        <button class="indicator-btn" data-type="homogeneite"><span class="icon">🎯</span>Homogénéité<span class="axis-tag"></span></button>
                     </div>
                 </div>
                 <div class="control-card">
@@ -1877,8 +1878,8 @@
     var mainChart = null;
     var editingUserId = null;
     
-    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [] };
-    var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [] };
+    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [] };
+    var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [] };
     var selectedIndicators = ['poids'];
     var currentPeriod = '56';
     var currentLotInfo = null;
@@ -1894,9 +1895,10 @@
         aliment:    { label: 'Conso. aliment',       unit: 'g/j',     color: '#ea580c', colorArea: 'rgba(234,88,12,0.2)',   colorBorder: 'rgba(234,88,12,0.5)',   icon: '🌾', dataField: 'conso_par_animal',    stdMinField: 'conso_min',                stdMaxField: 'conso_max',                tableEau: false },
         oeufs:      { label: 'Œufs pondus',          unit: 'œufs',    color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)', colorBorder: 'rgba(124,58,237,0.5)', icon: '🥚', dataField: 'nombre_oeufs',        stdMinField: 'taux_ponte_min',           stdMaxField: 'taux_ponte_max',           tableEau: false },
         // ── Indicateurs eau (source : donnees_eau / standards_eau) ──
-        eau_animal: { label: 'Conso. eau/poule',     unit: 'L/poule', color: '#0891b2', colorArea: 'rgba(8,145,178,0.2)',   colorBorder: 'rgba(8,145,178,0.5)',   icon: '💧', dataField: 'conso_par_animal',    stdMinField: 'conso_par_animal_min',     stdMaxField: 'conso_par_animal_max',     tableEau: true },
-        eau_ratio:  { label: 'Ratio eau/aliment',    unit: 'ratio',   color: '#0284c7', colorArea: 'rgba(2,132,199,0.2)',   colorBorder: 'rgba(2,132,199,0.5)',   icon: '⚖️', dataField: 'ratio_eau_aliment',   stdMinField: 'ratio_eau_aliment_min',    stdMaxField: 'ratio_eau_aliment_max',    tableEau: true },
-        eau_conso:  { label: 'Conso. eau totale',    unit: 'L',       color: '#0369a1', colorArea: 'rgba(3,105,161,0.2)',   colorBorder: 'rgba(3,105,161,0.5)',   icon: '🚿', dataField: 'consommation_litres', stdMinField: 'consommation_litres_min',  stdMaxField: 'consommation_litres_max',  tableEau: true }
+        eau_animal:  { label: 'Conso. eau/poule',  unit: 'L/poule', color: '#0891b2', colorArea: 'rgba(8,145,178,0.2)',   colorBorder: 'rgba(8,145,178,0.5)',   icon: '💧', dataField: 'conso_par_animal',    stdMinField: 'conso_par_animal_min',    stdMaxField: 'conso_par_animal_max',    tableEau: true },
+        eau_ratio:   { label: 'Ratio eau/aliment', unit: 'ratio',   color: '#0284c7', colorArea: 'rgba(2,132,199,0.2)',   colorBorder: 'rgba(2,132,199,0.5)',   icon: '⚖️', dataField: 'ratio_eau_aliment',   stdMinField: 'ratio_eau_aliment_min',   stdMaxField: 'ratio_eau_aliment_max',   tableEau: true },
+        eau_conso:   { label: 'Conso. eau totale', unit: 'L',       color: '#0369a1', colorArea: 'rgba(3,105,161,0.2)',   colorBorder: 'rgba(3,105,161,0.5)',   icon: '🚿', dataField: 'consommation_litres', stdMinField: 'consommation_litres_min', stdMaxField: 'consommation_litres_max', tableEau: true },
+        homogeneite: { label: 'Homogénéité',       unit: '%',       color: '#059669', colorArea: 'rgba(5,150,105,0.2)',   colorBorder: 'rgba(5,150,105,0.5)',   icon: '🎯', dataField: 'homogeneite',         stdMinField: 'homogeneite_min',         stdMaxField: 'homogeneite_max',         tableEau: false }
     };
     
     function $(id) { return document.getElementById(id); }
@@ -2817,11 +2819,13 @@
             lotData.oeufs    = (r[3] && r[3].data) ? r[3].data : [];
             // Les 3 indicateurs eau partagent la même table source
             var eauData = (r[4] && r[4].data) ? r[4].data : [];
-            lotData.eau_animal = eauData;
-            lotData.eau_ratio  = eauData;
-            lotData.eau_conso  = eauData;
+            lotData.eau_animal   = eauData;
+            lotData.eau_ratio    = eauData;
+            lotData.eau_conso    = eauData;
+            // Homogénéité : même source que poids (donnees_poids.homogeneite)
+            lotData.homogeneite  = lotData.poids;
             if (lot.souche_id) loadStandards(lot.souche_id);
-            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [] }; showDataPanels(); updateUI(); }
+            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [] }; showDataPanels(); updateUI(); }
         }).catch(function(err) {
             console.error('Erreur chargement données lot:', err);
             showDataPanels();
@@ -2843,12 +2847,14 @@
             standardsData.oeufs    = (r[3] && r[3].data) ? r[3].data : [];
             // Les 3 indicateurs eau partagent la même table de standards
             var eauStd = (r[4] && r[4].data) ? r[4].data : [];
-            standardsData.eau_animal = eauStd;
-            standardsData.eau_ratio  = eauStd;
-            standardsData.eau_conso  = eauStd;
+            standardsData.eau_animal   = eauStd;
+            standardsData.eau_ratio    = eauStd;
+            standardsData.eau_conso    = eauStd;
+            // Homogénéité : même table que poids (homogeneite_min/max si renseignés un jour)
+            standardsData.homogeneite  = standardsData.poids;
         }).catch(function() {
             // En cas d'erreur, on affiche quand même les données sans standards
-            standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [] };
+            standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [] };
         }).finally(function() {
             showDataPanels();
             updateUI();
