@@ -619,6 +619,25 @@
         }
         .filtre-reset-btn:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
 
+        /* Bouton PDF récap commande */
+        .btn-pdf-recap {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.75rem;
+            border: 1px solid var(--blue);
+            border-radius: 7px;
+            background: var(--blue-light);
+            color: var(--blue);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-pdf-recap:hover:not(:disabled) { background: var(--blue); color: #fff; }
+        .btn-pdf-recap:disabled { opacity: 0.55; cursor: wait; }
+
         /* Sections dans la carte commande */
         .cmd-sep {
             height: 1px;
@@ -3493,6 +3512,12 @@
         $('btnEnvoyerCommande').addEventListener('click', envoyerCommande);
         $('btnRefreshCommandes').addEventListener('click', loadHistoriqueCommandes);
 
+        // ── Bouton PDF récap (délégation sur le conteneur) ──
+        $('commandesListContainer').addEventListener('click', function(e) {
+            var btn = e.target.closest('.btn-pdf-recap[data-pdf-id]');
+            if (btn) previewRecapPDF(btn.getAttribute('data-pdf-id'));
+        });
+
         // ── Filtres historique commandes ──
         $('btnToggleFiltres').addEventListener('click', function() {
             var panel = $('filtresPanel');
@@ -3911,24 +3936,25 @@
         if (badge) badge.textContent = unite;
     }
 
+    // ── Normalise TEXT[] Supabase → tableau JS ──────────
+    function parsePhotoUrls(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.filter(Boolean);
+        if (typeof val === 'string') {
+            try { var p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch(e) {}
+            if (val.charAt(0) === '{' && val.charAt(val.length-1) === '}') {
+                return val.slice(1,-1).split(',').map(function(s){ return s.trim().replace(/^"|"$/g,''); }).filter(Boolean);
+            }
+        }
+        return [];
+    }
+
     // ── Construit le HTML d'une carte commande ──────────
     function buildCommandeHtml(c) {
         var html = '';
                     var statut = c.statut || 'en_attente';
                     var statutLabel = { en_attente: 'En attente', confirmee: 'Confirmée', livree: 'Livrée', annulee: 'Annulée' };
-
-                    // Normalise TEXT[] Supabase → tableau JS
-                    var photoUrls = (function(val) {
-                        if (!val) return [];
-                        if (Array.isArray(val)) return val.filter(Boolean);
-                        if (typeof val === 'string') {
-                            try { var p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch(e) {}
-                            if (val.charAt(0) === '{' && val.charAt(val.length-1) === '}') {
-                                return val.slice(1,-1).split(',').map(function(s){ return s.trim().replace(/^"|"$/g,''); }).filter(Boolean);
-                            }
-                        }
-                        return [];
-                    })(c.photos_livraison);
+                    var photoUrls = parsePhotoUrls(c.photos_livraison);
 
                     html += '<div class="commande-item">';
 
@@ -4053,6 +4079,11 @@
                             html += '</div>';
                         }
                     }
+
+                    // ── BOUTON APERÇU PDF ──
+                    html += '<div style="margin-top:0.7rem;border-top:1px solid var(--border);padding-top:0.55rem;display:flex;justify-content:flex-end;">';
+                    html += '<button class="btn-pdf-recap" data-pdf-id="' + esc(c.id) + '">📄 Aperçu PDF</button>';
+                    html += '</div>';
 
                     html += '</div>'; // /commande-item
         return html;
@@ -4219,6 +4250,308 @@
 
         return doc;
     }
+
+    // ══════════════════════════════════════════════════════
+    // PDF RÉCAPITULATIF COMMANDE (historique)
+    // ══════════════════════════════════════════════════════
+
+    // Charge une image depuis une URL et la renvoie en base64 data-URL
+    function loadImgAsB64(url) {
+        return fetch(url)
+            .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+            .then(function(blob) {
+                return new Promise(function(resolve, reject) {
+                    var reader = new FileReader();
+                    reader.onload  = function() { resolve(reader.result); };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            });
+    }
+
+    // Ajoute un bloc label + valeur, retourne le nouveau Y
+    function recapPdfField(doc, label, value, x, y, maxW) {
+        doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+        doc.text(label, x, y);
+        doc.setFontSize(9.5); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+        if (maxW) {
+            var lines = doc.splitTextToSize(String(value), maxW);
+            doc.text(lines, x, y + 5);
+            return y + 5 + (lines.length - 1) * 4.5 + 9;
+        }
+        doc.text(String(value), x, y + 5);
+        return y + 13;
+    }
+
+    // En-tête de section colorée, retourne le nouveau Y
+    function recapPdfSection(doc, label, y, margin, cW, fr, fg, fb, tr, tg, tb) {
+        doc.setFillColor(fr, fg, fb);
+        doc.roundedRect(margin, y, cW, 7, 1, 1, 'F');
+        doc.setTextColor(tr, tg, tb);
+        doc.setFontSize(8); doc.setFont(undefined, 'bold');
+        doc.text(label, margin + 3, y + 5);
+        return y + 11;
+    }
+
+    // Vérifie si on doit sauter de page, retourne le nouveau Y
+    function recapPdfBreak(doc, y, needed, pageH) {
+        if (y + needed > pageH - 18) { doc.addPage(); return 15; }
+        return y;
+    }
+
+    // Séparateur horizontal
+    function recapPdfSep(doc, y, margin, pageW) {
+        doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.3);
+        doc.line(margin, y, pageW - margin, y);
+        return y + 5;
+    }
+
+    // Construit le document jsPDF du récap
+    function buildRecapPDFDoc(c, logoBase64, photosBase64) {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc   = new jsPDF('portrait', 'mm', 'a4');
+        var pageW = doc.internal.pageSize.getWidth();
+        var pageH = doc.internal.pageSize.getHeight();
+        var mg    = 15;
+        var cW    = pageW - 2 * mg;
+        var now   = new Date();
+        var statut = c.statut || 'en_attente';
+        var statutLabels = { en_attente: 'En attente', confirmee: 'Confirmee', livree: 'Livree', annulee: 'Annulee' };
+        var statutColors = { en_attente: [234,88,12], confirmee: [22,163,74], livree: [59,130,246], annulee: [220,38,38] };
+        var sc = statutColors[statut] || [100,116,139];
+
+        var y = 10;
+
+        // ── EN-TÊTE ──────────────────────────────────────────
+        var titleX = mg;
+        if (logoBase64) {
+            try { doc.addImage(logoBase64, 'PNG', mg, y, 40, 20); titleX = mg + 46; } catch(e) {}
+        }
+        doc.setFontSize(15); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+        doc.text('RECAPITULATIF DE COMMANDE', titleX, y + 9);
+        doc.setFontSize(8.5); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+        var genDate = now.toLocaleDateString('fr-FR') + ' a ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+        doc.text((c.code_commande || '') + '   |   Genere le ' + genDate, titleX, y + 17);
+        // Badge statut (coin haut droit)
+        doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(sc[0], sc[1], sc[2]);
+        doc.text((statutLabels[statut] || statut).toUpperCase(), pageW - mg, y + 9, {align:'right'});
+
+        y = 36;
+        doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.5);
+        doc.line(mg, y, pageW - mg, y);
+        y += 6;
+
+        // ── BLOC ÉLEVEUR ─────────────────────────────────────
+        var elevNom = (((currentEleveur && currentEleveur.prenom) || '') + ' ' + ((currentEleveur && currentEleveur.nom) || '')).trim() || '--';
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(mg, y, cW, 20, 2, 2, 'F');
+        doc.setTextColor(100, 116, 139); doc.setFontSize(7); doc.setFont(undefined, 'bold');
+        doc.text('ELEVEUR', mg + 3, y + 5.5);
+        doc.setTextColor(30, 41, 59); doc.setFontSize(9.5); doc.setFont(undefined, 'bold');
+        doc.text(elevNom, mg + 3, y + 12);
+        var codeX = mg + 3 + doc.getTextWidth(elevNom) + 5;
+        if (currentEleveur && currentEleveur.code_eleveur) {
+            doc.setFont(undefined, 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+            doc.text('Code: ' + currentEleveur.code_eleveur, codeX, y + 12);
+        }
+        if (currentEleveur && currentEleveur.raison_sociale) {
+            doc.setFont(undefined, 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+            doc.text(currentEleveur.raison_sociale, mg + 3, y + 17.5);
+        }
+        y += 25;
+
+        // ── SECTION 1 — COMMANDE ────────────────────────────
+        y = recapPdfBreak(doc, y, 60, pageH);
+        y = recapPdfSection(doc, 'COMMANDE', y, mg, cW, 254,243,199, 180,83,9);
+
+        // Date souhaitée + statut (2 colonnes)
+        var dateSouhaitee = c.date_livraison_souhaitee
+            ? new Date(c.date_livraison_souhaitee.length === 10
+                ? c.date_livraison_souhaitee + 'T12:00:00'
+                : c.date_livraison_souhaitee).toLocaleDateString('fr-FR')
+            : '--';
+        var half = cW / 2 - 3;
+        doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+        doc.text('Date souhaitee', mg, y);
+        doc.text('Statut', mg + half + 6, y);
+        doc.setFontSize(9.5); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+        doc.text(dateSouhaitee, mg, y + 5);
+        doc.setTextColor(sc[0], sc[1], sc[2]);
+        doc.text(statutLabels[statut] || statut, mg + half + 6, y + 5);
+        y += 13;
+
+        // Type aliment + quantité (2 colonnes)
+        doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+        doc.text('Type d\'aliment', mg, y);
+        doc.text('Quantite commandee', mg + half + 6, y);
+        doc.setFontSize(9.5); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+        doc.text(String(c.type_aliment || '--'), mg, y + 5);
+        doc.text(String(c.quantite || '--') + ' ' + String(c.unite || 'tonnes'), mg + half + 6, y + 5);
+        y += 13;
+
+        // Lieu de livraison
+        var lieu = '';
+        if (c.batiment_nom)       lieu += c.batiment_nom;
+        if (c.lieu_livraison_nom) lieu += (lieu ? ' - ' : '') + c.lieu_livraison_nom;
+        else if (c.numero_silo)   lieu += (lieu ? ' - Silo : ' : 'Silo : ') + c.numero_silo;
+        if (lieu) { y = recapPdfField(doc, 'Lieu de livraison', lieu, mg, y, null); }
+
+        // Notes
+        if (c.notes) { y = recapPdfField(doc, 'Notes', c.notes, mg, y, cW); }
+
+        // Commandé par
+        var createur, createurRole;
+        if (c.created_by_nom) {
+            createur     = ((c.created_by_prenom || '') + ' ' + c.created_by_nom).trim();
+            createurRole = c.created_by_role === 'salarie' ? 'Salarie' : 'Eleveur';
+        } else {
+            createur     = ((c.eleveur_prenom || '') + ' ' + (c.eleveur_nom || '')).trim() || 'Eleveur';
+            createurRole = 'Eleveur';
+        }
+        y = recapPdfField(doc, 'Commande par', createur + ' (' + createurRole + ')', mg, y, null);
+
+        // ── SECTION 2 — CONFIRMATION FOURNISSEUR ────────────
+        if (c.date_livraison_confirmee || c.heure_livraison_confirmee) {
+            y = recapPdfBreak(doc, y, 45, pageH);
+            y = recapPdfSep(doc, y, mg, pageW);
+            y = recapPdfSection(doc, 'CONFIRMATION FOURNISSEUR', y, mg, cW, 220,252,231, 21,128,61);
+            var dcf = c.date_livraison_confirmee
+                ? new Date(c.date_livraison_confirmee.length === 10
+                    ? c.date_livraison_confirmee + 'T12:00:00'
+                    : c.date_livraison_confirmee).toLocaleDateString('fr-FR')
+                : '';
+            var hcf = c.heure_livraison_confirmee || '';
+            var confStr = dcf + (dcf && hcf ? ' a ' : '') + hcf;
+            if (confStr.trim()) { y = recapPdfField(doc, 'Date et heure confirmees', confStr, mg, y, null); }
+            if (c.commentaire_fournisseur) { y = recapPdfField(doc, 'Commentaire fournisseur', c.commentaire_fournisseur, mg, y, cW); }
+        }
+
+        // ── SECTION 3 — LIVRAISON RÉALISÉE ──────────────────
+        if (statut === 'livree') {
+            y = recapPdfBreak(doc, y, 55, pageH);
+            y = recapPdfSep(doc, y, mg, pageW);
+            y = recapPdfSection(doc, 'LIVRAISON REALISEE', y, mg, cW, 219,234,254, 29,78,216);
+
+            if (c.date_livraison_reelle) {
+                var dlr = new Date(c.date_livraison_reelle);
+                var dlrStr = dlr.toLocaleDateString('fr-FR') + ' a ' + dlr.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                y = recapPdfField(doc, 'Date et heure de livraison', dlrStr, mg, y, null);
+            }
+            if (c.quantite_reelle !== null && c.quantite_reelle !== undefined) {
+                doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+                doc.text('Quantite livree', mg, y);
+                doc.setFontSize(9.5); doc.setFont(undefined, 'bold'); doc.setTextColor(22, 163, 74);
+                doc.text(String(c.quantite_reelle) + ' ' + String(c.unite_livraison || 'Tonnes'), mg, y + 5);
+                y += 13;
+            }
+            if (c.livreur_nom) {
+                var livreurStr = ((c.livreur_prenom || '') + ' ' + c.livreur_nom).trim();
+                if (c.livreur_societe) livreurStr += ' - ' + c.livreur_societe;
+                y = recapPdfField(doc, 'Livreur', livreurStr, mg, y, null);
+            }
+
+            // Signature
+            if (c.livreur_signature) {
+                y = recapPdfBreak(doc, y, 42, pageH);
+                doc.setFontSize(7.5); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+                doc.text('Signature du livreur', mg, y);
+                y += 3;
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.3);
+                doc.rect(mg, y, 70, 30);
+                try { doc.addImage(c.livreur_signature, 'PNG', mg + 1, y + 1, 68, 28); } catch(e) {
+                    try { doc.addImage(c.livreur_signature, mg + 1, y + 1, 68, 28); } catch(e2) {}
+                }
+                y += 34;
+            }
+
+            // Photos (2 par ligne)
+            var validPhotos = (photosBase64 || []).filter(Boolean);
+            if (validPhotos.length > 0) {
+                y = recapPdfBreak(doc, y, 80, pageH);
+                doc.setFontSize(7.5); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 116, 139);
+                doc.text('Photos de livraison (' + validPhotos.length + ')', mg, y);
+                y += 4;
+                var photoW = (cW - 6) / 2;   // 2 colonnes, 6mm de gouttière
+                var photoH = Math.round(photoW * 0.67); // ratio ~3:2
+                for (var pi = 0; pi < validPhotos.length; pi++) {
+                    var col = pi % 2;
+                    if (col === 0 && pi > 0) {
+                        y += photoH + 4;
+                        y = recapPdfBreak(doc, y, photoH + 12, pageH);
+                    }
+                    var px = mg + col * (photoW + 6);
+                    doc.setFillColor(241, 245, 249);
+                    doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.3);
+                    doc.rect(px, y, photoW, photoH, 'FD');
+                    try { doc.addImage(validPhotos[pi], px, y, photoW, photoH); } catch(eA) {
+                        try { doc.addImage(validPhotos[pi], 'JPEG', px, y, photoW, photoH); } catch(eB) {
+                            doc.setFontSize(7); doc.setTextColor(150, 150, 150);
+                            doc.text('Photo ' + (pi + 1), px + photoW / 2, y + photoH / 2, {align:'center'});
+                        }
+                    }
+                }
+                y += photoH + 8;
+            }
+        }
+
+        // ── PIED DE PAGE (toutes les pages) ─────────────────
+        var totalPages = doc.getNumberOfPages();
+        for (var pg = 1; pg <= totalPages; pg++) {
+            doc.setPage(pg);
+            var fy = pageH - 10;
+            doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.3);
+            doc.line(mg, fy - 3, pageW - mg, fy - 3);
+            doc.setTextColor(100, 116, 139); doc.setFontSize(7); doc.setFont(undefined, 'normal');
+            doc.text('Dataferme - ADOSI', mg, fy);
+            doc.text('Page ' + pg + ' / ' + totalPages, pageW / 2, fy, {align:'center'});
+            doc.text('Genere le ' + now.toLocaleString('fr-FR'), pageW - mg, fy, {align:'right'});
+        }
+
+        return doc;
+    }
+
+    // Lance le chargement des images puis ouvre l'aperçu PDF dans un nouvel onglet
+    function previewRecapPDF(commandeId) {
+        var c = allCommandesHistorique.find(function(x) { return x.id === commandeId; });
+        if (!c) { alert('Commande introuvable.'); return; }
+
+        // Feedback sur le bouton
+        var btn = document.querySelector('.btn-pdf-recap[data-pdf-id="' + commandeId + '"]');
+        if (btn) { btn.disabled = true; btn.textContent = '\u23F3 Generation...'; }
+
+        var photoUrls = parsePhotoUrls(c.photos_livraison);
+
+        // Chargement en parallèle : logo + toutes les photos
+        var logoPromise  = loadImgAsB64('Logo_Dataferme.png').catch(function() { return null; });
+        var photoPromises = photoUrls.map(function(url) {
+            return loadImgAsB64(url).catch(function() { return null; });
+        });
+
+        Promise.all([logoPromise].concat(photoPromises))
+            .then(function(results) {
+                var logoB64   = results[0];
+                var photosB64 = results.slice(1);
+                var doc = buildRecapPDFDoc(c, logoB64, photosB64);
+                // Nom de fichier : CMD-2026-0004_recap_02042026.pdf
+                var dateStr = now.toLocaleDateString('fr-FR').replace(/\//g,'');
+                var fileName = (c.code_commande || 'commande') + '_recap_' + dateStr + '.pdf';
+                window.open(doc.output('bloburl'), '_blank');
+                // Propose aussi le téléchargement direct
+                doc.save(fileName);
+            })
+            .catch(function(err) {
+                console.error('Erreur generation PDF:', err);
+                alert('Erreur lors de la generation du PDF: ' + err.message);
+            })
+            .finally(function() {
+                if (btn) { btn.disabled = false; btn.innerHTML = '&#128196; Apercu PDF'; }
+            });
+    }
+
+    // ══════════════════════════════════════════════════════
+    // FIN PDF RÉCAPITULATIF
+    // ══════════════════════════════════════════════════════
 
     function getCommandeFormData() {
         var typeId = $('cmdTypeAliment').value;
