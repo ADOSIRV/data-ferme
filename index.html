@@ -192,6 +192,11 @@
         
         .controls-grid { display: none; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem; }
         .controls-grid.show { display: grid; }
+        /* ── Conteneur multi-graphiques ── */
+        .graphs-container { display: none; flex-direction: column; gap: 1.5rem; }
+        .graphs-container.show { display: flex; }
+        .graph-block { display: flex; flex-direction: column; gap: 0.75rem; }
+        .graph-block-header { font-size: 1rem; font-weight: 700; color: var(--text); padding: 0.5rem 0.75rem; background: var(--bg-input); border-radius: 10px; border-left: 4px solid var(--green); }
         .control-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); }
         .control-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.75rem; font-weight: 600; }
         .control-hint { font-weight: 400; font-style: italic; opacity: 0.7; }
@@ -1325,44 +1330,112 @@
                 </div>
             </div>
             
-            <!-- Contrôles -->
-            <div class="controls-grid" id="controlsGrid">
-                <div class="control-card">
-                    <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
-                    <div class="indicator-btns" id="indicatorBtns">
-                        <button class="indicator-btn selected-y1" data-type="poids"><span class="icon">📈</span>Croissance en poids<span class="axis-tag">Y1</span></button>
-                        <button class="indicator-btn" data-type="mortalite"><span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="aliment"><span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="oeufs"><span class="icon">🥚</span>Œufs pondus<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="eau_animal"><span class="icon">💧</span>Conso. eau/poule<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="eau_ratio"><span class="icon">⚖️</span>Ratio eau/aliment<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="eau_conso"><span class="icon">🚿</span>Conso. eau totale<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="homogeneite"><span class="icon">🎯</span>Homogénéité<span class="axis-tag"></span></button>
-                        <button class="indicator-btn" data-type="gmq"><span class="icon">📊</span>GMQ<span class="axis-tag"></span></button>
+            <!-- Graphiques multi-sections -->
+            <div class="graphs-container" id="graphsContainer">
+
+                <!-- ═══ GRAPHIQUE 1 : Croissance & Santé ═══ -->
+                <div class="graph-block">
+                    <div class="graph-block-header">📈 Croissance &amp; Santé</div>
+                    <div class="controls-grid show">
+                        <div class="control-card">
+                            <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
+                            <div class="indicator-btns" id="indicatorBtnsSante">
+                                <button class="indicator-btn" data-type="poids" data-graph="sante"><span class="icon">📈</span>Croissance en poids<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="mortalite" data-graph="sante"><span class="icon">⚠️</span>Mortalité<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="gmq" data-graph="sante"><span class="icon">📊</span>GMQ<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="homogeneite" data-graph="sante"><span class="icon">🎯</span>Homogénéité<span class="axis-tag"></span></button>
+                            </div>
+                        </div>
+                        <div class="control-card">
+                            <div class="control-title">Période d'analyse</div>
+                            <div class="period-btns" id="periodBtnsSante">
+                                <button class="period-btn" data-period="7" data-graph="sante">1 sem.</button>
+                                <button class="period-btn" data-period="28" data-graph="sante">4 sem.</button>
+                                <button class="period-btn active" data-period="56" data-graph="sante">8 sem.</button>
+                                <button class="period-btn" data-period="all" data-graph="sante">Tout</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-card show">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title" id="chartTitleSante">Sélectionnez un indicateur</div>
+                                <div class="chart-subtitle" id="chartSubtitleSante"></div>
+                            </div>
+                            <div class="chart-legend" id="chartLegendSante"></div>
+                        </div>
+                        <div class="chart-container"><canvas id="chartSante"></canvas></div>
                     </div>
                 </div>
-                <div class="control-card">
-                    <div class="control-title">Période d'analyse</div>
-                    <div class="period-btns" id="periodBtns">
-                        <button class="period-btn" data-period="7">1 sem.</button>
-                        <button class="period-btn" data-period="28">4 sem.</button>
-                        <button class="period-btn active" data-period="56">8 sem.</button>
-                        <button class="period-btn" data-period="all">Tout</button>
+
+                <!-- ═══ GRAPHIQUE 2 : Consommation ═══ -->
+                <div class="graph-block">
+                    <div class="graph-block-header">🌊 Consommation</div>
+                    <div class="controls-grid show">
+                        <div class="control-card">
+                            <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
+                            <div class="indicator-btns" id="indicatorBtnsConso">
+                                <button class="indicator-btn" data-type="aliment" data-graph="conso"><span class="icon">🌾</span>Consommation aliment<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="eau_animal" data-graph="conso"><span class="icon">💧</span>Conso. eau/poule<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="eau_conso" data-graph="conso"><span class="icon">🚿</span>Conso. eau totale<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="eau_ratio" data-graph="conso"><span class="icon">⚖️</span>Ratio eau/aliment<span class="axis-tag"></span></button>
+                            </div>
+                        </div>
+                        <div class="control-card">
+                            <div class="control-title">Période d'analyse</div>
+                            <div class="period-btns" id="periodBtnsConso">
+                                <button class="period-btn" data-period="7" data-graph="conso">1 sem.</button>
+                                <button class="period-btn" data-period="28" data-graph="conso">4 sem.</button>
+                                <button class="period-btn active" data-period="56" data-graph="conso">8 sem.</button>
+                                <button class="period-btn" data-period="all" data-graph="conso">Tout</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-card show">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title" id="chartTitleConso">Sélectionnez un indicateur</div>
+                                <div class="chart-subtitle" id="chartSubtitleConso"></div>
+                            </div>
+                            <div class="chart-legend" id="chartLegendConso"></div>
+                        </div>
+                        <div class="chart-container"><canvas id="chartConso"></canvas></div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Graphique -->
-            <div class="chart-card" id="chartCard">
-                <div class="chart-header">
-                    <div>
-                        <div class="chart-title" id="chartTitle">Évolution</div>
-                        <div class="chart-subtitle" id="chartSubtitle">--</div>
+
+                <!-- ═══ GRAPHIQUE 3 : Ponte ═══ -->
+                <div class="graph-block">
+                    <div class="graph-block-header">🥚 Ponte</div>
+                    <div class="controls-grid show">
+                        <div class="control-card">
+                            <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
+                            <div class="indicator-btns" id="indicatorBtnsPonte">
+                                <button class="indicator-btn" data-type="oeufs" data-graph="ponte"><span class="icon">🥚</span>Œufs pondus<span class="axis-tag"></span></button>
+                            </div>
+                        </div>
+                        <div class="control-card">
+                            <div class="control-title">Période d'analyse</div>
+                            <div class="period-btns" id="periodBtnsPonte">
+                                <button class="period-btn" data-period="7" data-graph="ponte">1 sem.</button>
+                                <button class="period-btn" data-period="28" data-graph="ponte">4 sem.</button>
+                                <button class="period-btn active" data-period="56" data-graph="ponte">8 sem.</button>
+                                <button class="period-btn" data-period="all" data-graph="ponte">Tout</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="chart-legend" id="chartLegend"></div>
+                    <div class="chart-card show">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title" id="chartTitlePonte">Sélectionnez un indicateur</div>
+                                <div class="chart-subtitle" id="chartSubtitlePonte"></div>
+                            </div>
+                            <div class="chart-legend" id="chartLegendPonte"></div>
+                        </div>
+                        <div class="chart-container"><canvas id="chartPonte"></canvas></div>
+                    </div>
                 </div>
-                <div class="chart-container"><canvas id="mainChart"></canvas></div>
-            </div>
+
+            </div><!-- /graphsContainer -->
             
             <!-- Stats -->
             <div class="stats-row" id="statsRow">
@@ -1876,13 +1949,18 @@
     var currentEleveur = null;
     var currentSite = null;
     var currentBatiment = null;
-    var mainChart = null;
+    // ── État indépendant par graphique ──
+    var graphState = {
+        sante: { selected: [], period: '56', chart: null },
+        conso: { selected: [], period: '56', chart: null },
+        ponte: { selected: [], period: '56', chart: null }
+    };
+    var lastActiveGraph = 'sante'; // dernier graphique interagi
     var editingUserId = null;
     
     var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] };
-    var selectedIndicators = ['poids'];
-    var currentPeriod = '56';
+    // selectedIndicators et currentPeriod remplacés par graphState ci-dessus
     var currentLotInfo = null;
     var allEleveursList = [];
     // Caches en mémoire pour éviter le stockage de JSON dans les attributs DOM
@@ -2883,17 +2961,15 @@
     
     function showDataPanels() {
         $('lotCard').classList.add('show');
-        $('controlsGrid').classList.add('show');
-        $('chartCard').classList.add('show');
+        $('graphsContainer').classList.add('show');
         $('statsRow').classList.add('show');
         $('exportSection').classList.add('show');
         $('emptyState').classList.remove('show');
     }
-    
+
     function hideDataPanels() {
         $('lotCard').classList.remove('show');
-        $('controlsGrid').classList.remove('show');
-        $('chartCard').classList.remove('show');
+        $('graphsContainer').classList.remove('show');
         $('statsRow').classList.remove('show');
         $('exportSection').classList.remove('show');
         $('emptyState').classList.add('show');
@@ -2902,69 +2978,90 @@
     // =====================================================
     // UI UPDATE
     // =====================================================
-    function updateUI() { updateChart(); updateStats(); updateLegend(); }
-    
+    function updateUI() {
+        ['sante', 'conso', 'ponte'].forEach(function(gid) { updateChart(gid); updateLegend(gid); });
+        updateStats();
+    }
+
     function updateStats() {
-        var t1 = selectedIndicators[0], ind1 = INDICATORS[t1], d1 = lotData[t1] || [];
+        var g   = graphState[lastActiveGraph];
+        var sel = g.selected;
+        var t1  = sel[0];
+        if (!t1) {
+            $('statValue1').textContent = '--'; $('statDetail1').textContent = '--';
+            $('statCard2').classList.add('hidden');
+            $('dataCount').textContent = 0;
+            $('dataPeriod').textContent = '--';
+            return;
+        }
+        var ind1 = INDICATORS[t1], d1 = lotData[t1] || [];
         $('statTitle1').textContent = ind1.label;
-        $('statIcon1').textContent = ind1.icon;
-        $('statUnit1').textContent = ind1.unit;
+        $('statIcon1').textContent  = ind1.icon;
+        $('statUnit1').textContent  = ind1.unit;
         if (d1.length > 0) {
             var last = d1[d1.length - 1];
             $('statValue1').textContent = Math.round(parseFloat(last[ind1.dataField]) || 0);
             $('statDetail1').textContent = 'Jour ' + last.jour_age;
         } else { $('statValue1').textContent = '--'; $('statDetail1').textContent = 'Pas de données'; }
-        
-        if (selectedIndicators[1]) {
-            var t2 = selectedIndicators[1], ind2 = INDICATORS[t2], d2 = lotData[t2] || [];
+
+        if (sel[1]) {
+            var t2 = sel[1], ind2 = INDICATORS[t2], d2 = lotData[t2] || [];
             $('statCard2').classList.remove('hidden');
             $('statTitle2').textContent = ind2.label;
-            $('statIcon2').textContent = ind2.icon;
-            $('statUnit2').textContent = ind2.unit;
+            $('statIcon2').textContent  = ind2.icon;
+            $('statUnit2').textContent  = ind2.unit;
             if (d2.length > 0) {
                 var last2 = d2[d2.length - 1];
                 $('statValue2').textContent = Math.round(parseFloat(last2[ind2.dataField]) || 0);
                 $('statDetail2').textContent = 'Jour ' + last2.jour_age;
             } else { $('statValue2').textContent = '--'; $('statDetail2').textContent = 'Pas de données'; }
         } else { $('statCard2').classList.add('hidden'); }
-        
+
         var total = 0;
-        selectedIndicators.forEach(function(t) { total += (lotData[t] || []).length; });
+        sel.forEach(function(t) { total += (lotData[t] || []).length; });
         $('dataCount').textContent = total;
-        $('dataPeriod').textContent = currentPeriod === 'all' ? 'Tout' : currentPeriod + 'j';
+        $('dataPeriod').textContent = g.period === 'all' ? 'Tout' : g.period + 'j';
     }
-    
-    function updateLegend() {
+
+    function updateLegend(graphId) {
+        var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+        var sel = graphState[graphId].selected;
         var html = '';
-        selectedIndicators.forEach(function(type, idx) {
-            var ind = INDICATORS[type];
-            var axis = idx === 0 ? 'Y1' : 'Y2';
+        sel.forEach(function(type, idx) {
+            var ind = INDICATORS[type], axis = idx === 0 ? 'Y1' : 'Y2';
             html += '<div class="legend-item"><span class="legend-line" style="background:' + ind.color + '"></span>' + ind.label + ' (' + axis + ')</div>';
             html += '<div class="legend-item"><span class="legend-area" style="background:' + ind.colorArea + '"></span>Zone ' + axis + '</div>';
         });
-        $('chartLegend').innerHTML = html;
+        $('chartLegend' + suffix).innerHTML = html;
     }
     
-    function updateChart() {
-        var canvas = $('mainChart');
+    function updateChart(graphId) {
+        var g      = graphState[graphId];
+        var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+        var canvas = $('chart' + suffix);
         if (!canvas) return;
         var ctx = canvas.getContext('2d');
-        if (mainChart) { mainChart.destroy(); mainChart = null; }
-        
-        var t1 = selectedIndicators[0], t2 = selectedIndicators[1];
+        if (g.chart) { g.chart.destroy(); g.chart = null; }
+
+        var t1 = g.selected[0], t2 = g.selected[1];
+        if (!t1) {
+            $('chartTitle'    + suffix).textContent = 'Sélectionnez un indicateur';
+            $('chartSubtitle' + suffix).textContent = '';
+            return;
+        }
         var ind1 = INDICATORS[t1];
-        var d1 = filterByPeriod(lotData[t1] || []);
+        var d1   = filterByPeriod(lotData[t1] || [], g.period);
         var std1 = standardsData[t1] || [];
-        
-        if (d1.length === 0) { $('chartTitle').textContent = 'Aucune donnée'; $('chartSubtitle').textContent = ''; return; }
+
+        if (d1.length === 0) { $('chartTitle' + suffix).textContent = 'Aucune donnée'; $('chartSubtitle' + suffix).textContent = ''; return; }
         
         var labels = d1.map(function(d) { return 'J' + d.jour_age; });
         var jours = d1.map(function(d) { return d.jour_age; });
         
         var title = ind1.label;
         if (t2) title += ' vs ' + INDICATORS[t2].label;
-        $('chartTitle').textContent = title;
-        $('chartSubtitle').textContent = t2 ? 'Comparaison sur deux axes' : 'Évolution';
+        $('chartTitle'    + suffix).textContent = title;
+        $('chartSubtitle' + suffix).textContent = t2 ? 'Comparaison sur deux axes' : 'Évolution';
         
         var datasets = [];
         
@@ -3012,7 +3109,7 @@
         
         if (t2) {
             var ind2 = INDICATORS[t2];
-            var d2 = filterByPeriod(lotData[t2] || []);
+            var d2 = filterByPeriod(lotData[t2] || [], g.period);
             var std2 = standardsData[t2] || [];
             
             var min2 = [], max2 = [];
@@ -3128,7 +3225,7 @@
             }
         };
         
-        mainChart = new Chart(ctx, {
+        g.chart = new Chart(ctx, {
             type: 'line', 
             data: { labels: labels, datasets: datasets },
             options: {
@@ -3144,29 +3241,43 @@
         });
     }
     
-    function filterByPeriod(data) {
-        if (!data || !data.length || currentPeriod === 'all') return data;
-        var maxAge = parseInt(currentPeriod);
-        // Filtre sur les N derniers jours du cycle (jour_age), pas sur le nombre de lignes
+    function filterByPeriod(data, period) {
+        if (!data || !data.length || period === 'all') return data;
+        var maxAge = parseInt(period);
         var maxJour = data[data.length - 1].jour_age;
         return data.filter(function(d) { return d.jour_age > maxJour - maxAge; });
     }
-    
+
     function onIndicatorClick(e) {
-        var btn = e.currentTarget, type = btn.getAttribute('data-type');
-        var idx = selectedIndicators.indexOf(type);
-        if (idx === 0) { if (selectedIndicators.length > 1) selectedIndicators = [selectedIndicators[1]]; }
-        else if (idx === 1) { selectedIndicators = [selectedIndicators[0]]; }
-        else { if (selectedIndicators.length < 2) selectedIndicators.push(type); else selectedIndicators[1] = type; }
-        updateIndicatorButtons(); updateUI();
+        var btn     = e.currentTarget;
+        var type    = btn.getAttribute('data-type');
+        var graphId = btn.getAttribute('data-graph');
+        var g       = graphState[graphId];
+        lastActiveGraph = graphId;
+
+        var idx = g.selected.indexOf(type);
+        if (idx === 0) {
+            g.selected = g.selected.length > 1 ? [g.selected[1]] : [];
+        } else if (idx === 1) {
+            g.selected = [g.selected[0]];
+        } else {
+            if (g.selected.length < 2) g.selected.push(type);
+            else g.selected[1] = type;
+        }
+        updateIndicatorButtons(graphId);
+        updateChart(graphId);
+        updateLegend(graphId);
+        updateStats();
     }
-    
-    function updateIndicatorButtons() {
-        document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) {
+
+    function updateIndicatorButtons(graphId) {
+        var g      = graphState[graphId];
+        var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+        document.querySelectorAll('#indicatorBtns' + suffix + ' .indicator-btn').forEach(function(btn) {
             var type = btn.getAttribute('data-type'), tag = btn.querySelector('.axis-tag');
             btn.classList.remove('selected-y1', 'selected-y2'); tag.textContent = '';
-            if (selectedIndicators[0] === type) { btn.classList.add('selected-y1'); tag.textContent = 'Y1'; }
-            else if (selectedIndicators[1] === type) { btn.classList.add('selected-y2'); tag.textContent = 'Y2'; }
+            if (g.selected[0] === type) { btn.classList.add('selected-y1'); tag.textContent = 'Y1'; }
+            else if (g.selected[1] === type) { btn.classList.add('selected-y2'); tag.textContent = 'Y2'; }
         });
     }
     
@@ -3175,14 +3286,11 @@
     // =====================================================
     function exportPDF() {
         showLoading('Génération du PDF...');
-        
-        // Capturer le graphique actuel directement
-        var chartCanvas = $('mainChart');
-        var chartImageBase64 = null;
-        
-        if (chartCanvas) {
-            chartImageBase64 = chartCanvas.toDataURL('image/png', 1.0);
-        }
+
+        // Capturer le graphique du dernier graphique actif
+        var suffix      = lastActiveGraph.charAt(0).toUpperCase() + lastActiveGraph.slice(1);
+        var chartCanvas = $('chart' + suffix);
+        var chartImageBase64 = chartCanvas ? chartCanvas.toDataURL('image/png', 1.0) : null;
         
         // Charger le logo
         var logoImg = new Image();
@@ -3288,17 +3396,19 @@
             doc.text('INDICATEURS', indX + 3, infoY + 6);
             doc.setTextColor(37, 99, 235);
             doc.setFontSize(8);
-            var indicateursText = selectedIndicators.map(function(t) { return INDICATORS[t].label; }).join(', ');
+            var gExp   = graphState[lastActiveGraph];
+            var selExp = gExp.selected;
+            var indicateursText = selExp.length > 0 ? selExp.map(function(t) { return INDICATORS[t].label; }).join(', ') : '--';
             if (indicateursText.length > 28) indicateursText = indicateursText.substring(0, 25) + '...';
             doc.text(indicateursText, indX + 3, infoY + 13);
             doc.setTextColor(100, 116, 139);
             doc.setFontSize(7);
-            var periodeText = 'Période: ' + (currentPeriod === 'all' ? 'Tout' : currentPeriod + ' jours');
+            var periodeText = 'Période: ' + (gExp.period === 'all' ? 'Tout' : gExp.period + ' jours');
             doc.text(periodeText, indX + 3, infoY + 19);
-            
+
             // Bloc Valeur actuelle
             var valX = indX + blockWidth + gap;
-            var t1 = selectedIndicators[0];
+            var t1   = selExp[0] || 'poids';
             var ind1 = INDICATORS[t1];
             var d1 = lotData[t1] || [];
             var lastVal = d1.length > 0 ? Math.round(parseFloat(d1[d1.length - 1][ind1.dataField]) || 0) : '--';
@@ -3328,7 +3438,8 @@
             doc.setTextColor(30, 41, 59);
             doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
-            doc.text($('chartTitle').textContent, margin + 5, chartY + 7);
+            var sfxExp = lastActiveGraph.charAt(0).toUpperCase() + lastActiveGraph.slice(1);
+            doc.text($('chartTitle' + sfxExp).textContent, margin + 5, chartY + 7);
             doc.setFont(undefined, 'normal');
             
             // Image du graphique
@@ -3390,10 +3501,18 @@
                 var wsInfo = XLSX.utils.aoa_to_sheet(infoData);
                 XLSX.utils.book_append_sheet(wb, wsInfo, 'Informations');
                 
-                selectedIndicators.forEach(function(type) {
-                    var ind = INDICATORS[type];
-                    var data = filterByPeriod(lotData[type] || []);
-                    var std = standardsData[type] || [];
+                // Exporte tous les indicateurs sélectionnés dans les 3 graphiques
+                var allSelected = [];
+                ['sante','conso','ponte'].forEach(function(gid) {
+                    graphState[gid].selected.forEach(function(t) {
+                        if (allSelected.indexOf(t) === -1) allSelected.push(t);
+                    });
+                });
+                allSelected.forEach(function(type) {
+                    var ind  = INDICATORS[type];
+                    var gidOf = ['sante','conso','ponte'].find(function(gid) { return graphState[gid].selected.indexOf(type) !== -1; }) || 'sante';
+                    var data = filterByPeriod(lotData[type] || [], graphState[gidOf].period);
+                    var std  = standardsData[type] || [];
                     
                     if (data.length > 0) {
                         var sheetData = [
@@ -3447,10 +3566,9 @@
         if (toggleBtn) toggleBtn.textContent = icon;
         if (toggleBtnLogin) toggleBtnLogin.textContent = icon;
         
-        // Update chart if exists
-        if (mainChart) {
-            updateChartTheme();
-        }
+        // Update charts if exist
+        var hasChart = ['sante','conso','ponte'].some(function(id) { return graphState[id].chart; });
+        if (hasChart) { updateChartTheme(); }
     }
     
     function toggleTheme() {
@@ -3460,10 +3578,10 @@
     }
     
     function updateChartTheme() {
-        // Redraw chart with new theme colors
-        if (mainChart && currentLotInfo) {
-            updateChart();
-        }
+        if (!currentLotInfo) return;
+        ['sante','conso','ponte'].forEach(function(gid) {
+            if (graphState[gid].selected.length > 0) updateChart(gid);
+        });
     }
     
     function initTheme() {
@@ -3514,14 +3632,22 @@
         $('selBatiment').addEventListener('change', onBatimentChange);
         $('selLot').addEventListener('change', onLotChange);
         
-        // Indicators
-        document.querySelectorAll('#indicatorBtns .indicator-btn').forEach(function(btn) { btn.addEventListener('click', onIndicatorClick); });
-        document.querySelectorAll('#periodBtns .period-btn').forEach(function(btn) {
+        // Indicateurs — tous les graphiques (data-graph sur chaque bouton)
+        document.querySelectorAll('.indicator-btn').forEach(function(btn) {
+            btn.addEventListener('click', onIndicatorClick);
+        });
+        // Périodes — par graphique (data-graph sur chaque bouton)
+        document.querySelectorAll('.period-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                document.querySelectorAll('#periodBtns .period-btn').forEach(function(b) { b.classList.remove('active'); });
+                var graphId = this.getAttribute('data-graph');
+                var suffix  = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+                document.querySelectorAll('#periodBtns' + suffix + ' .period-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
-                currentPeriod = this.getAttribute('data-period');
-                updateUI();
+                graphState[graphId].period = this.getAttribute('data-period');
+                lastActiveGraph = graphId;
+                updateChart(graphId);
+                updateLegend(graphId);
+                updateStats();
             });
         });
         
