@@ -261,7 +261,73 @@
         .export-btn .export-icon { font-size: 1.2rem; }
         .export-btn.pdf:hover { border-color: var(--red); background: var(--red-light); }
         .export-btn.excel:hover { border-color: var(--green); background: var(--green-light); }
-        
+
+        /* ── Onglets Exploitation ── */
+        .exploit-tabs { display: none; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+        .exploit-tabs.show { display: flex; }
+        .exploit-tab { padding: 0.55rem 1.1rem; border: none; background: none; border-radius: 10px 10px 0 0; font-family: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-dim); cursor: pointer; transition: all 0.18s; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .exploit-tab:hover { color: var(--blue); background: var(--blue-light); }
+        .exploit-tab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--blue-light); }
+        .exploit-panel { display: none; }
+        .exploit-panel.show { display: block; }
+
+        /* ── Tableau journalier ── */
+        .tableau-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); }
+        .tableau-info { font-size: 0.82rem; color: var(--text-dim); }
+        .tableau-info strong { color: var(--text); }
+        .btn-journal { padding: 0.45rem 1rem; border: 1.5px solid var(--blue); background: var(--blue-light); color: var(--blue); border-radius: 8px; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-journal:hover { background: var(--blue); color: #fff; }
+        .tableau-scroll-wrapper { overflow-x: auto; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .tableau-jours { width: 100%; border-collapse: collapse; font-size: 0.81rem; }
+        .tableau-jours th, .tableau-jours td { padding: 0.42rem 0.65rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .tableau-jours th { background: var(--bg-input); font-weight: 600; text-align: center; position: sticky; top: 0; z-index: 2; }
+        .tableau-jours th.col-group { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 0.55rem; padding-bottom: 0.3rem; border-right: 2px solid var(--border); }
+        .tableau-jours th.col-group:last-child { border-right: none; }
+        .tableau-jours th.col-label { font-size: 0.74rem; font-weight: 600; border-right: 1px solid var(--border); }
+        .tableau-jours th.col-label:last-child { border-right: none; }
+        .tableau-jours td { text-align: right; }
+        .tableau-jours td.col-id { text-align: center; font-weight: 600; color: var(--text-dim); }
+        .tableau-jours td.col-border { border-right: 2px solid var(--border); }
+        .tableau-jours tr:hover td { background: var(--blue-light); }
+        .tableau-jours tr.row-editing td { background: #fffbeb; }
+        .cell-val { display: inline-block; }
+        .cell-corrected { background: #fef3c7 !important; }
+        .cell-corr-label { display: block; font-size: 0.6rem; color: #92400e; margin-top: 1px; white-space: nowrap; }
+        .input-cell { width: 75px; padding: 2px 5px; border: 1.5px solid var(--blue); border-radius: 5px; font-size: 0.8rem; text-align: right; font-family: inherit; background: #fff; }
+        .input-cell:focus { outline: none; border-color: var(--orange); }
+        .td-actions { text-align: center !important; min-width: 100px; }
+        .btn-edit-row { padding: 0.28rem 0.6rem; border: 1.5px solid var(--blue); background: var(--blue-light); color: var(--blue); border-radius: 6px; font-family: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .btn-edit-row:hover { background: var(--blue); color: #fff; }
+        .btn-save-row { padding: 0.28rem 0.6rem; border: 1.5px solid var(--green); background: #f0fdf4; color: var(--green); border-radius: 6px; font-family: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; display: none; }
+        .btn-save-row:hover { background: var(--green); color: #fff; }
+        .btn-cancel-row { padding: 0.28rem 0.6rem; border: 1.5px solid var(--border); background: var(--bg-input); color: var(--text-dim); border-radius: 6px; font-family: inherit; font-size: 0.76rem; cursor: pointer; display: none; margin-left: 4px; }
+        .btn-cancel-row:hover { background: var(--text-dim); color: #fff; }
+        .btn-restore-cell { padding: 0 4px; border: none; background: none; color: #b45309; font-size: 0.7rem; cursor: pointer; vertical-align: middle; }
+        .btn-restore-cell:hover { color: #92400e; text-decoration: underline; }
+        .tableau-loading { text-align: center; padding: 3rem; color: var(--text-dim); font-size: 0.9rem; }
+        .tableau-empty { text-align: center; padding: 3rem; color: var(--text-dim); font-size: 0.88rem; }
+        .correction-badge { display: inline-block; background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; border-radius: 20px; font-size: 0.7rem; font-weight: 700; padding: 0 6px; margin-left: 4px; vertical-align: middle; }
+
+        /* ── Journal des corrections (modal) ── */
+        .journal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .journal-overlay.show { display: flex; }
+        .journal-panel { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 760px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .journal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.4rem; border-bottom: 1px solid var(--border); }
+        .journal-title { font-size: 1.05rem; font-weight: 700; }
+        .journal-close { border: none; background: none; font-size: 1.4rem; cursor: pointer; color: var(--text-dim); line-height: 1; padding: 0 4px; }
+        .journal-close:hover { color: var(--text); }
+        .journal-body { overflow-y: auto; flex: 1; padding: 1rem; }
+        .journal-empty { text-align: center; padding: 2rem; color: var(--text-dim); }
+        .journal-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .journal-table th { background: var(--bg-input); font-weight: 600; text-align: left; padding: 0.5rem 0.7rem; border-bottom: 2px solid var(--border); color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+        .journal-table td { padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .journal-table tr:last-child td { border-bottom: none; }
+        .journal-table tr:hover td { background: var(--bg-input); }
+        .journal-badge-actif { display: inline-block; background: #d1fae5; color: #065f46; border-radius: 20px; font-size: 0.68rem; font-weight: 700; padding: 1px 7px; }
+        .journal-badge-restaure { display: inline-block; background: #fee2e2; color: #991b1b; border-radius: 20px; font-size: 0.68rem; font-weight: 700; padding: 1px 7px; }
+        .journal-badge-remplace { display: inline-block; background: #e5e7eb; color: #6b7280; border-radius: 20px; font-size: 0.68rem; font-weight: 700; padding: 1px 7px; }
+        .journal-val-arrow { color: var(--blue); font-weight: 700; margin: 0 4px; }
+
         /* Admin Panels */
         .admin-panel { display: none; }
         .admin-panel.show { display: block; }
@@ -1245,6 +1311,9 @@
             <button class="main-nav-btn" data-section="equarrissage">
                 <span class="nav-icon">🐄</span><span class="nav-label">Équarrissage</span>
             </button>
+            <button class="main-nav-btn" data-section="bdavicole">
+                <span class="nav-icon">🐓</span><span class="nav-label">BD Avicole</span>
+            </button>
             <button class="main-nav-btn" data-section="parametrage">
                 <span class="nav-icon">⚙️</span><span class="nav-label">Paramétrage</span>
             </button>
@@ -1266,6 +1335,9 @@
             </button>
             <button class="admin-menu-btn" id="menuAliments" data-panel="aliments">
                 <span class="menu-icon">🌾</span> Aliments
+            </button>
+            <button class="admin-menu-btn" id="menuBdAvicole" data-panel="bdAvicole">
+                <span class="menu-icon">🐓</span> BD Avicole
             </button>
         </div>
     </div>
@@ -1330,6 +1402,15 @@
                 </div>
             </div>
             
+            <!-- ── Onglets Exploitation ── -->
+            <div class="exploit-tabs" id="exploitTabs">
+                <button class="exploit-tab active" data-tab="graphiques">📊 Graphiques</button>
+                <button class="exploit-tab" data-tab="tableau">📋 Données journalières</button>
+            </div>
+
+            <!-- ── Panel : Graphiques ── -->
+            <div class="exploit-panel show" id="exploitGraphiques">
+
             <!-- Graphiques multi-sections -->
             <div class="graphs-container" id="graphsContainer">
 
@@ -1468,6 +1549,19 @@
                 </div>
             </div>
             
+            </div><!-- /exploitGraphiques -->
+
+            <!-- ── Panel : Tableau journalier ── -->
+            <div class="exploit-panel" id="exploitTableau">
+                <div class="tableau-toolbar">
+                    <div class="tableau-info" id="tableauInfo">Sélectionnez un lot pour afficher les données journalières.</div>
+                    <button class="btn-journal" id="btnJournal">📋 Journal des corrections</button>
+                </div>
+                <div class="tableau-scroll-wrapper">
+                    <div class="tableau-loading" id="tableauContent">📊 Chargement...</div>
+                </div>
+            </div><!-- /exploitTableau -->
+
             <!-- Empty -->
             <div class="chart-card show" id="emptyState">
                 <div class="empty-state">
@@ -1476,7 +1570,20 @@
                     <div class="empty-text">Choisissez un site → bâtiment → lot</div>
                 </div>
             </div>
-            
+
+        </div>
+
+        <!-- ══ MODALE : Journal des corrections ══ -->
+        <div class="journal-overlay" id="journalOverlay">
+            <div class="journal-panel">
+                <div class="journal-header">
+                    <div class="journal-title">📋 Journal des corrections</div>
+                    <button class="journal-close" id="btnCloseJournal">✕</button>
+                </div>
+                <div class="journal-body" id="journalBody">
+                    <div class="journal-empty">Chargement...</div>
+                </div>
+            </div>
         </div>
 
         <!-- PANEL: API Config -->
@@ -1678,6 +1785,37 @@
                 </div>
             </div>
         </div><!-- /panelAliments -->
+
+        <!-- PANEL: Paramétrage BD Avicole (admin uniquement) -->
+        <div class="admin-panel" id="panelBdAvicole">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🐓</span>
+                <div>
+                    <div class="admin-panel-title">Paramétrage BD Avicole</div>
+                    <div class="admin-panel-subtitle">URL de redirection vers le portail de déclaration légale des lots</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="alert" id="bdAvicoleAlert"></div>
+                <div class="form-group">
+                    <label class="form-label">URL du portail BD Avicole</label>
+                    <input type="url" id="urlBdAvicoleInput" class="form-control"
+                           placeholder="https://www.bdavicole.fr/"
+                           style="width:100%; box-sizing:border-box;">
+                    <div style="margin-top:0.4rem; font-size:0.82rem; color:var(--text-dim);">
+                        Ce lien est accessible à tous les profils (éleveur, salarié, admin) via le bouton <strong>BD Avicole</strong> dans la navigation.
+                    </div>
+                </div>
+                <div style="display:flex; gap:0.75rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
+                    <button class="btn btn-primary" id="btnSaveBdAvicole">💾 Enregistrer</button>
+                    <a id="testBdAvicoleLink" href="https://www.bdavicole.fr/" target="_blank"
+                       rel="noopener noreferrer"
+                       style="font-size:0.85rem; color:var(--green); text-decoration:none; display:flex; align-items:center; gap:0.3rem;">
+                        🔗 Tester le lien
+                    </a>
+                </div>
+            </div>
+        </div><!-- /panelBdAvicole -->
 
         </div><!-- /sectionExploitation -->
 
@@ -1946,7 +2084,8 @@
     var CONFIG = { supabase_url: null, supabase_anon_key: null };
     var supabase = null;
     var currentUser = null;
-    var currentEleveur = null;
+    var currentEleveur  = null;
+    var urlBdAvicole    = 'https://www.bdavicole.fr/'; // URL par défaut, remplacée au login
     var currentSite = null;
     var currentBatiment = null;
     // ── État indépendant par graphique ──
@@ -2044,6 +2183,10 @@
                 if (!passOk) throw new Error('Mot de passe incorrect');
                 
                 currentUser = res.data;
+                // Charger l'URL BD Avicole globale (accessible à tous les profils)
+                supabase.from('parametres_globaux').select('valeur').eq('cle', 'url_bdavicole').maybeSingle()
+                    .then(function(r) { if (r.data && r.data.valeur) urlBdAvicole = r.data.valeur; })
+                    .catch(function() {}); // silencieux : fallback sur URL par défaut
                 var role = res.data.role || 'eleveur';
                 var name = ((res.data.prenom || '') + ' ' + res.data.nom).trim();
                 
@@ -2175,9 +2318,58 @@
         // Load panel data
         if (panelName === 'apiConfig') loadApiConfig();
         if (panelName === 'users') loadUsers();
-        if (panelName === 'aliments') loadAliments();
+        if (panelName === 'aliments')   loadAliments();
+        if (panelName === 'bdAvicole')  initBdAvicolePanel();
     }
-    
+
+    // =====================================================
+    // PARAMÉTRAGE BD AVICOLE (admin uniquement)
+    // =====================================================
+    function initBdAvicolePanel() {
+        if (!supabase) return;
+        var input    = $('urlBdAvicoleInput');
+        var testLink = $('testBdAvicoleLink');
+        // Pré-remplir avec la valeur courante
+        if (input) input.value = urlBdAvicole || 'https://www.bdavicole.fr/';
+        if (testLink) testLink.href = urlBdAvicole || 'https://www.bdavicole.fr/';
+        // Rafraîchir depuis la base
+        supabase.from('parametres_globaux').select('valeur').eq('cle', 'url_bdavicole').maybeSingle()
+            .then(function(r) {
+                if (r.data && r.data.valeur) {
+                    urlBdAvicole = r.data.valeur;
+                    if (input)    input.value  = r.data.valeur;
+                    if (testLink) testLink.href = r.data.valeur;
+                }
+            }).catch(function() {});
+    }
+
+    function saveBdAvicoleUrl() {
+        var input = $('urlBdAvicoleInput');
+        var url   = input ? input.value.trim() : '';
+        hideAlert('bdAvicoleAlert');
+        if (!url) { showAlert('bdAvicoleAlert', 'error', '❌ Veuillez saisir une URL valide'); return; }
+        if (!currentUser || currentUser.role !== 'admin') {
+            showAlert('bdAvicoleAlert', 'error', '❌ Seul un administrateur peut modifier ce paramètre');
+            return;
+        }
+        var btn = $('btnSaveBdAvicole');
+        btn.disabled = true; btn.textContent = '⏳ Enregistrement...';
+        supabase.rpc('save_url_bdavicole', { p_user_id: currentUser.id, p_url: url })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                urlBdAvicole = url;
+                var testLink = $('testBdAvicoleLink');
+                if (testLink) testLink.href = url;
+                showAlert('bdAvicoleAlert', 'success', '✅ URL BD Avicole mise à jour avec succès');
+            })
+            .catch(function(err) {
+                showAlert('bdAvicoleAlert', 'error', '❌ ' + err.message);
+            })
+            .finally(function() {
+                btn.disabled = false; btn.textContent = '💾 Enregistrer';
+            });
+    }
+
     // =====================================================
     // GESTION DES ALIMENTS (admin)
     // =====================================================
@@ -2891,7 +3083,8 @@
             supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age'),
-            supabase.from('donnees_eau').select('*').eq('lot_id', id).order('jour_age')
+            supabase.from('donnees_eau').select('*').eq('lot_id', id).order('jour_age'),
+            supabase.from('corrections_journalieres').select('*').eq('lot_id', id).order('created_at', { ascending: false })
         ]).then(function(r) {
             lotData.poids    = (r[0] && r[0].data) ? r[0].data : [];
             lotData.mortalite = (r[1] && r[1].data) ? r[1].data : [];
@@ -2905,8 +3098,10 @@
             // Homogénéité et GMQ : même source que poids (donnees_poids)
             lotData.homogeneite  = lotData.poids;
             lotData.gmq          = lotData.poids;
+            // Corrections : construire la map (toutes corrections, actif ou non, pour le journal)
+            buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
             if (lot.souche_id) loadStandards(lot.souche_id);
-            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] }; showDataPanels(); updateUI(); }
+            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] }; showDataPanels(); updateUI(); renderTableau(); }
         }).catch(function(err) {
             console.error('Erreur chargement données lot:', err);
             showDataPanels();
@@ -2940,9 +3135,10 @@
         }).finally(function() {
             showDataPanels();
             updateUI();
+            renderTableau();
         });
     }
-    
+
     function resetSelectors(from) {
         var order = ['site', 'batiment', 'lot'];
         var start = order.indexOf(from);
@@ -2958,21 +3154,438 @@
         $('selEleveur').innerHTML = '<option value="">-- Sélectionner --</option>';
         resetSelectors('site');
     }
-    
+
+    // ══════════════════════════════════════════════════════════
+    // TABLEAU JOURNALIER — Données jour par jour
+    // ══════════════════════════════════════════════════════════
+
+    var currentExploitTab = 'graphiques';
+    // Toutes les corrections du lot (actif=true et actif=false) pour le journal
+    var allCorrections = [];
+    // Map des corrections ACTIVES : clé = "jour_age|champ" → objet correction
+    var activeCorrections = {};
+
+    var TABLEAU_FIELDS = [
+        { key: 'nombre_morts',   label: 'Morts',        unit: '',     digits: 0, group: 'mort',    groupLabel: 'Mortalité',    groupColor: '#e11d48' },
+        { key: 'poids_moyen',    label: 'Poids moy.',   unit: 'g',    digits: 1, group: 'poids',   groupLabel: 'Poids',        groupColor: '#2563eb' },
+        { key: 'gmq',            label: 'GMQ',           unit: 'g/j',  digits: 1, group: 'poids',   groupLabel: 'Poids',        groupColor: '#2563eb' },
+        { key: 'homogeneite',    label: 'Homog.',        unit: '%',    digits: 1, group: 'poids',   groupLabel: 'Poids',        groupColor: '#2563eb' },
+        { key: 'aliment_animal', label: 'Aliment',       unit: 'g/j',  digits: 1, group: 'aliment', groupLabel: 'Aliment',      groupColor: '#ea580c' },
+        { key: 'eau_litres',     label: 'Eau totale',    unit: 'L',    digits: 1, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' },
+        { key: 'eau_animal',     label: 'Eau/poule',     unit: 'L',    digits: 3, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' },
+        { key: 'eau_ratio',      label: 'Ratio E/A',     unit: '',     digits: 2, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' }
+    ];
+
+    var CHAMP_LABELS = {};
+    TABLEAU_FIELDS.forEach(function(f) { CHAMP_LABELS[f.key] = f.label + (f.unit ? ' (' + f.unit + ')' : ''); });
+
+    function buildCorrectionsMap(rows) {
+        allCorrections = rows || [];
+        activeCorrections = {};
+        allCorrections.forEach(function(c) {
+            if (c.actif) {
+                activeCorrections[c.jour_age + '|' + c.champ] = c;
+            }
+        });
+    }
+
+    function getActiveCorrection(jour_age, champ) {
+        return activeCorrections[jour_age + '|' + champ] || null;
+    }
+
+    function buildTableauRows() {
+        // Fusionner toutes les sources par jour_age
+        var map = {};
+        function ensureRow(j, date) {
+            if (!map[j]) map[j] = { jour_age: j, date_mesure: date || '' };
+        }
+        lotData.poids.forEach(function(d) {
+            ensureRow(d.jour_age, d.date_mesure);
+            map[d.jour_age].poids_moyen  = d.poids_moyen;
+            map[d.jour_age].gmq          = d.gmq;
+            map[d.jour_age].homogeneite  = d.homogeneite;
+        });
+        lotData.mortalite.forEach(function(d) {
+            ensureRow(d.jour_age, d.date_mesure);
+            map[d.jour_age].nombre_morts = d.nombre_morts;
+        });
+        lotData.aliment.forEach(function(d) {
+            ensureRow(d.jour_age, d.date_mesure);
+            map[d.jour_age].aliment_animal = d.conso_par_animal;
+        });
+        // eau_conso = même tableau que eau_animal/eau_ratio
+        lotData.eau_conso.forEach(function(d) {
+            ensureRow(d.jour_age, d.date_mesure);
+            map[d.jour_age].eau_litres = d.consommation_litres;
+            map[d.jour_age].eau_animal = d.conso_par_animal;
+            map[d.jour_age].eau_ratio  = d.ratio_eau_aliment;
+        });
+        return Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
+    }
+
+    function fmtVal(v, digits) {
+        if (v === null || v === undefined || v === '') return '—';
+        var n = parseFloat(v);
+        if (isNaN(n)) return '—';
+        return n.toFixed(digits);
+    }
+
+    function renderTableau() {
+        var rows = buildTableauRows();
+        var totalCorrections = Object.keys(activeCorrections).length;
+
+        // Info toolbar
+        var lot = currentLotInfo || {};
+        var infoHtml = '<strong>' + (lot.code_lot || '--') + '</strong> · '
+            + rows.length + ' jours de données';
+        if (totalCorrections > 0) {
+            infoHtml += ' · <span class="correction-badge">✎ ' + totalCorrections + ' correction' + (totalCorrections > 1 ? 's' : '') + ' active' + (totalCorrections > 1 ? 's' : '') + '</span>';
+        }
+        $('tableauInfo').innerHTML = infoHtml;
+
+        if (rows.length === 0) {
+            $('tableauContent').className = 'tableau-empty';
+            $('tableauContent').innerHTML = '📭 Aucune donnée journalière pour ce lot.';
+            return;
+        }
+
+        // Groupes de colonnes
+        var groups = [
+            { label: '', color: '', span: 2 },         // Jour + Date
+            { label: 'Mortalité', color: '#e11d48', span: 1 },
+            { label: 'Poids', color: '#2563eb', span: 3 },
+            { label: 'Aliment', color: '#ea580c', span: 1 },
+            { label: 'Eau', color: '#0891b2', span: 3 },
+            { label: '', color: '', span: 1 }           // Actions
+        ];
+
+        var html = '<table class="tableau-jours">';
+        // Ligne 1 : groupes
+        html += '<thead><tr>';
+        html += '<th class="col-group" colspan="2" style="text-align:left;"></th>';
+        html += '<th class="col-group" colspan="1" style="color:#e11d48; border-left:2px solid #fca5a5;">MORTALITÉ</th>';
+        html += '<th class="col-group" colspan="3" style="color:#2563eb; border-left:2px solid #bfdbfe;">POIDS</th>';
+        html += '<th class="col-group" colspan="1" style="color:#ea580c; border-left:2px solid #fed7aa;">ALIMENT</th>';
+        html += '<th class="col-group" colspan="3" style="color:#0891b2; border-left:2px solid #a5f3fc;">EAU</th>';
+        html += '<th class="col-group" colspan="1"></th>';
+        html += '</tr>';
+        // Ligne 2 : libellés colonnes
+        html += '<tr>';
+        html += '<th class="col-label" style="text-align:center;">Jour</th>';
+        html += '<th class="col-label" style="text-align:center; border-right:2px solid var(--border);">Date</th>';
+        TABLEAU_FIELDS.forEach(function(f, i) {
+            var borderLeft = (i === 0 || f.group !== TABLEAU_FIELDS[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
+            html += '<th class="col-label" style="' + borderLeft + '">'
+                + f.label + (f.unit ? '<br><span style="font-weight:400;color:var(--text-dim);font-size:0.65rem;">' + f.unit + '</span>' : '') + '</th>';
+        });
+        html += '<th class="col-label">Actions</th>';
+        html += '</tr></thead>';
+
+        // Corps
+        html += '<tbody>';
+        rows.forEach(function(row) {
+            var j = row.jour_age;
+            html += '<tr data-jour="' + j + '">';
+            html += '<td class="col-id">' + j + '</td>';
+            var dateFmt = row.date_mesure ? new Date(row.date_mesure).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+            html += '<td class="col-id col-border">' + dateFmt + '</td>';
+
+            TABLEAU_FIELDS.forEach(function(f, i) {
+                var corr = getActiveCorrection(j, f.key);
+                var rawVal = row[f.key];
+                var displayVal = corr ? parseFloat(corr.valeur_corrigee) : rawVal;
+                var isCorrected = !!corr;
+                var borderLeft = (i === 0 || f.group !== TABLEAU_FIELDS[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
+                var cls = isCorrected ? ' cell-corrected' : '';
+
+                html += '<td class="' + cls + '" data-field="' + f.key + '" style="' + borderLeft + '">';
+                html += '<span class="cell-val">' + fmtVal(displayVal, f.digits) + '</span>';
+                if (isCorrected) {
+                    html += '<span class="cell-corr-label">✎ était&nbsp;: ' + fmtVal(rawVal, f.digits) + '</span>';
+                }
+                html += '</td>';
+            });
+
+            html += '<td class="td-actions">'
+                + '<button class="btn-edit-row" data-jour="' + j + '">✏️ Modifier</button>'
+                + '<button class="btn-save-row" data-jour="' + j + '">✔ Enregistrer</button>'
+                + '<button class="btn-cancel-row" data-jour="' + j + '">✕</button>'
+                + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+
+        $('tableauContent').className = '';
+        $('tableauContent').innerHTML = html;
+
+        // Délégation d'événements sur le tableau
+        $('tableauContent').addEventListener('click', function(e) {
+            var editBtn   = e.target.closest('.btn-edit-row');
+            var saveBtn   = e.target.closest('.btn-save-row');
+            var cancelBtn = e.target.closest('.btn-cancel-row');
+            var restBtn   = e.target.closest('.btn-restore-cell');
+            if (editBtn)   { enterEditMode(editBtn.getAttribute('data-jour')); }
+            if (saveBtn)   { saveRowEdit(saveBtn.getAttribute('data-jour')); }
+            if (cancelBtn) { cancelRowEdit(cancelBtn.getAttribute('data-jour')); }
+            if (restBtn)   {
+                restoreCorrection(
+                    parseInt(restBtn.getAttribute('data-jour')),
+                    restBtn.getAttribute('data-field'),
+                    restBtn.getAttribute('data-original')
+                );
+            }
+        });
+    }
+
+    function getTableRow(jour) {
+        return document.querySelector('#tableauContent tr[data-jour="' + jour + '"]');
+    }
+
+    function enterEditMode(jour) {
+        var j   = parseInt(jour);
+        var row = getTableRow(j);
+        if (!row) return;
+        row.classList.add('row-editing');
+        // Remplacer les TD par des inputs
+        var rows = buildTableauRows();
+        var rowData = rows.find(function(r) { return r.jour_age === j; }) || {};
+
+        TABLEAU_FIELDS.forEach(function(f) {
+            var td = row.querySelector('td[data-field="' + f.key + '"]');
+            if (!td) return;
+            var corr = getActiveCorrection(j, f.key);
+            var currentVal = corr ? parseFloat(corr.valeur_corrigee) : rowData[f.key];
+            var rawVal = rowData[f.key];
+            var isCorrected = !!corr;
+            var originalVal = corr ? corr.valeur_originale : (rawVal !== undefined && rawVal !== null ? String(rawVal) : '');
+
+            var inputHtml = '<input class="input-cell" type="number" step="any" '
+                + 'data-field="' + f.key + '" '
+                + 'data-original="' + (originalVal || '') + '" '
+                + 'value="' + (currentVal !== undefined && currentVal !== null ? currentVal : '') + '">';
+            if (isCorrected) {
+                inputHtml += '<button class="btn-restore-cell" data-jour="' + j + '" data-field="' + f.key + '" data-original="' + originalVal + '" title="Restaurer valeur d\'origine">↺ Restaurer</button>';
+            }
+            td.innerHTML = inputHtml;
+        });
+
+        // Boutons
+        row.querySelector('.btn-edit-row').style.display   = 'none';
+        row.querySelector('.btn-save-row').style.display   = 'inline-block';
+        row.querySelector('.btn-cancel-row').style.display = 'inline-block';
+    }
+
+    function cancelRowEdit(jour) {
+        // Re-rendre le tableau complet (simple)
+        renderTableau();
+    }
+
+    function saveRowEdit(jour) {
+        var j   = parseInt(jour);
+        var row = getTableRow(j);
+        if (!row || !currentLotInfo) return;
+
+        var rows = buildTableauRows();
+        var rowData = rows.find(function(r) { return r.jour_age === j; }) || {};
+
+        var inputs = row.querySelectorAll('.input-cell');
+        var promises = [];
+        var hasChange = false;
+
+        inputs.forEach(function(input) {
+            var champ = input.getAttribute('data-field');
+            var newValStr = input.value.trim();
+            if (newValStr === '') return;
+            var newVal = parseFloat(newValStr);
+            if (isNaN(newVal)) return;
+
+            // Valeur actuelle affichée (correction active ou valeur source)
+            var corr = getActiveCorrection(j, champ);
+            var currentDisplayVal = corr ? parseFloat(corr.valeur_corrigee) : rowData[champ];
+
+            // Pas de changement ?
+            if (currentDisplayVal !== undefined && currentDisplayVal !== null
+                && Math.abs(parseFloat(currentDisplayVal) - newVal) < 0.0001) return;
+
+            hasChange = true;
+            // Valeur originale = valeur source Tuffigo (jamais une correction)
+            var originalVal = (rowData[champ] !== undefined && rowData[champ] !== null)
+                ? String(rowData[champ]) : null;
+
+            promises.push(
+                supabase.rpc('save_correction_journaliere', {
+                    p_lot_id:           currentLotInfo.id,
+                    p_jour_age:         j,
+                    p_champ:            champ,
+                    p_valeur_originale: originalVal,
+                    p_valeur_corrigee:  String(newVal),
+                    p_modifie_par:      currentUser ? currentUser.id : null,
+                    p_modifie_par_nom:  currentUser ? ((currentUser.prenom || '') + ' ' + (currentUser.nom || '')).trim() : 'Inconnu',
+                    p_modifie_par_role: currentUser ? (currentUser.role || '') : ''
+                })
+            );
+        });
+
+        if (!hasChange) { cancelRowEdit(jour); return; }
+
+        // Bouton feedback
+        var saveBtn = row.querySelector('.btn-save-row');
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳'; }
+
+        Promise.all(promises).then(function() {
+            // Recharger les corrections et re-rendre
+            return supabase.from('corrections_journalieres')
+                .select('*').eq('lot_id', currentLotInfo.id).order('created_at', { ascending: false });
+        }).then(function(r) {
+            buildCorrectionsMap((r && r.data) ? r.data : []);
+            renderTableau();
+        }).catch(function(err) {
+            console.error('Erreur sauvegarde correction:', err);
+            alert('Erreur lors de la sauvegarde : ' + (err.message || err));
+            cancelRowEdit(jour);
+        });
+    }
+
+    function restoreCorrection(jour, champ, originalVal) {
+        if (!currentLotInfo || !currentUser) return;
+        if (!confirm('Restaurer la valeur d\'origine pour ce champ ?')) return;
+
+        supabase.rpc('restore_correction_journaliere', {
+            p_lot_id:           currentLotInfo.id,
+            p_jour_age:         jour,
+            p_champ:            champ,
+            p_valeur_originale: originalVal,
+            p_modifie_par:      currentUser.id,
+            p_modifie_par_nom:  ((currentUser.prenom || '') + ' ' + (currentUser.nom || '')).trim() || 'Inconnu',
+            p_modifie_par_role: currentUser.role || ''
+        }).then(function(r) {
+            if (r.error) throw r.error;
+            return supabase.from('corrections_journalieres')
+                .select('*').eq('lot_id', currentLotInfo.id).order('created_at', { ascending: false });
+        }).then(function(r) {
+            buildCorrectionsMap((r && r.data) ? r.data : []);
+            renderTableau();
+        }).catch(function(err) {
+            console.error('Erreur restauration:', err);
+            alert('Erreur lors de la restauration : ' + (err.message || err));
+        });
+    }
+
+    // ── Onglets Exploitation ──
+    function switchExploitTab(tab, silent) {
+        currentExploitTab = tab;
+        document.querySelectorAll('.exploit-tab').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+        });
+        if (tab === 'graphiques') {
+            $('exploitGraphiques').classList.add('show');
+            $('exploitTableau').classList.remove('show');
+        } else {
+            $('exploitGraphiques').classList.remove('show');
+            $('exploitTableau').classList.add('show');
+            if (!silent && currentLotInfo) renderTableau();
+        }
+    }
+
+    // ── Journal des corrections ──
+    function openJournal() {
+        if (!currentLotInfo) return;
+        renderJournal(allCorrections);
+        $('journalOverlay').classList.add('show');
+    }
+
+    function closeJournal() {
+        $('journalOverlay').classList.remove('show');
+    }
+
+    function renderJournal(corrections) {
+        var body = $('journalBody');
+        if (!corrections || corrections.length === 0) {
+            body.innerHTML = '<div class="journal-empty">📭 Aucune correction enregistrée pour ce lot.</div>';
+            return;
+        }
+
+        // Grouper par jour_age pour la lisibilité
+        var html = '<table class="journal-table">';
+        html += '<thead><tr>'
+            + '<th>Date modif.</th>'
+            + '<th>Jour</th>'
+            + '<th>Indicateur</th>'
+            + '<th>Avant</th>'
+            + '<th></th>'
+            + '<th>Après</th>'
+            + '<th>Modifié par</th>'
+            + '<th>Statut</th>'
+            + '</tr></thead><tbody>';
+
+        corrections.forEach(function(c) {
+            var dt = c.created_at
+                ? new Date(c.created_at).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+                : '--';
+            var champLabel = CHAMP_LABELS[c.champ] || c.champ;
+            var isRestauration = c.valeur_originale === '(restauration)';
+            var badge = '';
+            if (isRestauration) {
+                badge = '<span class="journal-badge-restaure">↺ Restauration</span>';
+            } else if (c.actif) {
+                badge = '<span class="journal-badge-actif">✔ Active</span>';
+            } else {
+                badge = '<span class="journal-badge-remplace">Remplacée</span>';
+            }
+            var roleLabel = c.modifie_par_role === 'salarie' ? ' · Salarié'
+                : c.modifie_par_role === 'eleveur' ? ' · Éleveur'
+                : c.modifie_par_role === 'admin' ? ' · Admin' : '';
+
+            html += '<tr>'
+                + '<td style="color:var(--text-dim);white-space:nowrap;">' + dt + '</td>'
+                + '<td style="text-align:center;font-weight:600;">J' + c.jour_age + '</td>'
+                + '<td>' + champLabel + '</td>'
+                + '<td style="text-align:right;">' + (isRestauration ? '<em style="color:var(--text-dim);">—</em>' : fmtVal(c.valeur_originale, 2)) + '</td>'
+                + '<td style="text-align:center;"><span class="journal-val-arrow">→</span></td>'
+                + '<td style="text-align:right;font-weight:600;">' + fmtVal(c.valeur_corrigee, 2) + '</td>'
+                + '<td>' + (c.modifie_par_nom || '--') + '<span style="color:var(--text-dim);font-size:0.7rem;">' + roleLabel + '</span></td>'
+                + '<td>' + badge + '</td>'
+                + '</tr>';
+        });
+
+        html += '</tbody></table>';
+        body.innerHTML = html;
+    }
+
     function showDataPanels() {
         $('lotCard').classList.add('show');
-        $('graphsContainer').classList.add('show');
-        $('statsRow').classList.add('show');
-        $('exportSection').classList.add('show');
+        $('exploitTabs').classList.add('show');
         $('emptyState').classList.remove('show');
+        // Afficher le bon panel selon l'onglet actif
+        if (currentExploitTab === 'tableau') {
+            $('exploitTableau').classList.add('show');
+            $('exploitGraphiques').classList.remove('show');
+        } else {
+            $('exploitGraphiques').classList.add('show');
+            $('exploitTableau').classList.remove('show');
+            $('graphsContainer').classList.add('show');
+            $('statsRow').classList.add('show');
+            $('exportSection').classList.add('show');
+        }
     }
 
     function hideDataPanels() {
         $('lotCard').classList.remove('show');
+        $('exploitTabs').classList.remove('show');
+        $('exploitGraphiques').classList.remove('show');
+        $('exploitTableau').classList.remove('show');
         $('graphsContainer').classList.remove('show');
         $('statsRow').classList.remove('show');
         $('exportSection').classList.remove('show');
         $('emptyState').classList.add('show');
+        // Réinitialiser l'onglet actif
+        currentExploitTab = 'graphiques';
+        document.querySelectorAll('.exploit-tab').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === 'graphiques');
+        });
+        // Vider les corrections
+        allCorrections = [];
+        activeCorrections = {};
     }
     
     // =====================================================
@@ -3616,6 +4229,13 @@
         
         // API Config
         $('btnSaveApiConfig').addEventListener('click', saveApiConfig);
+        $('btnSaveBdAvicole').addEventListener('click', saveBdAvicoleUrl);
+
+        // Mise à jour dynamique du lien "Tester" quand l'admin tape l'URL
+        $('urlBdAvicoleInput').addEventListener('input', function() {
+            var link = $('testBdAvicoleLink');
+            if (link) link.href = this.value.trim() || 'https://www.bdavicole.fr/';
+        });
         $('btnShowApiKey').addEventListener('click', toggleApiKeyVisibility);
         $('btnShowPassword').addEventListener('click', togglePasswordVisibility);
         $('btnTestApiConfig').addEventListener('click', testApiConnection);
@@ -3654,6 +4274,20 @@
         // Exports
         $('btnExportPDF').addEventListener('click', exportPDF);
         $('btnExportExcel').addEventListener('click', exportExcel);
+
+        // Onglets Exploitation
+        document.querySelectorAll('.exploit-tab').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                switchExploitTab(this.getAttribute('data-tab'));
+            });
+        });
+
+        // Journal des corrections
+        $('btnJournal').addEventListener('click', openJournal);
+        $('btnCloseJournal').addEventListener('click', closeJournal);
+        $('journalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeJournal();
+        });
 
         // Navigation principale
         document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
@@ -3886,6 +4520,12 @@
 
     function switchSection(sectionName) {
         // Cas spécial : Équarrissage → ouvre l'URL externe sans changer de section
+        if (sectionName === 'bdavicole') {
+            var urlBda = (urlBdAvicole && urlBdAvicole.trim()) ? urlBdAvicole.trim() : 'https://www.bdavicole.fr/';
+            window.open(urlBda, '_blank', 'noopener,noreferrer');
+            return; // Ne pas changer de section
+        }
+
         if (sectionName === 'equarrissage') {
             var url = (currentEleveur && currentEleveur.url_equarrissage && currentEleveur.url_equarrissage.trim())
                 ? currentEleveur.url_equarrissage.trim()
