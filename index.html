@@ -1083,6 +1083,35 @@
     </div>
 </div>
 
+<!-- MODALE TYPE DE LOT (admin) -->
+<div class="modal-overlay" id="typeLotModal">
+    <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+            <span class="modal-title" id="typeLotModalTitle">🐔 Ajouter un type de lot</span>
+            <button class="modal-close" onclick="closeTypeLotModal()">&times;</button>
+        </div>
+        <div class="alert" id="typeLotModalAlert"></div>
+        <div class="form-group">
+            <label class="form-label">Nom du type *</label>
+            <input type="text" id="typeLotNom" class="form-input" placeholder="ex : Pondeuse, Poulet de chair…">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Ordre d'affichage</label>
+            <input type="number" id="typeLotOrdre" class="form-input" value="0" min="0" style="width:100px;">
+        </div>
+        <div class="form-group" id="typeLotActiveGroup" style="display:none;">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="typeLotIsActive" checked>
+                <span>Actif</span>
+            </label>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeTypeLotModal()">Annuler</button>
+            <button class="btn btn-primary" id="saveTypeLotModal" onclick="saveTypeLot()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODALE FOURNISSEUR -->
 <div class="modal-overlay" id="fournisseurModal">
     <div class="modal-box">
@@ -1336,6 +1365,9 @@
             <button class="admin-menu-btn" id="menuAliments" data-panel="aliments">
                 <span class="menu-icon">🌾</span> Aliments
             </button>
+            <button class="admin-menu-btn" id="menuTypesLot" data-panel="typesLot">
+                <span class="menu-icon">🐔</span> Types de lots
+            </button>
             <button class="admin-menu-btn" id="menuBdAvicole" data-panel="bdAvicole">
                 <span class="menu-icon">🐓</span> BD Avicole
             </button>
@@ -1391,14 +1423,42 @@
             
             <!-- Lot info -->
             <div class="lot-card" id="lotCard">
-                <div class="lot-title">🐥 Lot sélectionné</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                    <div class="lot-title" style="margin-bottom:0;">🐥 Lot sélectionné</div>
+                    <button class="btn btn-secondary" id="btnModifierLot" style="font-size:0.8rem;padding:0.3rem 0.75rem;display:none;" onclick="openLotEditMode()">✏️ Modifier</button>
+                </div>
                 <div class="lot-grid">
                     <div class="lot-item"><div class="lot-label">Code</div><div class="lot-value" id="lotCode">--</div></div>
                     <div class="lot-item"><div class="lot-label">Souche</div><div class="lot-value" id="lotSouche">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Type lot</div><div class="lot-value" id="lotTypeLot">--</div></div>
                     <div class="lot-item"><div class="lot-label">Effectif</div><div class="lot-value highlight" id="lotEffectif">--</div></div>
                     <div class="lot-item"><div class="lot-label">Mise en place</div><div class="lot-value" id="lotDate">--</div></div>
                     <div class="lot-item"><div class="lot-label">Âge</div><div class="lot-value highlight" id="lotAge">--</div></div>
                     <div class="lot-item"><div class="lot-label">Statut</div><div class="lot-value" id="lotStatut">--</div></div>
+                </div>
+                <!-- Zone d'édition (masquée par défaut) -->
+                <div id="lotEditZone" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+                    <div style="font-size:0.85rem;font-weight:600;color:var(--text-dim);margin-bottom:0.75rem;">✏️ Modifier les informations du lot</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                        <div>
+                            <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.3rem;">Souche</label>
+                            <select id="editLotSouche" class="selector-select" style="width:100%;">
+                                <option value="">-- Aucune (valeur Tuffigo) --</option>
+                            </select>
+                            <div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.25rem;">La valeur d'origine Tuffigo est conservée en base</div>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.3rem;">Type de lot</label>
+                            <select id="editLotType" class="selector-select" style="width:100%;">
+                                <option value="">-- Non défini --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="saveLotInfos()" id="btnSaveLot" style="font-size:0.85rem;">✅ Sauvegarder</button>
+                        <button class="btn btn-secondary" onclick="closeLotEditMode()" style="font-size:0.85rem;">❌ Annuler</button>
+                        <div class="alert" id="lotEditAlert" style="margin:0;flex:1;"></div>
+                    </div>
                 </div>
             </div>
             
@@ -1484,8 +1544,8 @@
                     </div>
                 </div>
 
-                <!-- ═══ GRAPHIQUE 3 : Ponte ═══ -->
-                <div class="graph-block">
+                <!-- ═══ GRAPHIQUE 3 : Ponte (visible uniquement pour les lots de type Pondeuse) ═══ -->
+                <div class="graph-block" id="graphBlockPonte" style="display:none;">
                     <div class="graph-block-header">🥚 Ponte</div>
                     <div class="controls-grid show">
                         <div class="control-card">
@@ -1785,6 +1845,39 @@
                 </div>
             </div>
         </div><!-- /panelAliments -->
+
+        <!-- PANEL: Types de lots (admin uniquement) -->
+        <div class="admin-panel" id="panelTypesLot">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🐔</span>
+                <div>
+                    <div class="admin-panel-title">Types de lots</div>
+                    <div class="admin-panel-subtitle">Référentiel des types de lots avicoles (Pondeuse, Poulette, Poulet de chair…)</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="alert" id="typesLotAlert"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <span id="typesLotCount" style="color:var(--text-dim);">0 types</span>
+                    <button class="btn btn-primary" id="btnNewTypeLot" onclick="openTypeLotModal(null)">➕ Ajouter</button>
+                </div>
+                <div class="aliment-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Ordre</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="typesLotTableBody">
+                            <tr><td colspan="4" style="text-align:center;color:var(--text-dim);">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /panelTypesLot -->
 
         <!-- PANEL: Paramétrage BD Avicole (admin uniquement) -->
         <div class="admin-panel" id="panelBdAvicole">
@@ -2316,9 +2409,10 @@
         });
         
         // Load panel data
-        if (panelName === 'apiConfig') loadApiConfig();
-        if (panelName === 'users') loadUsers();
+        if (panelName === 'apiConfig')  loadApiConfig();
+        if (panelName === 'users')      loadUsers();
         if (panelName === 'aliments')   loadAliments();
+        if (panelName === 'typesLot')   loadAdminTypesLot();
         if (panelName === 'bdAvicole')  initBdAvicolePanel();
     }
 
@@ -2374,6 +2468,238 @@
     // GESTION DES ALIMENTS (admin)
     // =====================================================
     var editingAlimentId = null;
+
+    // =====================================================
+    // TYPES DE LOTS — Cache global
+    // =====================================================
+    var typesLotCache = [];      // utilisé dans la fiche lot (edit mode)
+    var souchesCache  = [];      // utilisé dans la fiche lot (edit mode)
+    var editingTypeLotId = null; // id en cours d'édition dans le modal admin
+
+    // Charger les types_lot actifs dans le select de la fiche lot
+    function loadTypesLotForEdit() {
+        return supabase.from('types_lot').select('*').eq('is_active', true).order('ordre')
+            .then(function(r) {
+                typesLotCache = r.data || [];
+                var sel = $('editLotType');
+                if (!sel) return;
+                var current = sel.value;
+                sel.innerHTML = '<option value="">-- Non défini --</option>';
+                typesLotCache.forEach(function(t) {
+                    sel.innerHTML += '<option value="' + t.id + '">' + esc(t.nom) + '</option>';
+                });
+                sel.value = current;
+            });
+    }
+
+    // Charger les souches dans le select de la fiche lot
+    function loadSouchesForEdit() {
+        return supabase.from('souches').select('id, nom').order('nom')
+            .then(function(r) {
+                souchesCache = r.data || [];
+                var sel = $('editLotSouche');
+                if (!sel) return;
+                var current = sel.value;
+                sel.innerHTML = '<option value="">-- Aucune (valeur Tuffigo) --</option>';
+                souchesCache.forEach(function(s) {
+                    sel.innerHTML += '<option value="' + s.id + '">' + esc(s.nom) + '</option>';
+                });
+                sel.value = current;
+            });
+    }
+
+    // Ouvrir le mode édition de la fiche lot
+    function openLotEditMode() {
+        var lot = currentLotInfo;
+        if (!lot) return;
+
+        // Afficher la zone immédiatement, sans attendre les chargements
+        $('lotEditZone').style.display    = 'block';
+        $('btnModifierLot').style.display = 'none';
+        hideAlert('lotEditAlert');
+
+        // Charger les listes en parallèle — erreurs silencieuses
+        Promise.all([
+            loadTypesLotForEdit().catch(function(e) {
+                console.warn('types_lot indisponible (migration 037 appliquée ?):', e);
+                var sel = $('editLotType');
+                if (sel) sel.innerHTML = '<option value="">-- Table non disponible --</option>';
+            }),
+            loadSouchesForEdit().catch(function(e) {
+                console.warn('Erreur chargement souches:', e);
+            })
+        ]).then(function() {
+            // Pré-sélectionner les valeurs actuelles une fois les listes chargées
+            if ($('editLotSouche')) $('editLotSouche').value = lot.souche_id_manuel || '';
+            if ($('editLotType'))   $('editLotType').value   = lot.type_lot_id      || '';
+        });
+    }
+
+    // Fermer le mode édition de la fiche lot
+    function closeLotEditMode() {
+        $('lotEditZone').style.display   = 'none';
+        $('btnModifierLot').style.display = '';
+    }
+
+    // Sauvegarder souche_id_manuel + type_lot_id via RPC
+    function saveLotInfos() {
+        var lot = currentLotInfo;
+        if (!lot || !currentUser) return;
+        var soucheManuelId = $('editLotSouche').value || null;
+        var typeLotId      = $('editLotType').value   || null;
+        $('btnSaveLot').disabled = true;
+
+        supabase.rpc('save_lot_infos', {
+            p_user_id:          currentUser.id,
+            p_lot_id:           lot.id,
+            p_souche_id_manuel: soucheManuelId,
+            p_type_lot_id:      typeLotId
+        }).then(function(res) {
+            if (res.error) throw res.error;
+
+            // Mettre à jour le cache local
+            cacheLots[lot.id].souche_id_manuel = soucheManuelId;
+            cacheLots[lot.id].type_lot_id      = typeLotId;
+            currentLotInfo = cacheLots[lot.id];
+
+            // Affichage souche : priorité manuelle, sinon Tuffigo
+            var soucheEffId = soucheManuelId || lot.souche_id;
+            if (soucheEffId) {
+                var souche = souchesCache.find(function(s) { return s.id === soucheEffId; });
+                if (souche) {
+                    currentLotInfo.souche_nom = souche.nom;
+                    $('lotSouche').textContent = souche.nom + (soucheManuelId ? ' ✏️' : '');
+                }
+                // Recharger les standards avec la souche effective
+                loadStandards(soucheEffId);
+            } else {
+                $('lotSouche').textContent = '--';
+            }
+
+            // Affichage type lot + visibilité graphique Ponte
+            var tl = typeLotId ? typesLotCache.find(function(t) { return t.id === typeLotId; }) : null;
+            var tlNom = tl ? tl.nom : '';
+            $('lotTypeLot').textContent = tlNom || '--';
+            currentLotInfo.type_lot_nom = tlNom;
+            updatePonteGraphVisibility();
+
+            showAlert('lotEditAlert', 'success', '✅ Informations mises à jour');
+            setTimeout(closeLotEditMode, 1200);
+        }).catch(function(err) {
+            showAlert('lotEditAlert', 'error', '❌ ' + esc(err.message));
+        }).finally(function() {
+            $('btnSaveLot').disabled = false;
+        });
+    }
+
+    // =====================================================
+    // ADMIN — Gestion des types de lots
+    // =====================================================
+    function loadAdminTypesLot() {
+        if (!supabase) return;
+        $('typesLotTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">Chargement...</td></tr>';
+        supabase.from('types_lot').select('*').order('ordre').order('nom')
+            .then(function(r) {
+                var list = r.data || [];
+                $('typesLotCount').textContent = list.length + ' type' + (list.length > 1 ? 's' : '');
+                if (list.length === 0) {
+                    $('typesLotTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);">Aucun type enregistré.</td></tr>';
+                    return;
+                }
+                var html = '';
+                list.forEach(function(t) {
+                    var badge = t.is_active
+                        ? '<span class="status-badge status-active">Actif</span>'
+                        : '<span class="status-badge status-inactive">Inactif</span>';
+                    html += '<tr>' +
+                        '<td>' + esc(t.nom) + '</td>' +
+                        '<td>' + (t.ordre || 0) + '</td>' +
+                        '<td>' + badge + '</td>' +
+                        '<td><div class="action-btns">' +
+                            '<button class="action-btn" data-id="' + t.id + '" data-action="edit-tl">✏️ Éditer</button>' +
+                            '<button class="action-btn ' + (t.is_active ? 'delete' : '') + '" data-id="' + t.id + '" data-active="' + t.is_active + '" data-action="toggle-tl">' +
+                                (t.is_active ? '🚫 Désactiver' : '✅ Activer') +
+                            '</button>' +
+                        '</div></td>' +
+                        '</tr>';
+                });
+                $('typesLotTableBody').innerHTML = html;
+                $('typesLotTableBody').querySelectorAll('[data-action="edit-tl"]').forEach(function(btn) {
+                    btn.addEventListener('click', function() { openTypeLotModal(this.getAttribute('data-id')); });
+                });
+                $('typesLotTableBody').querySelectorAll('[data-action="toggle-tl"]').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var isActive = this.getAttribute('data-active') === 'true';
+                        toggleTypeLot(this.getAttribute('data-id'), !isActive);
+                    });
+                });
+            })
+            .catch(function(err) {
+                $('typesLotTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);">Erreur : ' + esc(err.message) + '</td></tr>';
+            });
+    }
+
+    function openTypeLotModal(id) {
+        editingTypeLotId = id || null;
+        hideAlert('typeLotModalAlert');
+        $('typeLotActiveGroup').style.display = id ? 'block' : 'none';
+        if (id) {
+            $('typeLotModalTitle').textContent = '✏️ Modifier le type de lot';
+            supabase.from('types_lot').select('*').eq('id', id).single()
+                .then(function(r) {
+                    if (r.error) throw r.error;
+                    $('typeLotNom').value      = r.data.nom   || '';
+                    $('typeLotOrdre').value    = r.data.ordre || 0;
+                    $('typeLotIsActive').checked = r.data.is_active !== false;
+                    $('typeLotModal').classList.add('show');
+                })
+                .catch(function(err) { showAlert('typesLotAlert', 'error', '❌ ' + esc(err.message)); });
+        } else {
+            $('typeLotModalTitle').textContent = '🐔 Ajouter un type de lot';
+            $('typeLotNom').value   = '';
+            $('typeLotOrdre').value = 0;
+            $('typeLotIsActive').checked = true;
+            $('typeLotModal').classList.add('show');
+            $('typeLotNom').focus();
+        }
+    }
+
+    function closeTypeLotModal() {
+        $('typeLotModal').classList.remove('show');
+        editingTypeLotId = null;
+    }
+
+    function saveTypeLot() {
+        var nom    = $('typeLotNom').value.trim();
+        var ordre  = parseInt($('typeLotOrdre').value) || 0;
+        var actif  = $('typeLotIsActive').checked;
+        if (!nom) { showAlert('typeLotModalAlert', 'error', '❌ Le nom est requis'); return; }
+        $('saveTypeLotModal').disabled = true;
+        var payload = { nom: nom, ordre: ordre, is_active: actif };
+        var p = editingTypeLotId
+            ? supabase.from('types_lot').update(payload).eq('id', editingTypeLotId)
+            : supabase.from('types_lot').insert(payload);
+        p.then(function(res) {
+            if (res.error) throw res.error;
+            closeTypeLotModal();
+            showAlert('typesLotAlert', 'success', '✅ Type de lot enregistré');
+            loadAdminTypesLot();
+            typesLotCache = []; // forcer rechargement dans la fiche lot
+        }).catch(function(err) {
+            var msg = err.message && err.message.includes('unique') ? '❌ Ce nom existe déjà' : '❌ ' + esc(err.message);
+            showAlert('typeLotModalAlert', 'error', msg);
+        }).finally(function() { $('saveTypeLotModal').disabled = false; });
+    }
+
+    function toggleTypeLot(id, newActive) {
+        supabase.from('types_lot').update({ is_active: newActive }).eq('id', id)
+            .then(function(res) {
+                if (res.error) throw res.error;
+                loadAdminTypesLot();
+                typesLotCache = [];
+            })
+            .catch(function(err) { showAlert('typesLotAlert', 'error', '❌ ' + esc(err.message)); });
+    }
 
     function loadAliments() {
         if (!supabase) return;
@@ -3065,18 +3391,47 @@
         $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
         $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
         $('lotStatut').textContent = lot.statut || '--';
-        
-        // Load souche
-        if (lot.souche_id) {
-            supabase.from('souches').select('id, nom, type').eq('id', lot.souche_id).single()
-                .then(function(soucheRes) {
-                    if (soucheRes.data && soucheRes.data.nom) {
-                        currentLotInfo.souche_nom = soucheRes.data.nom;
-                        $('lotSouche').textContent = soucheRes.data.nom;
+
+        // Bouton Modifier : visible pour éleveur, technicien, admin (pas salarié)
+        var btnMod = $('btnModifierLot');
+        if (btnMod) {
+            var canEdit = currentUser && ['admin','technicien','eleveur'].indexOf(currentUser.role) !== -1;
+            btnMod.style.display = canEdit ? '' : 'none';
+        }
+        // Fermer le mode édition si on change de lot
+        closeLotEditMode();
+
+        // Souche : priorité souche_id_manuel, sinon souche_id (Tuffigo)
+        var soucheEffId = lot.souche_id_manuel || lot.souche_id;
+        $('lotSouche').textContent = '--';
+        if (soucheEffId) {
+            supabase.from('souches').select('id, nom').eq('id', soucheEffId).single()
+                .then(function(r) {
+                    if (r.data && r.data.nom) {
+                        currentLotInfo.souche_nom = r.data.nom;
+                        $('lotSouche').textContent = r.data.nom + (lot.souche_id_manuel ? ' ✏️' : '');
                     } else { $('lotSouche').textContent = '--'; }
                 })
                 .catch(function() { $('lotSouche').textContent = '--'; });
-        } else { $('lotSouche').textContent = '--'; }
+        }
+
+        // Type lot
+        $('lotTypeLot').textContent = '--';
+        currentLotInfo.type_lot_nom = '';
+        updatePonteGraphVisibility(); // masquer par défaut, afficher si Pondeuse confirmée
+        if (lot.type_lot_id) {
+            var _capturedLotId = lot.id;
+            supabase.from('types_lot').select('nom').eq('id', lot.type_lot_id).single()
+                .then(function(r) {
+                    var nom = (r.data && r.data.nom) ? r.data.nom : '--';
+                    $('lotTypeLot').textContent = nom;
+                    // Vérifier que l'utilisateur n'a pas changé de lot entre-temps
+                    if (currentLotInfo && currentLotInfo.id === _capturedLotId) {
+                        currentLotInfo.type_lot_nom = (r.data && r.data.nom) ? r.data.nom : '';
+                        updatePonteGraphVisibility();
+                    }
+                }).catch(function() { $('lotTypeLot').textContent = '--'; });
+        }
         
         Promise.all([
             supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
@@ -3100,7 +3455,8 @@
             lotData.gmq          = lotData.poids;
             // Corrections : construire la map (toutes corrections, actif ou non, pour le journal)
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
-            if (lot.souche_id) loadStandards(lot.souche_id);
+            var soucheForStd = lot.souche_id_manuel || lot.souche_id;
+            if (soucheForStd) loadStandards(soucheForStd);
             else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] }; showDataPanels(); updateUI(); renderTableau(); }
         }).catch(function(err) {
             console.error('Erreur chargement données lot:', err);
@@ -3552,6 +3908,26 @@
         body.innerHTML = html;
     }
 
+    // Affiche ou masque le graphique Ponte selon le type du lot courant
+    function updatePonteGraphVisibility() {
+        var block = $('graphBlockPonte');
+        if (!block) return;
+        var nom = (currentLotInfo && currentLotInfo.type_lot_nom)
+            ? currentLotInfo.type_lot_nom.trim().toLowerCase() : '';
+        var isPondeuse = (nom === 'pondeuse');
+        block.style.display = isPondeuse ? '' : 'none';
+        // Si le lot n'est plus de type Pondeuse : réinitialiser l'état du graphique
+        if (!isPondeuse && graphState && graphState.ponte) {
+            graphState.ponte.selected = [];
+            if (graphState.ponte.chart) {
+                graphState.ponte.chart.destroy();
+                graphState.ponte.chart = null;
+            }
+            var t = $('chartTitlePonte');  if (t) t.textContent = 'Sélectionnez un indicateur';
+            var l = $('chartLegendPonte'); if (l) l.innerHTML = '';
+        }
+    }
+
     function showDataPanels() {
         $('lotCard').classList.add('show');
         $('exploitTabs').classList.add('show');
@@ -3570,6 +3946,10 @@
     }
 
     function hideDataPanels() {
+        closeLotEditMode();
+        if ($('btnModifierLot')) $('btnModifierLot').style.display = 'none';
+        if (currentLotInfo) currentLotInfo.type_lot_nom = '';
+        updatePonteGraphVisibility(); // remasquer le graphique ponte
         $('lotCard').classList.remove('show');
         $('exploitTabs').classList.remove('show');
         $('exploitGraphiques').classList.remove('show');
@@ -6442,6 +6822,14 @@
         }
         container.innerHTML = html;
     }
+
+    // Exposer les fonctions appelées via onclick= dans le HTML (hors portée IIFE)
+    window.openLotEditMode   = openLotEditMode;
+    window.closeLotEditMode  = closeLotEditMode;
+    window.saveLotInfos      = saveLotInfos;
+    window.openTypeLotModal  = openTypeLotModal;
+    window.closeTypeLotModal = closeTypeLotModal;
+    window.saveTypeLot       = saveTypeLot;
 
 })();
 </script>
