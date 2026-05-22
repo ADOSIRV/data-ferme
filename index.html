@@ -1551,7 +1551,9 @@
                         <div class="control-card">
                             <div class="control-title">Type de données <span class="control-hint">(1 ou 2 indicateurs)</span></div>
                             <div class="indicator-btns" id="indicatorBtnsPonte">
-                                <button class="indicator-btn" data-type="oeufs" data-graph="ponte"><span class="icon">🥚</span>Œufs pondus<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="taux_ponte_pct" data-graph="ponte"><span class="icon">📊</span>Taux de ponte<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="oeufs_a" data-graph="ponte"><span class="icon">🥚</span>Classe A<span class="axis-tag"></span></button>
+                                <button class="indicator-btn" data-type="oeufs_b" data-graph="ponte"><span class="icon">🥚</span>Classe B<span class="axis-tag"></span></button>
                             </div>
                         </div>
                         <div class="control-card">
@@ -2190,8 +2192,8 @@
     var lastActiveGraph = 'sante'; // dernier graphique interagi
     var editingUserId = null;
     
-    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] };
-    var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] };
+    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
+    var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
     // selectedIndicators et currentPeriod remplacés par graphState ci-dessus
     var currentLotInfo = null;
     var allEleveursList = [];
@@ -2204,7 +2206,10 @@
         poids:      { label: 'Croissance en poids', unit: 'g',       color: '#2563eb', colorArea: 'rgba(37,99,235,0.2)',   colorBorder: 'rgba(37,99,235,0.5)',   icon: '📈', dataField: 'poids_moyen',         stdMinField: 'poids_min',                stdMaxField: 'poids_max',                tableEau: false },
         mortalite:  { label: 'Mortalité',            unit: 'morts',   color: '#e11d48', colorArea: 'rgba(225,29,72,0.2)',   colorBorder: 'rgba(225,29,72,0.5)',   icon: '⚠️', dataField: 'nombre_morts',        stdMinField: 'mortalite_min',            stdMaxField: 'mortalite_max',            tableEau: false },
         aliment:    { label: 'Conso. aliment',       unit: 'g/j',     color: '#ea580c', colorArea: 'rgba(234,88,12,0.2)',   colorBorder: 'rgba(234,88,12,0.5)',   icon: '🌾', dataField: 'conso_par_animal',    stdMinField: 'conso_min',                stdMaxField: 'conso_max',                tableEau: false },
-        oeufs:      { label: 'Œufs pondus',          unit: 'œufs',    color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)', colorBorder: 'rgba(124,58,237,0.5)', icon: '🥚', dataField: 'nombre_oeufs',        stdMinField: 'taux_ponte_min',           stdMaxField: 'taux_ponte_max',           tableEau: false },
+        oeufs:          { label: 'Œufs pondus',    unit: 'œufs',  color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)',   colorBorder: 'rgba(124,58,237,0.5)',   icon: '🥚', dataField: 'nombre_oeufs',    stdMinField: 'taux_ponte_min',       stdMaxField: 'taux_ponte_max',       tableEau: false },
+        taux_ponte_pct: { label: 'Taux de ponte', unit: '%',     color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)',   colorBorder: 'rgba(124,58,237,0.5)',   icon: '📊', dataField: 'taux_ponte_pct',  stdMinField: 'taux_ponte_min_pct',   stdMaxField: 'taux_ponte_max_pct',   tableEau: false },
+        oeufs_a:        { label: 'Œufs Classe A', unit: 'œufs', color: '#9333ea', colorArea: 'rgba(147,51,234,0.2)',   colorBorder: 'rgba(147,51,234,0.5)',   icon: '🥚', dataField: 'oeufs_classe_a',  stdMinField: null,                   stdMaxField: null,                   tableEau: false },
+        oeufs_b:        { label: 'Œufs Classe B', unit: 'œufs', color: '#c084fc', colorArea: 'rgba(192,132,252,0.2)', colorBorder: 'rgba(192,132,252,0.5)',   icon: '🥚', dataField: 'oeufs_classe_b',  stdMinField: null,                   stdMaxField: null,                   tableEau: false },
         // ── Indicateurs eau (source : donnees_eau / standards_eau) ──
         eau_animal:  { label: 'Conso. eau/poule',  unit: 'L/poule', color: '#0891b2', colorArea: 'rgba(8,145,178,0.2)',   colorBorder: 'rgba(8,145,178,0.5)',   icon: '💧', dataField: 'conso_par_animal',    stdMinField: 'conso_par_animal_min',    stdMaxField: 'conso_par_animal_max',    tableEau: true },
         eau_ratio:   { label: 'Ratio eau/aliment', unit: 'ratio',   color: '#0284c7', colorArea: 'rgba(2,132,199,0.2)',   colorBorder: 'rgba(2,132,199,0.5)',   icon: '⚖️', dataField: 'ratio_eau_aliment',   stdMinField: 'ratio_eau_aliment_min',   stdMaxField: 'ratio_eau_aliment_max',   tableEau: true },
@@ -3453,6 +3458,14 @@
             // Homogénéité et GMQ : même source que poids (donnees_poids)
             lotData.homogeneite  = lotData.poids;
             lotData.gmq          = lotData.poids;
+            // Indicateurs ponte dérivés (graphique)
+            lotData.taux_ponte_pct = lotData.oeufs.map(function(d) {
+                var clone = Object.assign({}, d);
+                clone.taux_ponte_pct = d.taux_ponte != null ? d.taux_ponte * 100 : null;
+                return clone;
+            });
+            lotData.oeufs_a = lotData.oeufs;
+            lotData.oeufs_b = lotData.oeufs;
             // Corrections : construire la map (toutes corrections, actif ou non, pour le journal)
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
             var soucheForStd = lot.souche_id_manuel || lot.souche_id;
@@ -3485,9 +3498,18 @@
             // Homogénéité et GMQ : même table que poids (min/max si renseignés un jour)
             standardsData.homogeneite  = standardsData.poids;
             standardsData.gmq          = standardsData.poids;
+            // Standards ponte dérivés (taux_ponte stocké en 0-1 → multiplié par 100 pour %)
+            standardsData.taux_ponte_pct = standardsData.oeufs.map(function(s) {
+                var clone = Object.assign({}, s);
+                clone.taux_ponte_min_pct = s.taux_ponte_min != null ? s.taux_ponte_min * 100 : null;
+                clone.taux_ponte_max_pct = s.taux_ponte_max != null ? s.taux_ponte_max * 100 : null;
+                return clone;
+            });
+            standardsData.oeufs_a = [];
+            standardsData.oeufs_b = [];
         }).catch(function() {
             // En cas d'erreur, on affiche quand même les données sans standards
-            standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] };
+            standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
         }).finally(function() {
             showDataPanels();
             updateUI();
@@ -3529,7 +3551,12 @@
         { key: 'aliment_animal', label: 'Aliment',       unit: 'g/j',  digits: 1, group: 'aliment', groupLabel: 'Aliment',      groupColor: '#ea580c' },
         { key: 'eau_litres',     label: 'Eau totale',    unit: 'L',    digits: 1, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' },
         { key: 'eau_animal',     label: 'Eau/poule',     unit: 'L',    digits: 3, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' },
-        { key: 'eau_ratio',      label: 'Ratio E/A',     unit: '',     digits: 2, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' }
+        { key: 'eau_ratio',      label: 'Ratio E/A',     unit: '',     digits: 2, group: 'eau',     groupLabel: 'Eau',          groupColor: '#0891b2' },
+        // Champs œufs — visibles uniquement pour les lots de type Pondeuse
+        { key: 'oeufs_classe_a', label: 'Cl. A',         unit: 'œufs', digits: 0, group: 'oeufs',   groupLabel: 'Œufs',         groupColor: '#7c3aed', pondeuse_only: true, noCorr: true },
+        { key: 'oeufs_classe_b', label: 'Cl. B',         unit: 'œufs', digits: 0, group: 'oeufs',   groupLabel: 'Œufs',         groupColor: '#7c3aed', pondeuse_only: true, noCorr: true },
+        { key: 'nombre_oeufs',   label: 'Total',         unit: 'œufs', digits: 0, group: 'oeufs',   groupLabel: 'Œufs',         groupColor: '#7c3aed', pondeuse_only: true, readonly: true },
+        { key: 'taux_ponte',     label: 'Tx ponte',      unit: '%',    digits: 1, group: 'oeufs',   groupLabel: 'Œufs',         groupColor: '#7c3aed', pondeuse_only: true, readonly: true, displayMult: 100 }
     ];
 
     var CHAMP_LABELS = {};
@@ -3576,6 +3603,14 @@
             map[d.jour_age].eau_animal = d.conso_par_animal;
             map[d.jour_age].eau_ratio  = d.ratio_eau_aliment;
         });
+        // Données œufs (Pondeuse uniquement)
+        lotData.oeufs.forEach(function(d) {
+            ensureRow(d.jour_age, d.date_mesure);
+            map[d.jour_age].oeufs_classe_a = d.oeufs_classe_a;
+            map[d.jour_age].oeufs_classe_b = d.oeufs_classe_b;
+            map[d.jour_age].nombre_oeufs   = d.nombre_oeufs;
+            map[d.jour_age].taux_ponte     = d.taux_ponte;
+        });
         return Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
     }
 
@@ -3605,15 +3640,10 @@
             return;
         }
 
-        // Groupes de colonnes
-        var groups = [
-            { label: '', color: '', span: 2 },         // Jour + Date
-            { label: 'Mortalité', color: '#e11d48', span: 1 },
-            { label: 'Poids', color: '#2563eb', span: 3 },
-            { label: 'Aliment', color: '#ea580c', span: 1 },
-            { label: 'Eau', color: '#0891b2', span: 3 },
-            { label: '', color: '', span: 1 }           // Actions
-        ];
+        // Filtre des champs selon le type de lot
+        var isPondeuse = !!(currentLotInfo && currentLotInfo.type_lot_nom
+            && currentLotInfo.type_lot_nom.trim().toLowerCase() === 'pondeuse');
+        var activeFields = TABLEAU_FIELDS.filter(function(f) { return !f.pondeuse_only || isPondeuse; });
 
         var html = '<table class="tableau-jours">';
         // Ligne 1 : groupes
@@ -3623,14 +3653,17 @@
         html += '<th class="col-group" colspan="3" style="color:#2563eb; border-left:2px solid #bfdbfe;">POIDS</th>';
         html += '<th class="col-group" colspan="1" style="color:#ea580c; border-left:2px solid #fed7aa;">ALIMENT</th>';
         html += '<th class="col-group" colspan="3" style="color:#0891b2; border-left:2px solid #a5f3fc;">EAU</th>';
+        if (isPondeuse) {
+            html += '<th class="col-group" colspan="4" style="color:#7c3aed; border-left:2px solid #ddd8fe;">ŒUFS</th>';
+        }
         html += '<th class="col-group" colspan="1"></th>';
         html += '</tr>';
         // Ligne 2 : libellés colonnes
         html += '<tr>';
         html += '<th class="col-label" style="text-align:center;">Jour</th>';
         html += '<th class="col-label" style="text-align:center; border-right:2px solid var(--border);">Date</th>';
-        TABLEAU_FIELDS.forEach(function(f, i) {
-            var borderLeft = (i === 0 || f.group !== TABLEAU_FIELDS[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
+        activeFields.forEach(function(f, i) {
+            var borderLeft = (i === 0 || f.group !== activeFields[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
             html += '<th class="col-label" style="' + borderLeft + '">'
                 + f.label + (f.unit ? '<br><span style="font-weight:400;color:var(--text-dim);font-size:0.65rem;">' + f.unit + '</span>' : '') + '</th>';
         });
@@ -3646,20 +3679,30 @@
             var dateFmt = row.date_mesure ? new Date(row.date_mesure).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
             html += '<td class="col-id col-border">' + dateFmt + '</td>';
 
-            TABLEAU_FIELDS.forEach(function(f, i) {
-                var corr = getActiveCorrection(j, f.key);
+            activeFields.forEach(function(f, i) {
+                var borderLeft = (i === 0 || f.group !== activeFields[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
                 var rawVal = row[f.key];
-                var displayVal = corr ? parseFloat(corr.valeur_corrigee) : rawVal;
-                var isCorrected = !!corr;
-                var borderLeft = (i === 0 || f.group !== TABLEAU_FIELDS[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
-                var cls = isCorrected ? ' cell-corrected' : '';
 
-                html += '<td class="' + cls + '" data-field="' + f.key + '" style="' + borderLeft + '">';
-                html += '<span class="cell-val">' + fmtVal(displayVal, f.digits) + '</span>';
-                if (isCorrected) {
-                    html += '<span class="cell-corr-label">✎ était&nbsp;: ' + fmtVal(rawVal, f.digits) + '</span>';
+                if (f.readonly) {
+                    // Champ calculé (nombre_oeufs, taux_ponte) — affichage uniquement, pas de correction
+                    var dispVal = (f.displayMult && rawVal != null) ? parseFloat(rawVal) * f.displayMult : rawVal;
+                    html += '<td data-field="' + f.key + '" style="' + borderLeft + 'font-style:italic;color:var(--text-dim);">';
+                    html += '<span class="cell-val">' + fmtVal(dispVal, f.digits) + '</span>';
+                    html += '</td>';
+                } else {
+                    // Champ éditable — gestion des corrections (sauf noCorr)
+                    var corr = f.noCorr ? null : getActiveCorrection(j, f.key);
+                    var displayVal = corr ? parseFloat(corr.valeur_corrigee) : rawVal;
+                    var isCorrected = !!corr;
+                    var cls = isCorrected ? ' cell-corrected' : '';
+
+                    html += '<td class="' + cls + '" data-field="' + f.key + '" style="' + borderLeft + '">';
+                    html += '<span class="cell-val">' + fmtVal(displayVal, f.digits) + '</span>';
+                    if (isCorrected) {
+                        html += '<span class="cell-corr-label">✎ était&nbsp;: ' + fmtVal(rawVal, f.digits) + '</span>';
+                    }
+                    html += '</td>';
                 }
-                html += '</td>';
             });
 
             html += '<td class="td-actions">'
@@ -3709,13 +3752,17 @@
         TABLEAU_FIELDS.forEach(function(f) {
             var td = row.querySelector('td[data-field="' + f.key + '"]');
             if (!td) return;
-            var corr = getActiveCorrection(j, f.key);
+            // Champs calculés (readonly) : on ne génère pas d'input
+            if (f.readonly) return;
+
+            var corr = f.noCorr ? null : getActiveCorrection(j, f.key);
             var currentVal = corr ? parseFloat(corr.valeur_corrigee) : rowData[f.key];
             var rawVal = rowData[f.key];
             var isCorrected = !!corr;
             var originalVal = corr ? corr.valeur_originale : (rawVal !== undefined && rawVal !== null ? String(rawVal) : '');
 
-            var inputHtml = '<input class="input-cell" type="number" step="any" '
+            var step = (f.digits === 0) ? '1' : 'any';
+            var inputHtml = '<input class="input-cell" type="number" step="' + step + '" '
                 + 'data-field="' + f.key + '" '
                 + 'data-original="' + (originalVal || '') + '" '
                 + 'value="' + (currentVal !== undefined && currentVal !== null ? currentVal : '') + '">';
@@ -3747,9 +3794,17 @@
         var inputs = row.querySelectorAll('.input-cell');
         var promises = [];
         var hasChange = false;
+        var eggChanged = false;
+
+        // Séparer les inputs œufs des inputs standard
+        var eggInputA = row.querySelector('.input-cell[data-field="oeufs_classe_a"]');
+        var eggInputB = row.querySelector('.input-cell[data-field="oeufs_classe_b"]');
 
         inputs.forEach(function(input) {
             var champ = input.getAttribute('data-field');
+            // Les champs œufs sont traités séparément ci-dessous
+            if (champ === 'oeufs_classe_a' || champ === 'oeufs_classe_b') return;
+
             var newValStr = input.value.trim();
             if (newValStr === '') return;
             var newVal = parseFloat(newValStr);
@@ -3782,19 +3837,72 @@
             );
         });
 
+        // Traitement des champs œufs (un seul appel RPC pour les deux)
+        if (eggInputA || eggInputB) {
+            var newAStr = eggInputA ? eggInputA.value.trim() : '';
+            var newBStr = eggInputB ? eggInputB.value.trim() : '';
+            var newA = newAStr !== '' && !isNaN(parseInt(newAStr, 10)) ? parseInt(newAStr, 10) : null;
+            var newB = newBStr !== '' && !isNaN(parseInt(newBStr, 10)) ? parseInt(newBStr, 10) : null;
+            var oldA = rowData.oeufs_classe_a != null ? rowData.oeufs_classe_a : null;
+            var oldB = rowData.oeufs_classe_b != null ? rowData.oeufs_classe_b : null;
+
+            // Sauvegarder si au moins un champ a changé et est renseigné
+            if ((newA !== null && newA !== oldA) || (newB !== null && newB !== oldB)) {
+                eggChanged = true;
+                hasChange = true;
+                promises.push(
+                    supabase.rpc('save_donnee_oeufs', {
+                        p_user_id:     currentUser ? currentUser.id : null,
+                        p_lot_id:      currentLotInfo.id,
+                        p_jour_age:    j,
+                        p_date_mesure: rowData.date_mesure || null,
+                        p_oeufs_a:     newA !== null ? newA : (oldA || 0),
+                        p_oeufs_b:     newB !== null ? newB : (oldB || 0)
+                    })
+                );
+            }
+        }
+
         if (!hasChange) { cancelRowEdit(jour); return; }
 
         // Bouton feedback
         var saveBtn = row.querySelector('.btn-save-row');
         if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳'; }
 
+        var _capturedLotId = currentLotInfo.id;
         Promise.all(promises).then(function() {
-            // Recharger les corrections et re-rendre
-            return supabase.from('corrections_journalieres')
-                .select('*').eq('lot_id', currentLotInfo.id).order('created_at', { ascending: false });
-        }).then(function(r) {
-            buildCorrectionsMap((r && r.data) ? r.data : []);
+            // Recharger corrections + éventuellement donnees_oeufs
+            var reloadAll = [
+                supabase.from('corrections_journalieres')
+                    .select('*').eq('lot_id', _capturedLotId).order('created_at', { ascending: false })
+            ];
+            if (eggChanged) {
+                reloadAll.push(
+                    supabase.from('donnees_oeufs')
+                        .select('*').eq('lot_id', _capturedLotId).order('jour_age')
+                );
+            }
+            return Promise.all(reloadAll);
+        }).then(function(results) {
+            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
+            buildCorrectionsMap((results[0] && results[0].data) ? results[0].data : []);
+            if (eggChanged && results[1]) {
+                lotData.oeufs = (results[1].data) ? results[1].data : [];
+                // Re-dériver les indicateurs ponte
+                lotData.taux_ponte_pct = lotData.oeufs.map(function(d) {
+                    var clone = Object.assign({}, d);
+                    clone.taux_ponte_pct = d.taux_ponte != null ? d.taux_ponte * 100 : null;
+                    return clone;
+                });
+                lotData.oeufs_a = lotData.oeufs;
+                lotData.oeufs_b = lotData.oeufs;
+            }
             renderTableau();
+            // Rafraîchir le graphique ponte si des indicateurs sont sélectionnés
+            if (eggChanged && graphState.ponte.selected.length > 0) {
+                updateChart('ponte');
+                updateLegend('ponte');
+            }
         }).catch(function(err) {
             console.error('Erreur sauvegarde correction:', err);
             alert('Erreur lors de la sauvegarde : ' + (err.message || err));
