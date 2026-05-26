@@ -308,6 +308,24 @@
         .tableau-empty { text-align: center; padding: 3rem; color: var(--text-dim); font-size: 0.88rem; }
         .correction-badge { display: inline-block; background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; border-radius: 20px; font-size: 0.7rem; font-weight: 700; padding: 0 6px; margin-left: 4px; vertical-align: middle; }
 
+        /* ── Saisies manuelles ── */
+        .btn-add-jour { padding: 0.45rem 1rem; border: 1.5px solid #7c3aed; background: rgba(124,58,237,0.08); color: #7c3aed; border-radius: 8px; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-add-jour:hover { background: #7c3aed; color: #fff; }
+        .row-manual { background: rgba(234,179,8,0.04) !important; }
+        .row-manual .col-id { background: rgba(234,179,8,0.10) !important; }
+        .badge-manual { display: inline-block; font-size: 0.65rem; background: #fef9c3; color: #854d0e; border: 1px solid #fde047; border-radius: 4px; padding: 0 4px; margin-left: 3px; vertical-align: middle; font-weight: 700; white-space: nowrap; }
+        .badge-tuffigo-alert { display: inline-block; font-size: 0.65rem; background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; border-radius: 4px; padding: 0 4px; margin-left: 2px; vertical-align: middle; font-weight: 700; cursor: help; white-space: nowrap; }
+        /* Modal saisie manuelle */
+        .manual-section { margin-bottom: 1.1rem; padding: 0.8rem; background: var(--bg-input); border-radius: 10px; border: 1px solid var(--border); }
+        .manual-section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
+        .manual-fields-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .manual-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 110px; }
+        .manual-field label { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
+        .manual-field input { width: 100%; padding: 0.35rem 0.6rem; border: 1.5px solid var(--border); border-radius: 7px; font-family: inherit; font-size: 0.85rem; background: var(--bg-card); color: var(--text); }
+        .manual-field input:focus { outline: none; border-color: var(--blue); }
+        .manual-computed-value { padding: 0.35rem 0.6rem; border: 1.5px dashed var(--border); border-radius: 7px; font-size: 0.85rem; background: rgba(0,0,0,0.02); color: var(--text-dim); font-style: italic; min-height: 2.05rem; display: flex; align-items: center; }
+        #manualJourAgeDisplay { font-size: 1rem; font-weight: 700; color: var(--blue); padding: 0.35rem 0; }
+
         /* ── Journal des corrections (modal) ── */
         .journal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
         .journal-overlay.show { display: flex; }
@@ -1112,6 +1130,117 @@
     </div>
 </div>
 
+<!-- MODALE SAISIE MANUELLE JOURNÉE -->
+<div class="modal-overlay" id="manualEntryModal">
+    <div class="modal-content" style="max-width:620px;">
+        <div class="modal-header">
+            <span class="modal-title">✍️ Saisie manuelle d'une journée</span>
+            <button class="modal-close" onclick="closeManualEntryModal()">&times;</button>
+        </div>
+        <div class="alert" id="manualEntryAlert" style="display:none;margin-bottom:1rem;"></div>
+
+        <!-- Date + Jour calculé -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Date de la journée *</label>
+                <input type="date" id="manualDate" class="form-input" onchange="onManualDateChange()">
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Jour d'âge calculé</label>
+                <div id="manualJourAgeDisplay">—</div>
+            </div>
+        </div>
+
+        <!-- Mortalité -->
+        <div class="manual-section">
+            <div class="manual-section-title" style="color:#e11d48;">Mortalité</div>
+            <div class="manual-fields-row">
+                <div class="manual-field">
+                    <label>Nombre de morts</label>
+                    <input type="number" id="manualNombreMorts" min="0" step="1" placeholder="—" oninput="recalculateManualDerivedFields()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Poids -->
+        <div class="manual-section">
+            <div class="manual-section-title" style="color:#2563eb;">Poids</div>
+            <div class="manual-fields-row">
+                <div class="manual-field">
+                    <label>Poids moyen (g)</label>
+                    <input type="number" id="manualPoidsMoyen" min="0" step="0.1" placeholder="—">
+                </div>
+                <div class="manual-field">
+                    <label>GMQ (g/j)</label>
+                    <input type="number" id="manualGmq" step="0.1" placeholder="—">
+                </div>
+                <div class="manual-field">
+                    <label>Homogénéité (%)</label>
+                    <input type="number" id="manualHomogeneite" min="0" max="100" step="0.1" placeholder="—">
+                </div>
+            </div>
+        </div>
+
+        <!-- Aliment -->
+        <div class="manual-section">
+            <div class="manual-section-title" style="color:#ea580c;">Aliment</div>
+            <div class="manual-fields-row">
+                <div class="manual-field">
+                    <label>Conso. globale lot (kg)</label>
+                    <input type="number" id="manualAlimentGlobal" min="0" step="0.1" placeholder="—" oninput="recalculateManualDerivedFields()">
+                </div>
+                <div class="manual-field">
+                    <label>Effectif présent <em style="font-weight:400;font-size:0.68rem;color:var(--text-dim);">calculé</em></label>
+                    <div class="manual-computed-value" id="manualEffectifDisplay">—</div>
+                </div>
+                <div class="manual-field">
+                    <label>Conso./animal (g/j) <em style="font-weight:400;font-size:0.68rem;color:var(--text-dim);">calculé</em></label>
+                    <div class="manual-computed-value" id="manualAlimentAnimalDisplay">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Eau -->
+        <div class="manual-section">
+            <div class="manual-section-title" style="color:#0891b2;">Eau</div>
+            <div class="manual-fields-row">
+                <div class="manual-field">
+                    <label>Eau totale lot (L)</label>
+                    <input type="number" id="manualEauLitres" min="0" step="0.1" placeholder="—" oninput="recalculateManualDerivedFields()">
+                </div>
+                <div class="manual-field">
+                    <label>Eau/animal (L) <em style="font-weight:400;font-size:0.68rem;color:var(--text-dim);">calculé</em></label>
+                    <div class="manual-computed-value" id="manualEauAnimalDisplay">—</div>
+                </div>
+                <div class="manual-field">
+                    <label>Ratio eau/aliment <em style="font-weight:400;font-size:0.68rem;color:var(--text-dim);">calculé</em></label>
+                    <div class="manual-computed-value" id="manualEauRatioDisplay">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Œufs (Pondeuse uniquement) -->
+        <div class="manual-section" id="manualSectionOeufs" style="display:none;">
+            <div class="manual-section-title" style="color:#7c3aed;">Œufs (Pondeuse)</div>
+            <div class="manual-fields-row">
+                <div class="manual-field">
+                    <label>Classe A (œufs)</label>
+                    <input type="number" id="manualOeufsA" min="0" step="1" placeholder="—">
+                </div>
+                <div class="manual-field">
+                    <label>Classe B (œufs)</label>
+                    <input type="number" id="manualOeufsB" min="0" step="1" placeholder="—">
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeManualEntryModal()">Annuler</button>
+            <button class="btn btn-primary" id="btnSaveManualEntry" onclick="saveManualEntry()">💾 Enregistrer</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODALE FOURNISSEUR -->
 <div class="modal-overlay" id="fournisseurModal">
     <div class="modal-box">
@@ -1617,7 +1746,10 @@
             <div class="exploit-panel" id="exploitTableau">
                 <div class="tableau-toolbar">
                     <div class="tableau-info" id="tableauInfo">Sélectionnez un lot pour afficher les données journalières.</div>
-                    <button class="btn-journal" id="btnJournal">📋 Journal des corrections</button>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button class="btn-add-jour" id="btnAddJour" onclick="openManualEntryModal()" style="display:none;">➕ Saisir une journée</button>
+                        <button class="btn-journal" id="btnJournal">📋 Journal des corrections</button>
+                    </div>
                 </div>
                 <div class="tableau-scroll-wrapper">
                     <div class="tableau-loading" id="tableauContent">📊 Chargement...</div>
@@ -2192,7 +2324,7 @@
     var lastActiveGraph = 'sante'; // dernier graphique interagi
     var editingUserId = null;
     
-    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
+    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [], manual: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
     // selectedIndicators et currentPeriod remplacés par graphState ci-dessus
     var currentLotInfo = null;
@@ -3444,7 +3576,8 @@
             supabase.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_eau').select('*').eq('lot_id', id).order('jour_age'),
-            supabase.from('corrections_journalieres').select('*').eq('lot_id', id).order('created_at', { ascending: false })
+            supabase.from('corrections_journalieres').select('*').eq('lot_id', id).order('created_at', { ascending: false }),
+            supabase.from('saisies_manuelles_journalieres').select('*').eq('lot_id', id).order('jour_age')
         ]).then(function(r) {
             lotData.poids    = (r[0] && r[0].data) ? r[0].data : [];
             lotData.mortalite = (r[1] && r[1].data) ? r[1].data : [];
@@ -3458,19 +3591,15 @@
             // Homogénéité et GMQ : même source que poids (donnees_poids)
             lotData.homogeneite  = lotData.poids;
             lotData.gmq          = lotData.poids;
-            // Indicateurs ponte dérivés (graphique)
-            lotData.taux_ponte_pct = lotData.oeufs.map(function(d) {
-                var clone = Object.assign({}, d);
-                clone.taux_ponte_pct = d.taux_ponte != null ? d.taux_ponte * 100 : null;
-                return clone;
-            });
-            lotData.oeufs_a = lotData.oeufs;
-            lotData.oeufs_b = lotData.oeufs;
+            // Saisies manuelles journalières
+            lotData.manual = (r[6] && r[6].data) ? r[6].data : [];
+            // Indicateurs ponte dérivés (inclut les données manuelles en priorité)
+            rebuildOeufsIndicators();
             // Corrections : construire la map (toutes corrections, actif ou non, pour le journal)
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
             var soucheForStd = lot.souche_id_manuel || lot.souche_id;
             if (soucheForStd) loadStandards(soucheForStd);
-            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [] }; showDataPanels(); updateUI(); renderTableau(); }
+            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] }; showDataPanels(); updateUI(); renderTableau(); }
         }).catch(function(err) {
             console.error('Erreur chargement données lot:', err);
             showDataPanels();
@@ -3576,6 +3705,30 @@
         return activeCorrections[jour_age + '|' + champ] || null;
     }
 
+    // ── Reconstruction des indicateurs ponte (merge Tuffigo + manuel) ──
+    function rebuildOeufsIndicators() {
+        // Prépare un map combiné : Tuffigo d'abord, puis données manuelles en priorité
+        var map = {};
+        lotData.oeufs.forEach(function(d) { map[d.jour_age] = Object.assign({}, d); });
+        lotData.manual.forEach(function(d) {
+            if (d.oeufs_classe_a != null || d.oeufs_classe_b != null || d.nombre_oeufs != null) {
+                if (!map[d.jour_age]) map[d.jour_age] = { jour_age: d.jour_age, date_mesure: d.date_mesure };
+                if (d.oeufs_classe_a != null) map[d.jour_age].oeufs_classe_a = d.oeufs_classe_a;
+                if (d.oeufs_classe_b != null) map[d.jour_age].oeufs_classe_b = d.oeufs_classe_b;
+                if (d.nombre_oeufs   != null) map[d.jour_age].nombre_oeufs   = d.nombre_oeufs;
+                if (d.taux_ponte     != null) map[d.jour_age].taux_ponte     = d.taux_ponte;
+            }
+        });
+        var mergedOeufs = Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
+        lotData.taux_ponte_pct = mergedOeufs.map(function(d) {
+            var clone = Object.assign({}, d);
+            clone.taux_ponte_pct = d.taux_ponte != null ? d.taux_ponte * 100 : null;
+            return clone;
+        });
+        lotData.oeufs_a = mergedOeufs;
+        lotData.oeufs_b = mergedOeufs;
+    }
+
     function buildTableauRows() {
         // Fusionner toutes les sources par jour_age
         var map = {};
@@ -3603,7 +3756,7 @@
             map[d.jour_age].eau_animal = d.conso_par_animal;
             map[d.jour_age].eau_ratio  = d.ratio_eau_aliment;
         });
-        // Données œufs (Pondeuse uniquement)
+        // Données œufs Tuffigo (Pondeuse uniquement)
         lotData.oeufs.forEach(function(d) {
             ensureRow(d.jour_age, d.date_mesure);
             map[d.jour_age].oeufs_classe_a = d.oeufs_classe_a;
@@ -3611,6 +3764,35 @@
             map[d.jour_age].nombre_oeufs   = d.nombre_oeufs;
             map[d.jour_age].taux_ponte     = d.taux_ponte;
         });
+
+        // ── Saisies manuelles (prioritaires sur Tuffigo) ──
+        // Construction d'un set des jours présents dans les tables Tuffigo
+        var tuffigoJours = {};
+        ['poids','mortalite','aliment','eau_conso'].forEach(function(src) {
+            (lotData[src] || []).forEach(function(d) { tuffigoJours[d.jour_age] = true; });
+        });
+        lotData.oeufs.forEach(function(d) { tuffigoJours[d.jour_age] = true; });
+
+        lotData.manual.forEach(function(d) {
+            ensureRow(d.jour_age, d.date_mesure);
+            var r = map[d.jour_age];
+            r.is_manual = true;
+            r.has_tuffigo_data = !!tuffigoJours[d.jour_age];
+            // Écraser chaque champ si la valeur manuelle est renseignée
+            if (d.nombre_morts   != null) r.nombre_morts   = d.nombre_morts;
+            if (d.poids_moyen    != null) r.poids_moyen    = d.poids_moyen;
+            if (d.gmq            != null) r.gmq            = d.gmq;
+            if (d.homogeneite    != null) r.homogeneite    = d.homogeneite;
+            if (d.aliment_animal != null) r.aliment_animal = d.aliment_animal;
+            if (d.eau_litres     != null) r.eau_litres     = d.eau_litres;
+            if (d.eau_animal     != null) r.eau_animal     = d.eau_animal;
+            if (d.eau_ratio      != null) r.eau_ratio      = d.eau_ratio;
+            if (d.oeufs_classe_a != null) r.oeufs_classe_a = d.oeufs_classe_a;
+            if (d.oeufs_classe_b != null) r.oeufs_classe_b = d.oeufs_classe_b;
+            if (d.nombre_oeufs   != null) r.nombre_oeufs   = d.nombre_oeufs;
+            if (d.taux_ponte     != null) r.taux_ponte     = d.taux_ponte;
+        });
+
         return Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
     }
 
@@ -3674,8 +3856,17 @@
         html += '<tbody>';
         rows.forEach(function(row) {
             var j = row.jour_age;
-            html += '<tr data-jour="' + j + '">';
-            html += '<td class="col-id">' + j + '</td>';
+            var rowClass = row.is_manual ? ' class="row-manual"' : '';
+            html += '<tr data-jour="' + j + '"' + rowClass + '>';
+            // Colonne Jour — badge si saisie manuelle
+            var jourCell = j + '';
+            if (row.is_manual) {
+                jourCell += '<span class="badge-manual" title="Saisie manuelle">✍️</span>';
+                if (row.has_tuffigo_data) {
+                    jourCell += '<span class="badge-tuffigo-alert" title="Des données Tuffigo existent également pour cette journée — la saisie manuelle est prioritaire">⚠️</span>';
+                }
+            }
+            html += '<td class="col-id">' + jourCell + '</td>';
             var dateFmt = row.date_mesure ? new Date(row.date_mesure).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
             html += '<td class="col-id col-border">' + dateFmt + '</td>';
 
@@ -3888,14 +4079,7 @@
             buildCorrectionsMap((results[0] && results[0].data) ? results[0].data : []);
             if (eggChanged && results[1]) {
                 lotData.oeufs = (results[1].data) ? results[1].data : [];
-                // Re-dériver les indicateurs ponte
-                lotData.taux_ponte_pct = lotData.oeufs.map(function(d) {
-                    var clone = Object.assign({}, d);
-                    clone.taux_ponte_pct = d.taux_ponte != null ? d.taux_ponte * 100 : null;
-                    return clone;
-                });
-                lotData.oeufs_a = lotData.oeufs;
-                lotData.oeufs_b = lotData.oeufs;
+                rebuildOeufsIndicators();
             }
             renderTableau();
             // Rafraîchir le graphique ponte si des indicateurs sont sélectionnés
@@ -4040,6 +4224,10 @@
         $('lotCard').classList.add('show');
         $('exploitTabs').classList.add('show');
         $('emptyState').classList.remove('show');
+        // Bouton "Saisir une journée" — visible pour admin, technicien, éleveur
+        if ($('btnAddJour') && currentUser && ['admin','technicien','eleveur'].indexOf(currentUser.role) !== -1) {
+            $('btnAddJour').style.display = '';
+        }
         // Afficher le bon panel selon l'onglet actif
         if (currentExploitTab === 'tableau') {
             $('exploitTableau').classList.add('show');
@@ -4056,6 +4244,7 @@
     function hideDataPanels() {
         closeLotEditMode();
         if ($('btnModifierLot')) $('btnModifierLot').style.display = 'none';
+        if ($('btnAddJour')) $('btnAddJour').style.display = 'none';
         if (currentLotInfo) currentLotInfo.type_lot_nom = '';
         updatePonteGraphVisibility(); // remasquer le graphique ponte
         $('lotCard').classList.remove('show');
@@ -4775,6 +4964,11 @@
         $('btnCloseJournal').addEventListener('click', closeJournal);
         $('journalOverlay').addEventListener('click', function(e) {
             if (e.target === this) closeJournal();
+        });
+
+        // Saisie manuelle journée — fermeture au clic extérieur
+        $('manualEntryModal').addEventListener('click', function(e) {
+            if (e.target === this) closeManualEntryModal();
         });
 
         // Navigation principale
@@ -6931,13 +7125,281 @@
         container.innerHTML = html;
     }
 
+    // ── Saisie manuelle d'une journée ──
+    function openManualEntryModal() {
+        if (!currentLotInfo) return;
+        if (!currentLotInfo.date_mise_place) {
+            alert('⚠️ Date de mise en place manquante pour ce lot.\nImpossible de calculer le jour d\'âge sans cette information.');
+            return;
+        }
+        // Réinitialiser le formulaire
+        var today = new Date().toISOString().split('T')[0];
+        $('manualDate').value = '';
+        $('manualDate').max   = today;
+        $('manualJourAgeDisplay').textContent = '—';
+        $('manualJourAgeDisplay').style.color = 'var(--blue)';
+        ['manualNombreMorts','manualPoidsMoyen','manualGmq','manualHomogeneite',
+         'manualAlimentGlobal','manualEauLitres',
+         'manualOeufsA','manualOeufsB'].forEach(function(id) {
+            if ($(id)) $(id).value = '';
+        });
+        // Réinitialiser les champs calculés
+        ['manualEffectifDisplay','manualAlimentAnimalDisplay',
+         'manualEauAnimalDisplay','manualEauRatioDisplay'].forEach(function(id) {
+            if ($(id)) $(id).textContent = '—';
+        });
+        // Section œufs : visible uniquement pour Pondeuse
+        var isPondeuse = !!(currentLotInfo.type_lot_nom &&
+            currentLotInfo.type_lot_nom.trim().toLowerCase() === 'pondeuse');
+        $('manualSectionOeufs').style.display = isPondeuse ? '' : 'none';
+        // Alerte
+        var al = $('manualEntryAlert');
+        al.style.display = 'none';
+        al.className = 'alert';
+        al.textContent = '';
+        // Bouton enregistrer
+        $('btnSaveManualEntry').disabled = false;
+        $('btnSaveManualEntry').textContent = '💾 Enregistrer';
+        $('manualEntryModal').classList.add('show');
+    }
+
+    function closeManualEntryModal() {
+        $('manualEntryModal').classList.remove('show');
+    }
+
+    function onManualDateChange() {
+        var dateStr = $('manualDate').value;
+        var al = $('manualEntryAlert');
+        al.style.display = 'none';
+        al.className = 'alert';
+        al.textContent = '';
+        $('manualJourAgeDisplay').style.color = 'var(--blue)';
+
+        if (!dateStr || !currentLotInfo) { $('manualJourAgeDisplay').textContent = '—'; return; }
+
+        // Date future ?
+        var today = new Date().toISOString().split('T')[0];
+        if (dateStr > today) {
+            $('manualJourAgeDisplay').textContent = '—';
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ Impossible de saisir des données pour une date future.';
+            al.style.display = '';
+            return;
+        }
+
+        // Calculer le jour d'âge
+        var dateMp = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
+        var dateSaisie = new Date(dateStr + 'T12:00:00');
+        var jourAge = Math.round((dateSaisie - dateMp) / 86400000);
+
+        if (jourAge < 0) {
+            $('manualJourAgeDisplay').textContent = '—';
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ La date saisie est antérieure à la mise en place du lot.';
+            al.style.display = '';
+            return;
+        }
+
+        $('manualJourAgeDisplay').textContent = 'Jour ' + jourAge;
+
+        // Vérifier doublon manuel
+        var existingManual = lotData.manual.find(function(d) { return d.date_mesure === dateStr; });
+        if (existingManual) {
+            al.className = 'alert alert-warning show';
+            al.innerHTML = '✍️ Une saisie manuelle existe déjà pour le <strong>Jour ' + jourAge + '</strong>. En continuant, vous mettrez à jour cette saisie.';
+            al.style.display = '';
+            return;
+        }
+
+        // Vérifier présence de données Tuffigo pour ce jour
+        var hasTuffigo = lotData.poids.some(function(d) { return d.jour_age === jourAge; })
+            || lotData.mortalite.some(function(d) { return d.jour_age === jourAge; })
+            || lotData.aliment.some(function(d) { return d.jour_age === jourAge; })
+            || lotData.eau_conso.some(function(d) { return d.jour_age === jourAge; });
+        if (hasTuffigo) {
+            al.className = 'alert alert-warning show';
+            al.innerHTML = '⚠️ Des données Tuffigo existent déjà pour le <strong>Jour ' + jourAge + '</strong>. Votre saisie manuelle sera <strong>prioritaire</strong> à l\'affichage.';
+            al.style.display = '';
+        }
+        // Mettre à jour les champs calculés (effectif présent, ratios)
+        recalculateManualDerivedFields();
+    }
+
+    // Calcule l'effectif présent = effectif_depart − cumul des morts jusqu'à jourAge inclus
+    // Priorité : morts Tuffigo (< jourAge) + morts manuels (< jourAge hors saisie en cours) + morts formulaire
+    function calculateEffectifPresent(jourAge) {
+        if (!currentLotInfo) return 1;
+        var eff = currentLotInfo.effectif_depart || 1;
+        var currentDateStr = $('manualDate') ? $('manualDate').value : '';
+
+        // Morts Tuffigo pour les jours AVANT ce jour (le jour en cours est saisi dans le formulaire)
+        lotData.mortalite.forEach(function(d) {
+            if (d.jour_age < jourAge && d.nombre_morts != null) {
+                eff -= d.nombre_morts;
+            }
+        });
+        // Morts manuels pour les jours AVANT ce jour (hors la saisie en cours)
+        lotData.manual.forEach(function(d) {
+            if (d.date_mesure !== currentDateStr && d.jour_age < jourAge && d.nombre_morts != null) {
+                eff -= d.nombre_morts;
+            }
+        });
+        // Morts saisis dans le formulaire pour ce jour
+        var formMorts = parseInt(($('manualNombreMorts') && $('manualNombreMorts').value) || '', 10);
+        if (!isNaN(formMorts) && formMorts > 0) {
+            eff -= formMorts;
+        }
+        return Math.max(eff, 1);
+    }
+
+    // Met à jour en temps réel les affichages calculés du modal (effectif, conso/animal, eau/animal, ratio)
+    function recalculateManualDerivedFields() {
+        var dateStr = $('manualDate') ? $('manualDate').value : '';
+        function setComputed(id, txt) { if ($(id)) $(id).textContent = txt; }
+
+        if (!dateStr || !currentLotInfo || !currentLotInfo.date_mise_place) {
+            setComputed('manualEffectifDisplay', '—');
+            setComputed('manualAlimentAnimalDisplay', '—');
+            setComputed('manualEauAnimalDisplay', '—');
+            setComputed('manualEauRatioDisplay', '—');
+            return;
+        }
+
+        var dateMp = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
+        var dateSaisie = new Date(dateStr + 'T12:00:00');
+        var jourAge = Math.round((dateSaisie - dateMp) / 86400000);
+        if (jourAge < 0) {
+            setComputed('manualEffectifDisplay', '—');
+            setComputed('manualAlimentAnimalDisplay', '—');
+            setComputed('manualEauAnimalDisplay', '—');
+            setComputed('manualEauRatioDisplay', '—');
+            return;
+        }
+
+        var eff = calculateEffectifPresent(jourAge);
+        setComputed('manualEffectifDisplay', eff + ' animaux');
+
+        var alimentGlobal = parseFloat($('manualAlimentGlobal') ? $('manualAlimentGlobal').value : '');
+        var eauLitres     = parseFloat($('manualEauLitres')     ? $('manualEauLitres').value     : '');
+
+        // Conso./animal (g/j)
+        if (!isNaN(alimentGlobal) && alimentGlobal >= 0 && eff > 0) {
+            setComputed('manualAlimentAnimalDisplay',
+                Math.round(alimentGlobal * 1000 / eff * 10) / 10 + ' g/j');
+        } else {
+            setComputed('manualAlimentAnimalDisplay', '—');
+        }
+
+        // Eau/animal (L)
+        if (!isNaN(eauLitres) && eauLitres >= 0 && eff > 0) {
+            setComputed('manualEauAnimalDisplay',
+                Math.round(eauLitres / eff * 10000) / 10000 + ' L');
+        } else {
+            setComputed('manualEauAnimalDisplay', '—');
+        }
+
+        // Ratio eau/aliment
+        if (!isNaN(eauLitres) && !isNaN(alimentGlobal) && alimentGlobal > 0) {
+            setComputed('manualEauRatioDisplay',
+                Math.round(eauLitres / alimentGlobal * 1000) / 1000 + '');
+        } else {
+            setComputed('manualEauRatioDisplay', '—');
+        }
+    }
+
+    function saveManualEntry() {
+        if (!currentLotInfo || !currentUser) return;
+
+        var dateStr = $('manualDate').value;
+        if (!dateStr) { alert('Veuillez sélectionner une date.'); return; }
+
+        var today = new Date().toISOString().split('T')[0];
+        if (dateStr > today) { alert('Impossible de saisir des données pour une date future.'); return; }
+
+        if (!currentLotInfo.date_mise_place) { alert('Date de mise en place manquante.'); return; }
+
+        var dateMp = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
+        var dateSaisie = new Date(dateStr + 'T12:00:00');
+        var jourAge = Math.round((dateSaisie - dateMp) / 86400000);
+        if (jourAge < 0) { alert('La date saisie est antérieure à la mise en place du lot.'); return; }
+
+        // Vérifier qu'au moins un champ est renseigné
+        var hasData = ['manualNombreMorts','manualPoidsMoyen','manualGmq','manualHomogeneite',
+                       'manualAlimentGlobal','manualEauLitres',
+                       'manualOeufsA','manualOeufsB'].some(function(id) {
+            return $(id) && $(id).value.trim() !== '';
+        });
+        if (!hasData) { alert('Veuillez saisir au moins une valeur.'); return; }
+
+        var isPondeuse = !!(currentLotInfo.type_lot_nom &&
+            currentLotInfo.type_lot_nom.trim().toLowerCase() === 'pondeuse');
+
+        function getNum(id) {
+            var v = $(id) ? $(id).value.trim() : '';
+            if (v === '' || isNaN(parseFloat(v))) return null;
+            return parseFloat(v);
+        }
+        function getInt(id) {
+            var v = $(id) ? $(id).value.trim() : '';
+            if (v === '' || isNaN(parseInt(v, 10))) return null;
+            return parseInt(v, 10);
+        }
+
+        var btn = $('btnSaveManualEntry');
+        btn.disabled = true;
+        btn.textContent = '⏳ Enregistrement...';
+
+        var _capturedLotId = currentLotInfo.id;
+        var _effectifPresent = calculateEffectifPresent(jourAge);
+        supabase.rpc('save_saisie_manuelle', {
+            p_user_id:           currentUser.id,
+            p_lot_id:            currentLotInfo.id,
+            p_date_mesure:       dateStr,
+            p_nombre_morts:      getInt('manualNombreMorts'),
+            p_poids_moyen:       getNum('manualPoidsMoyen'),
+            p_gmq:               getNum('manualGmq'),
+            p_homogeneite:       getNum('manualHomogeneite'),
+            p_aliment_global_kg: getNum('manualAlimentGlobal'),
+            p_effectif_present:  _effectifPresent,
+            p_eau_litres:        getNum('manualEauLitres'),
+            p_oeufs_a:           isPondeuse ? getInt('manualOeufsA') : null,
+            p_oeufs_b:           isPondeuse ? getInt('manualOeufsB') : null
+        }).then(function(r) {
+            if (r.error) throw r.error;
+            // Recharger les saisies manuelles
+            return supabase.from('saisies_manuelles_journalieres')
+                .select('*').eq('lot_id', _capturedLotId).order('jour_age');
+        }).then(function(r) {
+            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
+            lotData.manual = (r && r.data) ? r.data : [];
+            rebuildOeufsIndicators();
+            closeManualEntryModal();
+            renderTableau();
+            // Rafraîchir graphique ponte si nécessaire
+            if (isPondeuse && graphState.ponte.selected.length > 0) {
+                updateChart('ponte');
+                updateLegend('ponte');
+            }
+        }).catch(function(err) {
+            console.error('Erreur saisie manuelle:', err);
+            alert('Erreur lors de l\'enregistrement :\n' + (err.message || JSON.stringify(err)));
+            btn.disabled = false;
+            btn.textContent = '💾 Enregistrer';
+        });
+    }
+
     // Exposer les fonctions appelées via onclick= dans le HTML (hors portée IIFE)
-    window.openLotEditMode   = openLotEditMode;
-    window.closeLotEditMode  = closeLotEditMode;
-    window.saveLotInfos      = saveLotInfos;
-    window.openTypeLotModal  = openTypeLotModal;
-    window.closeTypeLotModal = closeTypeLotModal;
-    window.saveTypeLot       = saveTypeLot;
+    window.openLotEditMode       = openLotEditMode;
+    window.closeLotEditMode      = closeLotEditMode;
+    window.saveLotInfos          = saveLotInfos;
+    window.openTypeLotModal      = openTypeLotModal;
+    window.closeTypeLotModal     = closeTypeLotModal;
+    window.saveTypeLot           = saveTypeLot;
+    window.openManualEntryModal           = openManualEntryModal;
+    window.closeManualEntryModal          = closeManualEntryModal;
+    window.onManualDateChange             = onManualDateChange;
+    window.recalculateManualDerivedFields = recalculateManualDerivedFields;
+    window.saveManualEntry                = saveManualEntry;
 
 })();
 </script>
