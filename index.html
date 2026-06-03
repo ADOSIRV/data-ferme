@@ -325,6 +325,15 @@
         .manual-field input:focus { outline: none; border-color: var(--blue); }
         .manual-computed-value { padding: 0.35rem 0.6rem; border: 1.5px dashed var(--border); border-radius: 7px; font-size: 0.85rem; background: rgba(0,0,0,0.02); color: var(--text-dim); font-style: italic; min-height: 2.05rem; display: flex; align-items: center; }
         #manualJourAgeDisplay { font-size: 1rem; font-weight: 700; color: var(--blue); padding: 0.35rem 0; }
+        /* Mode selector */
+        .manual-mode-selector { margin-bottom: 1.2rem; }
+        .mode-tabs-label { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.45rem; }
+        .mode-tabs { display: flex; border: 1.5px solid var(--border); border-radius: 9px; overflow: hidden; }
+        .mode-tab { flex: 1; padding: 0.5rem 0.4rem; border: none; border-right: 1px solid var(--border); background: var(--bg-card); color: var(--text-dim); font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: background 0.12s, color 0.12s; line-height: 1.3; text-align: center; }
+        .mode-tab:last-child { border-right: none; }
+        .mode-tab.active { background: var(--blue); color: #fff; font-weight: 700; }
+        .mode-tab:hover:not(.active) { background: var(--bg-input); color: var(--text); }
+        .mode-range-hint { font-size: 0.8rem; color: var(--blue); padding: 0.35rem 0.7rem; background: rgba(37,99,235,0.06); border-radius: 7px; border: 1px solid rgba(37,99,235,0.18); }
 
         /* ── Journal des corrections (modal) ── */
         .journal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
@@ -1134,20 +1143,56 @@
 <div class="modal-overlay" id="manualEntryModal">
     <div class="modal-content" style="max-width:620px;">
         <div class="modal-header">
-            <span class="modal-title">✍️ Saisie manuelle d'une journée</span>
+            <span class="modal-title">✍️ Saisie manuelle de données</span>
             <button class="modal-close" onclick="closeManualEntryModal()">&times;</button>
         </div>
         <div class="alert" id="manualEntryAlert" style="display:none;margin-bottom:1rem;"></div>
 
-        <!-- Date + Jour calculé -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
-            <div class="form-group" style="margin:0;">
-                <label class="form-label">Date de la journée *</label>
-                <input type="date" id="manualDate" class="form-input" onchange="onManualDateChange()">
+        <!-- Sélecteur de mode de saisie -->
+        <div class="manual-mode-selector">
+            <span class="mode-tabs-label">Mode de saisie</span>
+            <div class="mode-tabs">
+                <button type="button" class="mode-tab active" id="modeTabJournalier" onclick="setManualMode('journalier')">📅 Journalière</button>
+                <button type="button" class="mode-tab" id="modeTabHebdo" onclick="setManualMode('hebdo')">📆 Hebdomadaire</button>
+                <button type="button" class="mode-tab" id="modeTabPeriode" onclick="setManualMode('periode')">🗓️ Périodique</button>
             </div>
-            <div class="form-group" style="margin:0;">
-                <label class="form-label">Jour d'âge calculé</label>
-                <div id="manualJourAgeDisplay">—</div>
+        </div>
+
+        <!-- Section date + jour d'âge (journalière & hebdomadaire) -->
+        <div id="manualSectionJourHebdo">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.75rem;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" id="manualDateLabel">Date de la journée</label>
+                    <input type="date" id="manualDate" class="form-input" onchange="onManualDateChange()">
+                </div>
+                <div class="form-group" style="margin:0;" id="manualJourAgeGroup">
+                    <label class="form-label">Jour d'âge du lot</label>
+                    <input type="number" id="manualJourAge" class="form-input" min="0" step="1"
+                           placeholder="—" onchange="onManualJourAgeChange()">
+                </div>
+            </div>
+            <p id="manualDateHint" style="font-size:0.75rem;color:var(--text-dim);margin:0 0 0.75rem;">
+                Saisir la <strong>date</strong> ou le <strong>jour d'âge</strong> — l'autre champ se calcule automatiquement.
+            </p>
+            <div class="mode-range-hint" id="manualHebdoHint" style="display:none;margin-bottom:0.75rem;">
+                📆 Répartition sur 7 jours : <strong id="manualHebdoRange">—</strong>
+            </div>
+        </div>
+
+        <!-- Section période (mode périodique uniquement) -->
+        <div id="manualSectionPeriode" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.75rem;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Date de début</label>
+                    <input type="date" id="manualDateDebut" class="form-input" onchange="onManualDatePeriodeChange()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Date de fin</label>
+                    <input type="date" id="manualDateFin" class="form-input" onchange="onManualDatePeriodeChange()">
+                </div>
+            </div>
+            <div class="mode-range-hint" id="manualPeriodeHint" style="display:none;margin-bottom:0.75rem;">
+                🗓️ <strong id="manualPeriodeDuree">—</strong>
             </div>
         </div>
 
@@ -1594,7 +1639,7 @@
             <!-- ── Onglets Exploitation ── -->
             <div class="exploit-tabs" id="exploitTabs">
                 <button class="exploit-tab active" data-tab="graphiques">📊 Graphiques</button>
-                <button class="exploit-tab" data-tab="tableau">📋 Données journalières</button>
+                <button class="exploit-tab" data-tab="tableau">📋 Données exploitation</button>
             </div>
 
             <!-- ── Panel : Graphiques ── -->
@@ -1747,7 +1792,7 @@
                 <div class="tableau-toolbar">
                     <div class="tableau-info" id="tableauInfo">Sélectionnez un lot pour afficher les données journalières.</div>
                     <div style="display:flex;gap:0.5rem;">
-                        <button class="btn-add-jour" id="btnAddJour" onclick="openManualEntryModal()" style="display:none;">➕ Saisir une journée</button>
+                        <button class="btn-add-jour" id="btnAddJour" onclick="openManualEntryModal()" style="display:none;">➕ Saisir données</button>
                         <button class="btn-journal" id="btnJournal">📋 Journal des corrections</button>
                     </div>
                 </div>
@@ -7125,19 +7170,25 @@
         container.innerHTML = html;
     }
 
-    // ── Saisie manuelle d'une journée ──
+    // ── Saisie manuelle de données ──
+    var manualMode = 'journalier'; // 'journalier' | 'hebdo' | 'periode'
+
     function openManualEntryModal() {
         if (!currentLotInfo) return;
         if (!currentLotInfo.date_mise_place) {
             alert('⚠️ Date de mise en place manquante pour ce lot.\nImpossible de calculer le jour d\'âge sans cette information.');
             return;
         }
-        // Réinitialiser le formulaire
+        // Réinitialiser mode + formulaire
+        setManualMode('journalier');
         var today = new Date().toISOString().split('T')[0];
-        $('manualDate').value = '';
-        $('manualDate').max   = today;
-        $('manualJourAgeDisplay').textContent = '—';
-        $('manualJourAgeDisplay').style.color = 'var(--blue)';
+        $('manualDate').value    = '';
+        $('manualDate').max      = today;
+        $('manualJourAge').value = '';
+        if ($('manualDateDebut')) { $('manualDateDebut').value = ''; $('manualDateDebut').max = today; }
+        if ($('manualDateFin'))   { $('manualDateFin').value   = ''; $('manualDateFin').max   = today; }
+        $('manualHebdoHint').style.display   = 'none';
+        $('manualPeriodeHint').style.display  = 'none';
         ['manualNombreMorts','manualPoidsMoyen','manualGmq','manualHomogeneite',
          'manualAlimentGlobal','manualEauLitres',
          'manualOeufsA','manualOeufsB'].forEach(function(id) {
@@ -7167,20 +7218,95 @@
         $('manualEntryModal').classList.remove('show');
     }
 
+    // Bascule entre les 3 modes de saisie
+    function setManualMode(mode) {
+        manualMode = mode;
+        // Onglets
+        ['Journalier','Hebdo','Periode'].forEach(function(m) {
+            var tab = $('modeTab' + m);
+            if (tab) tab.classList.toggle('active', m.toLowerCase() === mode);
+        });
+        var isJourHebdo = mode === 'journalier' || mode === 'hebdo';
+        $('manualSectionJourHebdo').style.display = isJourHebdo ? '' : 'none';
+        $('manualSectionPeriode').style.display   = mode === 'periode' ? '' : 'none';
+        // Label date + aide contextuelle
+        if ($('manualDateLabel')) {
+            $('manualDateLabel').textContent = mode === 'hebdo' ? 'Date de fin (7ème jour)' : 'Date de la journée';
+        }
+        if ($('manualDateHint'))  $('manualDateHint').style.display  = mode === 'journalier' ? '' : 'none';
+        if ($('manualHebdoHint')) $('manualHebdoHint').style.display = 'none'; // sera mis à jour par onManualDateChange
+        // Réinitialiser l'alerte
+        var al = $('manualEntryAlert');
+        al.style.display = 'none'; al.className = 'alert'; al.textContent = '';
+        recalculateManualDerivedFields();
+    }
+
+    // Calcule et affiche la plage hebdomadaire (7 jours finissant à dateStr)
+    function updateHebdoHint(dateStr) {
+        if (!dateStr) { $('manualHebdoHint').style.display = 'none'; return; }
+        var endDate   = new Date(dateStr + 'T12:00:00');
+        var startDate = new Date(endDate.getTime() - 6 * 86400000);
+        function fmt(d) {
+            return String(d.getDate()).padStart(2,'0') + '/'
+                 + String(d.getMonth() + 1).padStart(2,'0') + '/'
+                 + d.getFullYear();
+        }
+        $('manualHebdoRange').innerHTML = fmt(startDate) + ' → ' + fmt(endDate);
+        $('manualHebdoHint').style.display = '';
+    }
+
+    // Gestion des champs date en mode périodique
+    function onManualDatePeriodeChange() {
+        var debutStr = $('manualDateDebut') ? $('manualDateDebut').value : '';
+        var finStr   = $('manualDateFin')   ? $('manualDateFin').value   : '';
+        var al = $('manualEntryAlert');
+        al.style.display = 'none'; al.className = 'alert'; al.textContent = '';
+        $('manualPeriodeHint').style.display = 'none';
+
+        if (!debutStr || !finStr) return;
+
+        var today = new Date().toISOString().split('T')[0];
+        if (finStr > today) {
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ La date de fin ne peut pas être dans le futur.';
+            al.style.display = '';
+            return;
+        }
+        if (debutStr > finStr) {
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ La date de début doit être antérieure ou égale à la date de fin.';
+            al.style.display = '';
+            return;
+        }
+        if (!currentLotInfo || !currentLotInfo.date_mise_place) return;
+
+        var dateMp  = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
+        var dateD   = new Date(debutStr + 'T12:00:00');
+        if (dateD < dateMp) {
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ La date de début est antérieure à la mise en place du lot.';
+            al.style.display = '';
+            return;
+        }
+
+        var n = Math.round((new Date(finStr + 'T12:00:00') - dateD) / 86400000) + 1;
+        $('manualPeriodeDuree').textContent = n + ' jour' + (n > 1 ? 's' : '') + ' — les valeurs saisies seront réparties sur toute la période.';
+        $('manualPeriodeHint').style.display = '';
+    }
+
     function onManualDateChange() {
         var dateStr = $('manualDate').value;
         var al = $('manualEntryAlert');
         al.style.display = 'none';
         al.className = 'alert';
         al.textContent = '';
-        $('manualJourAgeDisplay').style.color = 'var(--blue)';
 
-        if (!dateStr || !currentLotInfo) { $('manualJourAgeDisplay').textContent = '—'; return; }
+        if (!dateStr || !currentLotInfo) { $('manualJourAge').value = ''; return; }
 
         // Date future ?
         var today = new Date().toISOString().split('T')[0];
         if (dateStr > today) {
-            $('manualJourAgeDisplay').textContent = '—';
+            $('manualJourAge').value = '';
             al.className = 'alert alert-error show';
             al.textContent = '⛔ Impossible de saisir des données pour une date future.';
             al.style.display = '';
@@ -7193,14 +7319,17 @@
         var jourAge = Math.round((dateSaisie - dateMp) / 86400000);
 
         if (jourAge < 0) {
-            $('manualJourAgeDisplay').textContent = '—';
+            $('manualJourAge').value = '';
             al.className = 'alert alert-error show';
             al.textContent = '⛔ La date saisie est antérieure à la mise en place du lot.';
             al.style.display = '';
             return;
         }
 
-        $('manualJourAgeDisplay').textContent = 'Jour ' + jourAge;
+        $('manualJourAge').value = jourAge;
+
+        // Mode hebdomadaire : afficher la plage de 7 jours
+        if (manualMode === 'hebdo') { updateHebdoHint(dateStr); }
 
         // Vérifier doublon manuel
         var existingManual = lotData.manual.find(function(d) { return d.date_mesure === dateStr; });
@@ -7224,6 +7353,168 @@
         // Mettre à jour les champs calculés (effectif présent, ratios)
         recalculateManualDerivedFields();
     }
+
+    // Saisie depuis le jour d'âge → calcule et remplit la date
+    function onManualJourAgeChange() {
+        var jourAgeStr = $('manualJourAge').value.trim();
+        var al = $('manualEntryAlert');
+        al.style.display = 'none';
+        al.className = 'alert';
+        al.textContent = '';
+
+        if (jourAgeStr === '' || !currentLotInfo || !currentLotInfo.date_mise_place) {
+            $('manualDate').value = '';
+            recalculateManualDerivedFields();
+            return;
+        }
+
+        var jourAge = parseInt(jourAgeStr, 10);
+        if (isNaN(jourAge) || jourAge < 0) {
+            $('manualDate').value = '';
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ Le jour d\'âge doit être un entier positif ou nul.';
+            al.style.display = '';
+            recalculateManualDerivedFields();
+            return;
+        }
+
+        // Calculer la date correspondante
+        var dateMp = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
+        var computed = new Date(dateMp.getTime() + jourAge * 86400000);
+        var yyyy = computed.getFullYear();
+        var mm   = String(computed.getMonth() + 1).padStart(2, '0');
+        var dd   = String(computed.getDate()).padStart(2, '0');
+        var computedDateStr = yyyy + '-' + mm + '-' + dd;
+
+        // Date future ?
+        var today = new Date().toISOString().split('T')[0];
+        if (computedDateStr > today) {
+            $('manualDate').value = '';
+            al.className = 'alert alert-error show';
+            al.textContent = '⛔ Ce jour d\'âge correspond à une date future (' + dd + '/' + mm + '/' + yyyy + ').';
+            al.style.display = '';
+            recalculateManualDerivedFields();
+            return;
+        }
+
+        // Remplir la date
+        $('manualDate').value = computedDateStr;
+
+        // Vérifier doublon manuel
+        var existingManual = lotData.manual.find(function(d) { return d.jour_age === jourAge; });
+        if (existingManual) {
+            al.className = 'alert alert-warning show';
+            al.innerHTML = '✍️ Une saisie manuelle existe déjà pour le <strong>Jour ' + jourAge + '</strong>. En continuant, vous mettrez à jour cette saisie.';
+            al.style.display = '';
+            recalculateManualDerivedFields();
+            return;
+        }
+
+        // Vérifier présence données Tuffigo
+        var hasTuffigo = lotData.poids.some(function(d)    { return d.jour_age === jourAge; })
+            || lotData.mortalite.some(function(d) { return d.jour_age === jourAge; })
+            || lotData.aliment.some(function(d)   { return d.jour_age === jourAge; })
+            || lotData.eau_conso.some(function(d)  { return d.jour_age === jourAge; });
+        if (hasTuffigo) {
+            al.className = 'alert alert-warning show';
+            al.innerHTML = '⚠️ Des données Tuffigo existent déjà pour le <strong>Jour ' + jourAge + '</strong>. Votre saisie manuelle sera <strong>prioritaire</strong> à l\'affichage.';
+            al.style.display = '';
+        }
+
+        recalculateManualDerivedFields();
+    }
+
+    // ─── Helpers multi-jours ─────────────────────────────────────────────
+
+    // Retourne un tableau de {dateStr, jourAge} pour tous les jours du mode en cours
+    function buildDaysArray(mode) {
+        var days = [];
+        if (!currentLotInfo || !currentLotInfo.date_mise_place) return days;
+        var dateMp = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
+
+        function makeEntry(d) {
+            var yyyy = d.getFullYear();
+            var mm   = String(d.getMonth() + 1).padStart(2, '0');
+            var dd   = String(d.getDate()).padStart(2, '0');
+            return { dateStr: yyyy + '-' + mm + '-' + dd,
+                     jourAge: Math.round((d - dateMp) / 86400000) };
+        }
+
+        if (mode === 'journalier') {
+            var dateStr = $('manualDate') ? $('manualDate').value : '';
+            if (dateStr) days.push(makeEntry(new Date(dateStr + 'T12:00:00')));
+
+        } else if (mode === 'hebdo') {
+            var endStr = $('manualDate') ? $('manualDate').value : '';
+            if (!endStr) return days;
+            var end = new Date(endStr + 'T12:00:00');
+            for (var i = 6; i >= 0; i--) {
+                var e = makeEntry(new Date(end.getTime() - i * 86400000));
+                if (e.jourAge >= 0) days.push(e);
+            }
+
+        } else if (mode === 'periode') {
+            var debStr = $('manualDateDebut') ? $('manualDateDebut').value : '';
+            var finStr = $('manualDateFin')   ? $('manualDateFin').value   : '';
+            if (!debStr || !finStr) return days;
+            var start = new Date(debStr + 'T12:00:00');
+            var fin   = new Date(finStr + 'T12:00:00');
+            var nDays = Math.round((fin - start) / 86400000);
+            for (var i = 0; i <= nDays; i++) {
+                var e = makeEntry(new Date(start.getTime() + i * 86400000));
+                if (e.jourAge >= 0) days.push(e);
+            }
+        }
+        return days;
+    }
+
+    // Répartit une valeur totale sur n jours.
+    // isInteger=true : floor + reste sur le 1er jour.
+    // isInteger=false : arrondi 2 décimales + reste sur le 1er jour.
+    function distributeValue(total, n, isInteger) {
+        if (total === null || total === undefined || n <= 0) return null;
+        if (n === 1) return [total];
+        var values = [];
+        if (isInteger) {
+            var base = Math.floor(total / n);
+            var rem  = total - base * n;
+            for (var i = 0; i < n; i++) values.push(i === 0 ? base + rem : base);
+        } else {
+            var base = Math.round(total / n * 100) / 100;
+            var first = Math.round((total - base * (n - 1)) * 100) / 100;
+            for (var i = 0; i < n; i++) values.push(i === 0 ? first : base);
+        }
+        return values;
+    }
+
+    // Calcule l'effectif pour le jour dayIndex d'un batch multi-jours
+    function calculateEffectifForBatchDay(dayIndex, days, distMorts) {
+        if (!currentLotInfo) return 1;
+        var eff = currentLotInfo.effectif_depart || 1;
+        var batchDates    = days.map(function(d) { return d.dateStr; });
+        var batchJourAges = days.map(function(d) { return d.jourAge; });
+        var thisJourAge   = days[dayIndex].jourAge;
+
+        // Morts Tuffigo avant la période (hors jours du batch)
+        lotData.mortalite.forEach(function(d) {
+            if (d.jour_age < thisJourAge && batchJourAges.indexOf(d.jour_age) === -1 && d.nombre_morts != null)
+                eff -= d.nombre_morts;
+        });
+        // Morts manuels existants avant ce jour (hors jours du batch)
+        lotData.manual.forEach(function(d) {
+            if (d.jour_age < thisJourAge && batchDates.indexOf(d.date_mesure) === -1 && d.nombre_morts != null)
+                eff -= d.nombre_morts;
+        });
+        // Morts des jours précédents du batch + ce jour
+        if (distMorts) {
+            for (var i = 0; i <= dayIndex; i++) {
+                if (distMorts[i] != null && distMorts[i] > 0) eff -= distMorts[i];
+            }
+        }
+        return Math.max(eff, 1);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
 
     // Calcule l'effectif présent = effectif_depart − cumul des morts jusqu'à jourAge inclus
     // Priorité : morts Tuffigo (< jourAge) + morts manuels (< jourAge hors saisie en cours) + morts formulaire
@@ -7307,75 +7598,133 @@
         }
     }
 
+    // Enregistrement unifié — gère les 3 modes (journalier, hebdo, périodique)
     function saveManualEntry() {
         if (!currentLotInfo || !currentUser) return;
-
-        var dateStr = $('manualDate').value;
-        if (!dateStr) { alert('Veuillez sélectionner une date.'); return; }
-
-        var today = new Date().toISOString().split('T')[0];
-        if (dateStr > today) { alert('Impossible de saisir des données pour une date future.'); return; }
-
         if (!currentLotInfo.date_mise_place) { alert('Date de mise en place manquante.'); return; }
 
-        var dateMp = new Date(currentLotInfo.date_mise_place + 'T12:00:00');
-        var dateSaisie = new Date(dateStr + 'T12:00:00');
-        var jourAge = Math.round((dateSaisie - dateMp) / 86400000);
-        if (jourAge < 0) { alert('La date saisie est antérieure à la mise en place du lot.'); return; }
+        // ── 1. Construire la liste des jours ─────────────────────────────
+        var days = buildDaysArray(manualMode);
+        if (days.length === 0) {
+            alert(manualMode === 'periode'
+                ? 'Veuillez sélectionner une date de début et une date de fin.'
+                : 'Veuillez sélectionner une date.');
+            return;
+        }
+        var today = new Date().toISOString().split('T')[0];
+        for (var di = 0; di < days.length; di++) {
+            if (days[di].dateStr > today) {
+                alert('⛔ La période sélectionnée contient des dates dans le futur.'); return;
+            }
+            if (days[di].jourAge < 0) {
+                alert('⛔ La période sélectionnée contient des dates antérieures à la mise en place du lot.'); return;
+            }
+        }
+        var n = days.length;
 
-        // Vérifier qu'au moins un champ est renseigné
+        // ── 2. Lecture des valeurs saisies ───────────────────────────────
+        function getNum(id) { var v=$(id)?$(id).value.trim():''; return (v===''||isNaN(parseFloat(v)))?null:parseFloat(v); }
+        function getInt(id) { var v=$(id)?$(id).value.trim():''; return (v===''||isNaN(parseInt(v,10)))?null:parseInt(v,10); }
+
         var hasData = ['manualNombreMorts','manualPoidsMoyen','manualGmq','manualHomogeneite',
-                       'manualAlimentGlobal','manualEauLitres',
-                       'manualOeufsA','manualOeufsB'].some(function(id) {
-            return $(id) && $(id).value.trim() !== '';
-        });
+                       'manualAlimentGlobal','manualEauLitres','manualOeufsA','manualOeufsB']
+            .some(function(id) { return $(id) && $(id).value.trim() !== ''; });
         if (!hasData) { alert('Veuillez saisir au moins une valeur.'); return; }
 
         var isPondeuse = !!(currentLotInfo.type_lot_nom &&
             currentLotInfo.type_lot_nom.trim().toLowerCase() === 'pondeuse');
 
-        function getNum(id) {
-            var v = $(id) ? $(id).value.trim() : '';
-            if (v === '' || isNaN(parseFloat(v))) return null;
-            return parseFloat(v);
-        }
-        function getInt(id) {
-            var v = $(id) ? $(id).value.trim() : '';
-            if (v === '' || isNaN(parseInt(v, 10))) return null;
-            return parseInt(v, 10);
+        // Valeurs brutes du formulaire
+        var totalMorts   = getInt('manualNombreMorts');
+        var avgPoids     = getNum('manualPoidsMoyen');
+        var avgGmq       = getNum('manualGmq');
+        var avgHomo      = getNum('manualHomogeneite');
+        var totalAliment = getNum('manualAlimentGlobal');
+        var totalEau     = getNum('manualEauLitres');
+        var totalOeufsA  = isPondeuse ? getInt('manualOeufsA') : null;
+        var totalOeufsB  = isPondeuse ? getInt('manualOeufsB') : null;
+
+        // ── 3. Répartition ───────────────────────────────────────────────
+        // Totaux → divisés   |   Moyennes → répliquées
+        var distMorts   = totalMorts   !== null ? distributeValue(totalMorts,   n, true)  : null;
+        var distAliment = totalAliment !== null ? distributeValue(totalAliment, n, false) : null;
+        var distEau     = totalEau     !== null ? distributeValue(totalEau,     n, false) : null;
+        var distOeufsA  = totalOeufsA  !== null ? distributeValue(totalOeufsA,  n, true)  : null;
+        var distOeufsB  = totalOeufsB  !== null ? distributeValue(totalOeufsB,  n, true)  : null;
+
+        // ── 4. Détection des conflits ────────────────────────────────────
+        var conflictDays = days.filter(function(d) {
+            return lotData.manual.some(function(m) { return m.date_mesure === d.dateStr; });
+        });
+        if (conflictDays.length > 0) {
+            var conflictList = conflictDays.map(function(d) {
+                var p = d.dateStr.split('-');
+                return p[2] + '/' + p[1] + '/' + p[0] + ' (J' + d.jourAge + ')';
+            }).join('\n  • ');
+            var ok = confirm(
+                conflictDays.length + ' jour(s) ont déjà une saisie manuelle :\n  • ' + conflictList
+                + '\n\nConfirmer l\'écrasement de ces saisies ?'
+            );
+            if (!ok) return;
         }
 
+        // ── 5. Construction des entrées ──────────────────────────────────
+        var entries = days.map(function(d, i) {
+            return {
+                dateStr:  d.dateStr,
+                jourAge:  d.jourAge,
+                morts:    distMorts   ? distMorts[i]   : null,
+                poids:    avgPoids,
+                gmq:      avgGmq,
+                homo:     avgHomo,
+                aliment:  distAliment ? distAliment[i] : null,
+                eau:      distEau     ? distEau[i]     : null,
+                oeufsA:   distOeufsA  ? distOeufsA[i]  : null,
+                oeufsB:   distOeufsB  ? distOeufsB[i]  : null,
+                effectif: calculateEffectifForBatchDay(i, days, distMorts)
+            };
+        });
+
+        // ── 6. Envoi séquentiel ──────────────────────────────────────────
         var btn = $('btnSaveManualEntry');
         btn.disabled = true;
-        btn.textContent = '⏳ Enregistrement...';
-
+        btn.textContent = n > 1 ? '⏳ (0/' + n + ')…' : '⏳ Enregistrement…';
         var _capturedLotId = currentLotInfo.id;
-        var _effectifPresent = calculateEffectifPresent(jourAge);
-        supabase.rpc('save_saisie_manuelle', {
-            p_user_id:           currentUser.id,
-            p_lot_id:            currentLotInfo.id,
-            p_date_mesure:       dateStr,
-            p_nombre_morts:      getInt('manualNombreMorts'),
-            p_poids_moyen:       getNum('manualPoidsMoyen'),
-            p_gmq:               getNum('manualGmq'),
-            p_homogeneite:       getNum('manualHomogeneite'),
-            p_aliment_global_kg: getNum('manualAlimentGlobal'),
-            p_effectif_present:  _effectifPresent,
-            p_eau_litres:        getNum('manualEauLitres'),
-            p_oeufs_a:           isPondeuse ? getInt('manualOeufsA') : null,
-            p_oeufs_b:           isPondeuse ? getInt('manualOeufsB') : null
-        }).then(function(r) {
-            if (r.error) throw r.error;
-            // Recharger les saisies manuelles
-            return supabase.from('saisies_manuelles_journalieres')
-                .select('*').eq('lot_id', _capturedLotId).order('jour_age');
-        }).then(function(r) {
+        var savedCount = 0;
+
+        function saveNext(idx) {
+            if (idx >= entries.length) {
+                return supabase.from('saisies_manuelles_journalieres')
+                    .select('*').eq('lot_id', _capturedLotId).order('jour_age');
+            }
+            var e = entries[idx];
+            return supabase.rpc('save_saisie_manuelle', {
+                p_user_id:           currentUser.id,
+                p_lot_id:            currentLotInfo.id,
+                p_date_mesure:       e.dateStr,
+                p_nombre_morts:      e.morts,
+                p_poids_moyen:       e.poids,
+                p_gmq:               e.gmq,
+                p_homogeneite:       e.homo,
+                p_aliment_global_kg: e.aliment,
+                p_effectif_present:  e.effectif,
+                p_eau_litres:        e.eau,
+                p_oeufs_a:           e.oeufsA,
+                p_oeufs_b:           e.oeufsB
+            }).then(function(r) {
+                if (r.error) throw r.error;
+                savedCount++;
+                if (n > 1) btn.textContent = '⏳ (' + savedCount + '/' + n + ')…';
+                return saveNext(idx + 1);
+            });
+        }
+
+        saveNext(0).then(function(r) {
             if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
             lotData.manual = (r && r.data) ? r.data : [];
             rebuildOeufsIndicators();
             closeManualEntryModal();
             renderTableau();
-            // Rafraîchir graphique ponte si nécessaire
             if (isPondeuse && graphState.ponte.selected.length > 0) {
                 updateChart('ponte');
                 updateLegend('ponte');
@@ -7397,7 +7746,10 @@
     window.saveTypeLot           = saveTypeLot;
     window.openManualEntryModal           = openManualEntryModal;
     window.closeManualEntryModal          = closeManualEntryModal;
+    window.setManualMode                  = setManualMode;
     window.onManualDateChange             = onManualDateChange;
+    window.onManualJourAgeChange          = onManualJourAgeChange;
+    window.onManualDatePeriodeChange      = onManualDatePeriodeChange;
     window.recalculateManualDerivedFields = recalculateManualDerivedFields;
     window.saveManualEntry                = saveManualEntry;
 
