@@ -335,6 +335,47 @@
         .mode-tab:hover:not(.active) { background: var(--bg-input); color: var(--text); }
         .mode-range-hint { font-size: 0.8rem; color: var(--blue); padding: 0.35rem 0.7rem; background: rgba(37,99,235,0.06); border-radius: 7px; border: 1px solid rgba(37,99,235,0.18); }
 
+        /* ── Admin Souches & Standards ── */
+        .souches-table { width: 100%; border-collapse: collapse; }
+        .souches-table th, .souches-table td { padding: 0.65rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .souches-table th { background: var(--bg-input); font-size: 0.73rem; text-transform: uppercase; color: var(--text-dim); font-weight: 600; letter-spacing: 0.04em; }
+        .souches-table tr:hover td { background: var(--bg-input); }
+        .souche-type-badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .souche-type-chair { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .souche-type-pondeuse { background: #fefce8; color: #92400e; border: 1px solid #fde047; }
+        .souche-type-reproducteur { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .souche-type-autre { background: var(--bg-input); color: var(--text-dim); border: 1px solid var(--border); }
+        .souche-tuffigo-badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 12px; font-size: 0.68rem; font-weight: 600; background: var(--blue-light); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+
+        /* Standards editor overlay */
+        .std-editor-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .std-editor-overlay.show { display: flex; }
+        .std-editor-panel { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 920px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border: 1px solid var(--border); }
+        .std-editor-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 1.1rem 1.4rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .std-editor-title { font-size: 1.05rem; font-weight: 700; }
+        .std-editor-tabs { display: flex; padding: 0.7rem 1.2rem 0; border-bottom: 1px solid var(--border); gap: 0.3rem; flex-shrink: 0; flex-wrap: wrap; }
+        .std-tab { padding: 0.45rem 0.95rem; border: 1.5px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; background: var(--bg-input); color: var(--text-dim); font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-bottom: -1px; }
+        .std-tab.active { background: var(--bg-card); color: var(--text); }
+        .std-tab:hover:not(.active) { background: var(--bg-card); color: var(--text); }
+        .std-editor-toolbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.2rem; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+        .std-editor-body { overflow-y: auto; flex: 1; padding: 0.8rem 1.2rem; }
+        .std-editor-footer { display: flex; gap: 0.75rem; padding: 0.85rem 1.2rem; border-top: 1px solid var(--border); flex-shrink: 0; justify-content: flex-end; }
+        /* Standards grid */
+        .std-grid-wrap { overflow-x: auto; }
+        .std-grid { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .std-grid th { background: var(--bg-input); font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; padding: 0.45rem 0.5rem; text-align: center; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); white-space: nowrap; }
+        .std-grid td { padding: 0.18rem 0.25rem; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: center; }
+        .std-grid th:last-child, .std-grid td:last-child { border-right: none; }
+        .std-grid .col-jour { width: 58px; font-weight: 700; background: var(--bg-input); }
+        .std-grid .col-del  { width: 34px; }
+        .std-grid input[type="number"] { width: 100%; padding: 0.28rem 0.35rem; border: 1.5px solid var(--border); border-radius: 5px; font-family: inherit; font-size: 0.8rem; background: var(--bg-card); color: var(--text); text-align: right; box-sizing: border-box; -moz-appearance: textfield; }
+        .std-grid input[type="number"]::-webkit-inner-spin-button,
+        .std-grid input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .std-grid input[type="number"]:focus { outline: none; border-color: var(--blue); }
+        .std-grid .col-jour input { text-align: center; color: var(--blue); font-weight: 700; }
+        .btn-del-std-row { padding: 0.2rem 0.4rem; border: 1px solid var(--border); background: var(--bg-input); border-radius: 5px; cursor: pointer; font-size: 0.7rem; color: var(--text-dim); line-height: 1; }
+        .btn-del-std-row:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+
         /* ── Journal des corrections (modal) ── */
         .journal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1rem; }
         .journal-overlay.show { display: flex; }
@@ -1463,6 +1504,90 @@
     </div>
 </div>
 
+<!-- MODALE SOUCHE (créer / modifier) -->
+<div class="modal-overlay" id="soucheModal">
+    <div class="modal-content" style="max-width:460px;">
+        <div class="modal-header">
+            <div class="modal-title" id="soucheModalTitle">Nouvelle souche</div>
+            <button class="modal-close" onclick="closeSoucheModal()">&times;</button>
+        </div>
+        <div class="alert" id="soucheModalAlert"></div>
+        <input type="hidden" id="soucheModalId">
+        <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" id="soucheModalNom" class="form-input" placeholder="ex : Ross 308" maxlength="50">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Type de lot *</label>
+            <select id="soucheModalType" class="form-input">
+                <option value="">-- Sélectionner --</option>
+                <option value="chair">Poulet de chair</option>
+                <option value="pondeuse">Poule pondeuse</option>
+                <option value="reproducteur">Reproducteur</option>
+                <option value="autre">Autre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="soucheModalDesc" class="form-input" rows="3" placeholder="Description optionnelle…" style="resize:vertical;"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeSoucheModal()">Annuler</button>
+            <button class="btn btn-primary" id="btnSaveSouche" onclick="saveSouche()">💾 Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE ÉDITEUR DE STANDARDS ZOOTECHNIQUES -->
+<div class="std-editor-overlay" id="standardsEditorModal">
+    <div class="std-editor-panel">
+        <!-- En-tête -->
+        <div class="std-editor-header">
+            <div>
+                <div class="std-editor-title">📊 Standards — <span id="stdEditorSoucheName">—</span></div>
+                <div style="font-size:0.78rem;color:var(--text-dim);margin-top:0.2rem;">Valeurs de référence par jour d'âge · Les modifications ne sont sauvegardées que par onglet</div>
+            </div>
+            <button style="border:none;background:none;font-size:1.5rem;cursor:pointer;color:var(--text-dim);padding:0 4px;line-height:1;" onclick="closeStandardsEditor()">&times;</button>
+        </div>
+        <!-- Onglets -->
+        <div class="std-editor-tabs">
+            <button class="std-tab active" id="stdTab_poids"     onclick="setStandardsTab('poids')">📏 Poids (g)</button>
+            <button class="std-tab"        id="stdTab_mortalite" onclick="setStandardsTab('mortalite')">💀 Mortalité (%)</button>
+            <button class="std-tab"        id="stdTab_aliment"   onclick="setStandardsTab('aliment')">🌾 Aliment (g/j)</button>
+            <button class="std-tab"        id="stdTab_oeufs"     onclick="setStandardsTab('oeufs')">🥚 Œufs (%)</button>
+            <button class="std-tab"        id="stdTab_eau"       onclick="setStandardsTab('eau')">💧 Eau</button>
+        </div>
+        <!-- Barre d'outils -->
+        <div class="std-editor-toolbar">
+            <button class="btn btn-secondary btn-sm" onclick="addStandardRow()">➕ Ajouter ligne</button>
+            <button class="btn btn-secondary btn-sm" onclick="generateStandardRows()">🗓️ Générer J0→J70</button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📥 Importer CSV
+                <input type="file" accept=".csv,.txt" style="display:none;" onchange="importStandardsCSV(this)">
+            </label>
+            <button class="btn btn-secondary btn-sm" onclick="exportStandardsCSV()">📤 Exporter CSV</button>
+            <button class="btn btn-secondary btn-sm" style="color:var(--red);border-color:var(--red);" onclick="clearStandardsGrid()">🗑️ Tout effacer</button>
+            <div id="stdEditorMsg" style="font-size:0.79rem;margin-left:auto;color:var(--text-dim);"></div>
+        </div>
+        <!-- Corps : grille -->
+        <div class="std-editor-body">
+            <div class="std-grid-wrap">
+                <table class="std-grid">
+                    <thead id="stdGridHead"></thead>
+                    <tbody id="stdGridBody">
+                        <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Pied -->
+        <div class="std-editor-footer">
+            <button class="btn btn-secondary" onclick="closeStandardsEditor()">Fermer</button>
+            <button class="btn btn-primary"   id="btnSaveStdGrid" onclick="saveStandardsGrid()">💾 Enregistrer cet onglet</button>
+        </div>
+    </div>
+</div>
+
 <!-- PAGE LOGIN -->
 <div class="page active" id="pageLogin">
     <div class="login-box">
@@ -1544,6 +1669,9 @@
             </button>
             <button class="admin-menu-btn" id="menuBdAvicole" data-panel="bdAvicole">
                 <span class="menu-icon">🐓</span> BD Avicole
+            </button>
+            <button class="admin-menu-btn" id="menuSouches" data-panel="souches">
+                <span class="menu-icon">🧬</span> Souches &amp; Standards
             </button>
         </div>
     </div>
@@ -2089,6 +2217,42 @@
             </div>
         </div><!-- /panelBdAvicole -->
 
+        <!-- PANEL: Souches & Standards (admin uniquement) -->
+        <div class="admin-panel" id="panelSouches">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🧬</span>
+                <div>
+                    <div class="admin-panel-title">Souches &amp; Standards</div>
+                    <div class="admin-panel-subtitle">Gérer les souches avicoles et leurs standards zootechniques journaliers (min / cible / max)</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="alert" id="souchesAlert"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                    <div style="font-size:0.82rem; color:var(--text-dim);">
+                        Les souches <span class="souche-tuffigo-badge">🔌 Tuffigo</span> sont en lecture seule — vous pouvez modifier leurs standards.
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openSoucheModal(null)">➕ Nouvelle souche</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="souches-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Type</th>
+                                <th>Origine</th>
+                                <th>Description</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="souchesTbody">
+                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /panelSouches -->
+
         </div><!-- /sectionExploitation -->
 
         <!-- ================================================
@@ -2596,6 +2760,7 @@
         if (panelName === 'aliments')   loadAliments();
         if (panelName === 'typesLot')   loadAdminTypesLot();
         if (panelName === 'bdAvicole')  initBdAvicolePanel();
+        if (panelName === 'souches')    loadAdminSouches();
     }
 
     // =====================================================
@@ -7737,6 +7902,509 @@
         });
     }
 
+    // =====================================================
+    // ADMIN : SOUCHES & STANDARDS ZOOTECHNIQUES
+    // =====================================================
+    var adminSouchesCache = [];
+
+    // Configuration des onglets standards
+    // displayMult : facteur d'affichage (oeufs : ×100 car stocké en 0-1)
+    var STD_TABS_CONFIG = {
+        poids: {
+            label: 'Poids', unit: 'g',
+            cols: [
+                { key: 'min',   label: 'Min (g)',   field: 'poids_min' },
+                { key: 'cible', label: 'Cible (g)', field: 'poids_cible' },
+                { key: 'max',   label: 'Max (g)',   field: 'poids_max' }
+            ]
+        },
+        mortalite: {
+            label: 'Mortalité', unit: '%',
+            cols: [
+                { key: 'min',   label: 'Min (%)',   field: 'mortalite_min' },
+                { key: 'cible', label: 'Cible (%)', field: 'mortalite_cible' },
+                { key: 'max',   label: 'Max (%)',   field: 'mortalite_max' }
+            ]
+        },
+        aliment: {
+            label: 'Aliment', unit: 'g/j/animal',
+            cols: [
+                { key: 'min',   label: 'Min (g/j)',   field: 'conso_min' },
+                { key: 'cible', label: 'Cible (g/j)', field: 'conso_cible' },
+                { key: 'max',   label: 'Max (g/j)',   field: 'conso_max' }
+            ]
+        },
+        oeufs: {
+            label: 'Œufs', unit: '%', displayMult: 100,
+            cols: [
+                { key: 'min',   label: 'Min (%)',   field: 'taux_ponte_min' },
+                { key: 'cible', label: 'Cible (%)', field: 'taux_ponte_cible' },
+                { key: 'max',   label: 'Max (%)',   field: 'taux_ponte_max' }
+            ]
+        },
+        eau: {
+            label: 'Eau', unit: '',
+            cols: [
+                { key: 'cpa_min',    label: 'Conso/animal min (L)', field: 'conso_par_animal_min' },
+                { key: 'cpa_max',    label: 'Conso/animal max (L)', field: 'conso_par_animal_max' },
+                { key: 'ratio_min',  label: 'Ratio min',            field: 'ratio_eau_aliment_min' },
+                { key: 'ratio_max',  label: 'Ratio max',            field: 'ratio_eau_aliment_max' },
+                { key: 'litres_min', label: 'Litres min (L)',       field: 'consommation_litres_min' },
+                { key: 'litres_max', label: 'Litres max (L)',       field: 'consommation_litres_max' }
+            ]
+        }
+    };
+
+    // État de l'éditeur de standards
+    var stdEditorState = {
+        soucheId:   null,
+        soucheName: '',
+        activeTab:  'poids',
+        data: { poids: [], mortalite: [], aliment: [], oeufs: [], eau: [] }
+    };
+
+    // ── Helpers HTML ──────────────────────────────────────────────
+    function escHtml(str) {
+        return (str == null ? '' : String(str))
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escAttr(str) {
+        return (str == null ? '' : String(str))
+            .replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+    }
+
+    // ── Liste des souches ──────────────────────────────────────────
+
+    function loadAdminSouches() {
+        if (!supabase) return;
+        var tbody = $('souchesTbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
+        hideAlert('souchesAlert');
+        supabase.from('souches').select('*').order('nom')
+            .then(function(r) {
+                if (r.error) throw r.error;
+                adminSouchesCache = r.data || [];
+                renderSouchesAdmin();
+            })
+            .catch(function(err) {
+                showAlert('souchesAlert', 'error', '❌ ' + err.message);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--red);">Erreur de chargement</td></tr>';
+            });
+    }
+
+    function renderSouchesAdmin() {
+        var tbody = $('souchesTbody');
+        if (!tbody) return;
+        if (!adminSouchesCache.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="tableau-empty">Aucune souche enregistrée.</td></tr>';
+            return;
+        }
+        var html = '';
+        adminSouchesCache.forEach(function(s) {
+            var isTuffigo = s.tuffigo_id != null;
+            var typeKey   = (s.type || '').toLowerCase();
+            var typeMap   = { chair: 'souche-type-chair', pondeuse: 'souche-type-pondeuse', reproducteur: 'souche-type-reproducteur', autre: 'souche-type-autre' };
+            var typeLabel = { chair: 'Chair', pondeuse: 'Pondeuse', reproducteur: 'Reproducteur', autre: 'Autre' };
+            var typeBadge = '<span class="souche-type-badge ' + (typeMap[typeKey] || 'souche-type-autre') + '">' + escHtml(typeLabel[typeKey] || s.type || '—') + '</span>';
+            var origineBadge = isTuffigo
+                ? '<span class="souche-tuffigo-badge">🔌 Tuffigo</span>'
+                : '<span style="font-size:0.75rem;color:var(--text-dim);">✍️ Manuel</span>';
+            var stdBtn  = '<button class="btn btn-secondary btn-sm" onclick="openStandardsEditor(\'' + escAttr(s.id) + '\',\'' + escAttr(s.nom) + '\')" title="Éditer les standards">📊 Standards</button>';
+            var editBtn = isTuffigo ? '' : ' <button class="btn btn-secondary btn-sm" onclick="openSoucheModal(\'' + escAttr(s.id) + '\')" title="Modifier">✏️</button>';
+            var delBtn  = isTuffigo ? '' : ' <button class="btn btn-secondary btn-sm" style="color:var(--red);border-color:var(--red);" onclick="deleteSouche(\'' + escAttr(s.id) + '\',\'' + escAttr(s.nom) + '\')" title="Supprimer">🗑️</button>';
+            html += '<tr>'
+                + '<td><strong>' + escHtml(s.nom) + '</strong></td>'
+                + '<td>' + typeBadge + '</td>'
+                + '<td>' + origineBadge + '</td>'
+                + '<td style="max-width:260px;color:var(--text-dim);font-size:0.8rem;">' + escHtml(s.description || '—') + '</td>'
+                + '<td style="text-align:right;white-space:nowrap;">' + stdBtn + editBtn + delBtn + '</td>'
+                + '</tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ── Modale souche (créer / modifier) ──────────────────────────
+
+    function openSoucheModal(id) {
+        var modal = $('soucheModal');
+        if (!modal) return;
+        hideAlert('soucheModalAlert');
+        $('soucheModalId').value = id || '';
+        if (id) {
+            var s = adminSouchesCache.find(function(x) { return x.id === id; });
+            if (!s) return;
+            $('soucheModalTitle').textContent = 'Modifier la souche';
+            $('soucheModalNom').value  = s.nom || '';
+            $('soucheModalType').value = s.type || '';
+            $('soucheModalDesc').value = s.description || '';
+        } else {
+            $('soucheModalTitle').textContent = 'Nouvelle souche';
+            $('soucheModalNom').value  = '';
+            $('soucheModalType').value = '';
+            $('soucheModalDesc').value = '';
+        }
+        modal.classList.add('show');
+        setTimeout(function() { var n = $('soucheModalNom'); if (n) n.focus(); }, 80);
+    }
+
+    function closeSoucheModal() {
+        var m = $('soucheModal');
+        if (m) m.classList.remove('show');
+    }
+
+    function saveSouche() {
+        if (!currentUser || currentUser.role !== 'admin') return;
+        var id   = $('soucheModalId').value.trim() || null;
+        var nom  = ($('soucheModalNom').value  || '').trim();
+        var type = ($('soucheModalType').value || '').trim() || null;
+        var desc = ($('soucheModalDesc').value || '').trim() || null;
+        hideAlert('soucheModalAlert');
+        if (!nom)  { showAlert('soucheModalAlert', 'error', '❌ Le nom est obligatoire'); return; }
+        if (!type) { showAlert('soucheModalAlert', 'error', '❌ Le type est obligatoire'); return; }
+        var btn = $('btnSaveSouche');
+        btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
+        supabase.rpc('save_souche', {
+            p_user_id: currentUser.id, p_nom: nom, p_type: type,
+            p_description: desc, p_souche_id: id
+        }).then(function(r) {
+            if (r.error) throw r.error;
+            closeSoucheModal();
+            showAlert('souchesAlert', 'success', '✅ Souche enregistrée');
+            loadAdminSouches();
+        }).catch(function(err) {
+            showAlert('soucheModalAlert', 'error', '❌ ' + err.message);
+        }).finally(function() {
+            btn.disabled = false; btn.textContent = '💾 Enregistrer';
+        });
+    }
+
+    function deleteSouche(id, nom) {
+        if (!currentUser || currentUser.role !== 'admin') return;
+        if (!confirm('Supprimer la souche "' + nom + '" ?\n\nTous ses standards seront également supprimés. Cette action est irréversible.')) return;
+        supabase.rpc('delete_souche', { p_user_id: currentUser.id, p_souche_id: id })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                showAlert('souchesAlert', 'success', '✅ Souche "' + nom + '" supprimée');
+                loadAdminSouches();
+            })
+            .catch(function(err) {
+                showAlert('souchesAlert', 'error', '❌ ' + err.message);
+            });
+    }
+
+    // ── Éditeur de standards ──────────────────────────────────────
+
+    function openStandardsEditor(soucheId, soucheName) {
+        stdEditorState.soucheId   = soucheId;
+        stdEditorState.soucheName = soucheName;
+        stdEditorState.activeTab  = 'poids';
+        stdEditorState.data = { poids: [], mortalite: [], aliment: [], oeufs: [], eau: [] };
+        var modal = $('standardsEditorModal');
+        if (!modal) return;
+        if ($('stdEditorSoucheName')) $('stdEditorSoucheName').textContent = soucheName;
+        setStdEditorMsg('Chargement des données…', 'var(--text-dim)');
+        // Reset tabs UI
+        Object.keys(STD_TABS_CONFIG).forEach(function(t) {
+            var tab = $('stdTab_' + t);
+            if (tab) tab.classList.toggle('active', t === 'poids');
+        });
+        modal.classList.add('show');
+        // Afficher "chargement" dans la grille
+        var body = $('stdGridBody');
+        if (body) body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
+        var head = $('stdGridHead'); if (head) head.innerHTML = '';
+        // Charger toutes les données
+        loadAllStandardsForSouche(soucheId).then(function() {
+            renderStandardsGrid();
+            setStdEditorMsg('', '');
+        }).catch(function(err) {
+            setStdEditorMsg('⚠️ Erreur : ' + err.message, 'var(--red)');
+        });
+    }
+
+    function closeStandardsEditor() {
+        var m = $('standardsEditorModal');
+        if (m) m.classList.remove('show');
+    }
+
+    function loadAllStandardsForSouche(soucheId) {
+        var tableMap = {
+            poids: 'standards_poids', mortalite: 'standards_mortalite',
+            aliment: 'standards_aliment', oeufs: 'standards_oeufs', eau: 'standards_eau'
+        };
+        var promises = Object.keys(tableMap).map(function(type) {
+            return supabase.from(tableMap[type]).select('*').eq('souche_id', soucheId).order('jour_age')
+                .then(function(r) {
+                    if (r.error) { console.warn('standards_' + type + ':', r.error.message); stdEditorState.data[type] = []; }
+                    else stdEditorState.data[type] = r.data || [];
+                });
+        });
+        return Promise.all(promises);
+    }
+
+    function setStandardsTab(type) {
+        // Sauvegarder la grille courante avant de changer d'onglet
+        var cur = stdEditorState.activeTab;
+        stdEditorState.data[cur] = readStandardsGridData(cur);
+        stdEditorState.activeTab = type;
+        Object.keys(STD_TABS_CONFIG).forEach(function(t) {
+            var tab = $('stdTab_' + t);
+            if (tab) tab.classList.toggle('active', t === type);
+        });
+        setStdEditorMsg('', '');
+        renderStandardsGrid();
+    }
+
+    function renderStandardsGrid() {
+        var type = stdEditorState.activeTab;
+        var cfg  = STD_TABS_CONFIG[type];
+        var rows = stdEditorState.data[type] || [];
+        var mult = cfg.displayMult || 1;
+        var head = $('stdGridHead');
+        var body = $('stdGridBody');
+        if (!head || !body) return;
+
+        // En-tête
+        var thHtml = '<tr><th class="col-jour">Jour</th>';
+        cfg.cols.forEach(function(c) { thHtml += '<th>' + escHtml(c.label) + '</th>'; });
+        thHtml += '<th class="col-del"></th></tr>';
+        head.innerHTML = thHtml;
+
+        // Corps
+        if (!rows.length) {
+            body.innerHTML = '<tr><td colspan="' + (cfg.cols.length + 2) + '" style="text-align:center;padding:2rem;color:var(--text-dim);">'
+                + 'Aucune ligne — cliquez <strong>➕</strong> pour ajouter ou <strong>🗓️</strong> pour générer J0 → J70</td></tr>';
+            return;
+        }
+        var trHtml = '';
+        rows.forEach(function(row, i) {
+            trHtml += '<tr><td class="col-jour"><input type="number" class="std-jour-input" min="0" step="1" value="'
+                + escAttr(row.jour_age != null ? row.jour_age : '') + '" data-row="' + i + '"></td>';
+            cfg.cols.forEach(function(c) {
+                var raw = row[c.field] != null ? row[c.field] : (row[c.key] != null ? row[c.key] : '');
+                var disp = (raw !== '' && raw != null)
+                    ? (Math.round(parseFloat(raw) * mult * 100000) / 100000)
+                    : '';
+                trHtml += '<td><input type="number" min="0" step="any" value="' + escAttr(disp)
+                    + '" data-row="' + i + '" data-col="' + c.key + '"></td>';
+            });
+            trHtml += '<td class="col-del"><button class="btn-del-std-row" onclick="deleteStandardRow(' + i + ')">✕</button></td>';
+            trHtml += '</tr>';
+        });
+        body.innerHTML = trHtml;
+    }
+
+    function readStandardsGridData(type) {
+        var cfg  = STD_TABS_CONFIG[type];
+        var mult = cfg.displayMult || 1;
+        var body = $('stdGridBody');
+        if (!body) return stdEditorState.data[type] || [];
+        var result = [];
+        body.querySelectorAll('tr').forEach(function(tr) {
+            var jourInp = tr.querySelector('.std-jour-input');
+            if (!jourInp) return; // ligne vide ("aucune ligne")
+            var jourVal = jourInp.value.trim();
+            if (jourVal === '') return;
+            var j = parseInt(jourVal, 10);
+            if (isNaN(j) || j < 0) return;
+            var entry = { jour_age: j };
+            cfg.cols.forEach(function(c) {
+                var inp = tr.querySelector('[data-col="' + c.key + '"]');
+                var val = inp ? inp.value.trim() : '';
+                var num = val !== '' ? parseFloat(val) : null;
+                // Diviser par mult pour ramener au stockage (ex. 85% → 0.85 pour oeufs)
+                entry[c.field] = (num !== null && !isNaN(num)) ? num / mult : null;
+                entry[c.key]   = entry[c.field];
+            });
+            result.push(entry);
+        });
+        return result;
+    }
+
+    function addStandardRow() {
+        var type = stdEditorState.activeTab;
+        stdEditorState.data[type] = readStandardsGridData(type);
+        var rows  = stdEditorState.data[type];
+        var nextJ = rows.length > 0
+            ? (Math.max.apply(null, rows.map(function(r) { return r.jour_age || 0; })) + 1)
+            : 0;
+        var cfg   = STD_TABS_CONFIG[type];
+        var newRow = { jour_age: nextJ };
+        cfg.cols.forEach(function(c) { newRow[c.field] = null; newRow[c.key] = null; });
+        stdEditorState.data[type].push(newRow);
+        renderStandardsGrid();
+        // Focus le champ jour de la dernière ligne
+        var body = $('stdGridBody');
+        if (!body) return;
+        var lastJour = body.querySelector('tr:last-child .std-jour-input');
+        if (lastJour) { lastJour.select(); lastJour.focus(); }
+    }
+
+    function deleteStandardRow(idx) {
+        var type = stdEditorState.activeTab;
+        stdEditorState.data[type] = readStandardsGridData(type);
+        if (idx >= 0 && idx < stdEditorState.data[type].length) {
+            stdEditorState.data[type].splice(idx, 1);
+        }
+        renderStandardsGrid();
+    }
+
+    function generateStandardRows() {
+        var type = stdEditorState.activeTab;
+        var cfg  = STD_TABS_CONFIG[type];
+        if (stdEditorState.data[type].length > 0) {
+            if (!confirm('Générer les jours 0 à 70 ?\nLes données existantes seront remplacées.')) return;
+        }
+        var rows = [];
+        for (var j = 0; j <= 70; j++) {
+            var row = { jour_age: j };
+            cfg.cols.forEach(function(c) { row[c.field] = null; row[c.key] = null; });
+            rows.push(row);
+        }
+        stdEditorState.data[type] = rows;
+        renderStandardsGrid();
+        setStdEditorMsg('🗓️ 71 lignes générées (J0–J70). Renseignez les valeurs puis enregistrez.', 'var(--blue)');
+    }
+
+    function clearStandardsGrid() {
+        var type = stdEditorState.activeTab;
+        if (!confirm('Effacer toutes les lignes de l\'onglet "' + STD_TABS_CONFIG[type].label + '" ?')) return;
+        stdEditorState.data[type] = [];
+        renderStandardsGrid();
+        setStdEditorMsg('', '');
+    }
+
+    function setStdEditorMsg(msg, color) {
+        var el = $('stdEditorMsg');
+        if (!el) return;
+        el.textContent = msg;
+        el.style.color = color || 'var(--text-dim)';
+    }
+
+    function saveStandardsGrid() {
+        if (!currentUser || currentUser.role !== 'admin') return;
+        var type = stdEditorState.activeTab;
+        // Lire la grille courante
+        stdEditorState.data[type] = readStandardsGridData(type);
+        var cfg    = STD_TABS_CONFIG[type];
+        var rows   = stdEditorState.data[type];
+
+        // Construire le tableau JSON pour le RPC
+        var lignes = rows
+            .filter(function(r) { return r.jour_age != null && !isNaN(r.jour_age); })
+            .map(function(r) {
+                var obj = { jour_age: r.jour_age };
+                cfg.cols.forEach(function(c) {
+                    // Les valeurs sont déjà divisées par mult dans readStandardsGridData
+                    var v = r[c.field] != null ? r[c.field] : (r[c.key] != null ? r[c.key] : null);
+                    obj[c.key] = v;
+                });
+                return obj;
+            });
+
+        var btn = $('btnSaveStdGrid');
+        btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
+        setStdEditorMsg('⏳ Enregistrement de ' + lignes.length + ' ligne(s)…', 'var(--blue)');
+
+        supabase.rpc('save_standards_batch', {
+            p_user_id:   currentUser.id,
+            p_souche_id: stdEditorState.soucheId,
+            p_type:      type,
+            p_lignes:    lignes
+        }).then(function(r) {
+            if (r.error) throw r.error;
+            setStdEditorMsg('✅ Standards enregistrés (' + lignes.length + ' lignes)', 'var(--green)');
+            // Recharger les données depuis la base pour cet onglet
+            var tableMap = { poids: 'standards_poids', mortalite: 'standards_mortalite',
+                             aliment: 'standards_aliment', oeufs: 'standards_oeufs', eau: 'standards_eau' };
+            return supabase.from(tableMap[type]).select('*').eq('souche_id', stdEditorState.soucheId).order('jour_age');
+        }).then(function(r) {
+            if (r && !r.error && r.data) {
+                stdEditorState.data[type] = r.data;
+                renderStandardsGrid();
+            }
+        }).catch(function(err) {
+            setStdEditorMsg('❌ ' + (err.message || JSON.stringify(err)), 'var(--red)');
+        }).finally(function() {
+            btn.disabled = false; btn.textContent = '💾 Enregistrer cet onglet';
+        });
+    }
+
+    function exportStandardsCSV() {
+        var type = stdEditorState.activeTab;
+        var cfg  = STD_TABS_CONFIG[type];
+        var mult = cfg.displayMult || 1;
+        var rows = readStandardsGridData(type);
+        if (!rows.length) { alert('Aucune ligne à exporter.'); return; }
+        var headers = ['jour_age'].concat(cfg.cols.map(function(c) { return c.key; }));
+        var lines   = [headers.join(';')];
+        rows.forEach(function(r) {
+            var vals = [r.jour_age != null ? r.jour_age : ''];
+            cfg.cols.forEach(function(c) {
+                var v = r[c.field] != null ? r[c.field] : (r[c.key] != null ? r[c.key] : '');
+                if (v !== '' && v != null) v = Math.round(parseFloat(v) * mult * 100000) / 100000;
+                vals.push(v !== null && v !== undefined ? v : '');
+            });
+            lines.push(vals.join(';'));
+        });
+        var csv  = lines.join('\n');
+        var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href = url;
+        a.download = 'standards_' + type + '_' + (stdEditorState.soucheName || 'souche').replace(/\s+/g,'_') + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function importStandardsCSV(input) {
+        var file = input.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var type  = stdEditorState.activeTab;
+                var cfg   = STD_TABS_CONFIG[type];
+                var mult  = cfg.displayMult || 1;
+                var text  = e.target.result.replace(/\r/g, '');
+                var lines = text.split('\n').filter(function(l) { return l.trim() !== ''; });
+                if (lines.length < 2) { alert('Fichier CSV vide ou sans données.'); return; }
+                var sep  = lines[0].indexOf(';') >= 0 ? ';' : ',';
+                var hdrs = lines[0].split(sep).map(function(h) { return h.trim().replace(/^﻿/, ''); });
+                var jIdx = hdrs.indexOf('jour_age');
+                if (jIdx < 0) { alert('Colonne "jour_age" introuvable dans le fichier.\nEn-têtes détectés : ' + hdrs.join(', ')); return; }
+                var importedRows = [];
+                for (var i = 1; i < lines.length; i++) {
+                    var cells  = lines[i].split(sep);
+                    var jourRaw = cells[jIdx] ? cells[jIdx].trim() : '';
+                    var jourVal = parseInt(jourRaw, 10);
+                    if (isNaN(jourVal) || jourVal < 0) continue;
+                    var row = { jour_age: jourVal };
+                    cfg.cols.forEach(function(c) {
+                        var ci  = hdrs.indexOf(c.key);
+                        var val = ci >= 0 && cells[ci] ? cells[ci].replace(',', '.').trim() : '';
+                        var num = val !== '' ? parseFloat(val) : NaN;
+                        // Diviser par mult pour stocker en unité base (85% → 0.85)
+                        row[c.field] = !isNaN(num) ? num / mult : null;
+                        row[c.key]   = row[c.field];
+                    });
+                    importedRows.push(row);
+                }
+                importedRows.sort(function(a, b) { return a.jour_age - b.jour_age; });
+                stdEditorState.data[type] = importedRows;
+                renderStandardsGrid();
+                setStdEditorMsg('✅ ' + importedRows.length + ' ligne(s) importée(s) — cliquez "Enregistrer" pour valider', 'var(--orange)');
+            } catch (ex) {
+                alert('Erreur lors de l\'import CSV :\n' + ex.message);
+            }
+            input.value = ''; // reset le champ pour permettre un re-import du même fichier
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
     // Exposer les fonctions appelées via onclick= dans le HTML (hors portée IIFE)
     window.openLotEditMode       = openLotEditMode;
     window.closeLotEditMode      = closeLotEditMode;
@@ -7752,6 +8420,22 @@
     window.onManualDatePeriodeChange      = onManualDatePeriodeChange;
     window.recalculateManualDerivedFields = recalculateManualDerivedFields;
     window.saveManualEntry                = saveManualEntry;
+
+    // Admin Souches & Standards
+    window.openSoucheModal      = openSoucheModal;
+    window.closeSoucheModal     = closeSoucheModal;
+    window.saveSouche           = saveSouche;
+    window.deleteSouche         = deleteSouche;
+    window.openStandardsEditor  = openStandardsEditor;
+    window.closeStandardsEditor = closeStandardsEditor;
+    window.setStandardsTab      = setStandardsTab;
+    window.addStandardRow       = addStandardRow;
+    window.deleteStandardRow    = deleteStandardRow;
+    window.generateStandardRows = generateStandardRows;
+    window.clearStandardsGrid   = clearStandardsGrid;
+    window.saveStandardsGrid    = saveStandardsGrid;
+    window.exportStandardsCSV   = exportStandardsCSV;
+    window.importStandardsCSV   = importStandardsCSV;
 
 })();
 </script>
