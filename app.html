@@ -124,6 +124,13 @@
         .profile-section-title { font-size: 0.71rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.8rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.4rem; }
         .profile-footer { display: flex; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border); justify-content: flex-end; }
         
+        /* ── Logo coopérative ── */
+        .coop-logo-thumb { width: 40px; height: 40px; object-fit: contain; border-radius: 4px; background: var(--bg-input); border: 1px solid var(--border); display: block; }
+        .coop-logo-placeholder { width: 40px; height: 40px; border-radius: 4px; background: var(--bg-input); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--text-dim); }
+        .coop-logo-upload-box { width: 72px; height: 72px; border: 2px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; background: var(--bg-input); cursor: pointer; transition: border-color 0.2s; }
+        .coop-logo-upload-box:hover { border-color: var(--blue); }
+        .coop-logo-upload-box img { width: 100%; height: 100%; object-fit: contain; }
+
         /* Theme toggle button */
         .theme-toggle { 
             background: var(--bg-input); 
@@ -1630,6 +1637,7 @@
         </div>
         <div class="alert" id="cooperativeModalAlert"></div>
         <input type="hidden" id="cooperativeModalId">
+        <input type="hidden" id="cooperativeModalLogoUrl">
         <div class="form-group">
             <label class="form-label">Nom *</label>
             <input type="text" id="cooperativeModalNom" class="form-input" placeholder="ex : Maïsadour, Terrena…" maxlength="150">
@@ -1637,6 +1645,30 @@
         <div class="form-group">
             <label class="form-label">Description</label>
             <textarea id="cooperativeModalDesc" class="form-input" rows="2" placeholder="Description optionnelle…" style="resize:vertical;"></textarea>
+        </div>
+        <!-- Logo -->
+        <div class="form-group" style="margin-bottom:0.5rem;">
+            <label class="form-label">Logo</label>
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <!-- Prévisualisation cliquable -->
+                <div class="coop-logo-upload-box" id="coopLogoPreview" title="Cliquer pour choisir un logo" onclick="document.getElementById('coopLogoInput').click()">
+                    <span style="font-size:1.6rem; color:var(--text-dim);">🏢</span>
+                </div>
+                <div style="flex:1;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('coopLogoInput').click()">📁 Choisir un logo…</button>
+                    <button type="button" class="btn btn-sm" id="btnRemoveCoopLogo"
+                            onclick="removeCoopLogo()"
+                            style="display:none; margin-left:0.5rem; background:rgba(239,68,68,0.1); color:var(--red); border:1px solid var(--red);">
+                        🗑️ Retirer
+                    </button>
+                    <input type="file" id="coopLogoInput" accept="image/png,image/jpeg"
+                           style="display:none;" onchange="previewCoopLogo(this)">
+                    <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.4rem;">
+                        PNG ou JPG · max 1 Mo
+                    </div>
+                </div>
+            </div>
+            <div id="coopLogoUploadStatus" style="font-size:0.8rem; margin-top:0.4rem; display:none;"></div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeCooperativeModal()">Annuler</button>
@@ -2415,6 +2447,7 @@
                     <table class="souches-table">
                         <thead>
                             <tr>
+                                <th style="width:52px; text-align:center;">Logo</th>
                                 <th>Nom</th>
                                 <th>Description</th>
                                 <th style="text-align:center;">Éleveurs rattachés</th>
@@ -2422,7 +2455,7 @@
                             </tr>
                         </thead>
                         <tbody id="cooperativesTbody">
-                            <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -8783,14 +8816,13 @@
         var tbody   = $('cooperativesTbody');
         var alertEl = $('cooperativesAlert');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
         if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
 
-        supabase.from('cooperatives').select('id, nom, description, created_at').order('nom')
+        supabase.from('cooperatives').select('id, nom, description, logo_url, created_at').order('nom')
             .then(function(res) {
                 if (res.error) throw res.error;
                 adminCooperativesCache = res.data || [];
-                // Compter les éleveurs par coopérative
                 return supabase.from('eleveurs')
                     .select('cooperative_id')
                     .eq('is_active', true)
@@ -8809,7 +8841,7 @@
                     alertEl.textContent = '❌ Erreur : ' + (e.message || 'impossible de charger les coopératives');
                     alertEl.style.cssText = 'display:block;padding:0.6rem 1rem;border-radius:8px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid var(--red);';
                 }
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);">Erreur de chargement</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);">Erreur de chargement</td></tr>';
             });
     }
 
@@ -8820,13 +8852,16 @@
         if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
 
         if (!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">Aucune coopérative — cliquez ➕ pour en créer une</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Aucune coopérative — cliquez ➕ pour en créer une</td></tr>';
             return;
         }
 
         var html = '';
         list.forEach(function(c) {
             var cnt = counts[c.id] || 0;
+            var logoCell = c.logo_url
+                ? '<img src="' + escHtml(c.logo_url) + '" class="coop-logo-thumb" alt="' + escAttr(c.nom) + '" loading="lazy">'
+                : '<div class="coop-logo-placeholder" title="Aucun logo">🏢</div>';
             var cntBadge = cnt > 0
                 ? '<span style="display:inline-block;background:rgba(59,130,246,0.12);color:var(--blue);border-radius:20px;padding:0.1rem 0.65rem;font-size:0.82rem;font-weight:600;">' + cnt + '</span>'
                 : '<span style="color:var(--text-dim);font-size:0.82rem;">0</span>';
@@ -8835,6 +8870,7 @@
                 : '<button class="btn btn-sm" style="opacity:0.38;cursor:not-allowed;" title="Impossible : ' + cnt + ' éleveur(s) rattaché(s)" disabled>🗑️</button>';
 
             html += '<tr>';
+            html += '<td style="text-align:center; padding:0.4rem 0.6rem;">' + logoCell + '</td>';
             html += '<td style="font-weight:600;">' + escHtml(c.nom) + '</td>';
             html += '<td style="color:var(--text-dim);font-size:0.87rem;">' + escHtml(c.description || '—') + '</td>';
             html += '<td style="text-align:center;">' + cntBadge + '</td>';
@@ -8847,12 +8883,23 @@
     }
 
     function openCooperativeModal(id) {
-        var alertEl = $('cooperativeModalAlert');
+        var alertEl  = $('cooperativeModalAlert');
+        var preview  = $('coopLogoPreview');
+        var removeBtn = $('btnRemoveCoopLogo');
+        var statusEl = $('coopLogoUploadStatus');
+
         $('cooperativeModalTitle').textContent = id ? 'Modifier la coopérative' : 'Nouvelle coopérative';
-        $('cooperativeModalId').value  = id || '';
-        $('cooperativeModalNom').value  = '';
-        $('cooperativeModalDesc').value = '';
-        if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
+        $('cooperativeModalId').value           = id || '';
+        $('cooperativeModalNom').value          = '';
+        $('cooperativeModalDesc').value         = '';
+        $('cooperativeModalLogoUrl').value      = '';
+        $('coopLogoInput').value                = '';
+        if (alertEl)   { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
+        if (statusEl)  { statusEl.textContent = ''; statusEl.style.display = 'none'; }
+
+        // Réinitialiser la prévisualisation
+        if (preview) preview.innerHTML = '<span style="font-size:1.6rem; color:var(--text-dim);">🏢</span>';
+        if (removeBtn) removeBtn.style.display = 'none';
 
         if (id) {
             var coop = null;
@@ -8862,6 +8909,11 @@
             if (coop) {
                 $('cooperativeModalNom').value  = coop.nom         || '';
                 $('cooperativeModalDesc').value = coop.description || '';
+                if (coop.logo_url) {
+                    $('cooperativeModalLogoUrl').value = coop.logo_url;
+                    if (preview) preview.innerHTML = '<img src="' + escHtml(coop.logo_url) + '" style="width:100%;height:100%;object-fit:contain;" loading="lazy">';
+                    if (removeBtn) removeBtn.style.display = '';
+                }
             }
         }
 
@@ -8873,27 +8925,109 @@
         $('cooperativeModal').classList.remove('show');
     }
 
+    // Upload d'un logo vers Supabase Storage
+    function uploadCooperativeLogo(file) {
+        var ext      = file.type === 'image/png' ? 'png' : 'jpg';
+        var filename = 'logo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10) + '.' + ext;
+        return supabase.storage
+            .from('cooperatives-logos')
+            .upload(filename, file, { contentType: file.type, upsert: false })
+            .then(function(res) {
+                if (res.error) throw res.error;
+                var pub = supabase.storage.from('cooperatives-logos').getPublicUrl(filename);
+                return pub.data.publicUrl;
+            });
+    }
+
+    // Prévisualisation côté client après sélection de fichier
+    function previewCoopLogo(input) {
+        if (!input.files || !input.files[0]) return;
+        var file = input.files[0];
+        var allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (allowed.indexOf(file.type) === -1) {
+            alert('Format non supporté. Veuillez choisir un fichier PNG ou JPG.');
+            input.value = '';
+            return;
+        }
+        if (file.size > 1048576) {
+            alert('Le fichier est trop lourd (' + Math.round(file.size / 1024) + ' Ko). Taille maximale : 1 Mo.');
+            input.value = '';
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var preview  = $('coopLogoPreview');
+            var removeBtn = $('btnRemoveCoopLogo');
+            if (preview)   preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:contain;">';
+            if (removeBtn) removeBtn.style.display = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Retirer le logo sélectionné (sans toucher au fichier déjà en base)
+    function removeCoopLogo() {
+        var preview   = $('coopLogoPreview');
+        var removeBtn = $('btnRemoveCoopLogo');
+        var statusEl  = $('coopLogoUploadStatus');
+        $('coopLogoInput').value           = '';
+        $('cooperativeModalLogoUrl').value = '';  // marqueur : logo supprimé
+        if (preview)   preview.innerHTML = '<span style="font-size:1.6rem; color:var(--text-dim);">🏢</span>';
+        if (removeBtn) removeBtn.style.display = 'none';
+        if (statusEl)  { statusEl.textContent = ''; statusEl.style.display = 'none'; }
+    }
+
     function saveCooperative() {
         if (!currentUser) return;
-        var id   = $('cooperativeModalId').value || null;
-        var nom  = ($('cooperativeModalNom').value  || '').trim();
-        var desc = ($('cooperativeModalDesc').value || '').trim();
+        var id        = $('cooperativeModalId').value || null;
+        var nom       = ($('cooperativeModalNom').value  || '').trim();
+        var desc      = ($('cooperativeModalDesc').value || '').trim();
+        var logoUrl   = $('cooperativeModalLogoUrl').value; // '' = retiré, valeur = URL existante ou vide si nouveau
+        var fileInput = $('coopLogoInput');
+        var file      = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+        var statusEl  = $('coopLogoUploadStatus');
 
         if (!nom) { setCooperativeModalMsg('❌ Le nom est obligatoire.', 'error'); return; }
 
         var btn = $('btnSaveCooperative');
         btn.disabled = true; btn.textContent = '⏳…';
 
-        supabase.rpc('save_cooperative', {
-            p_user_id:        currentUser.id,
-            p_nom:            nom,
-            p_description:    desc || null,
-            p_cooperative_id: id
+        // Afficher l'état lors de l'upload
+        function setStatus(msg) {
+            if (statusEl) {
+                statusEl.textContent = msg;
+                statusEl.style.display = msg ? '' : 'none';
+                statusEl.style.color = 'var(--text-dim)';
+            }
+        }
+
+        // Étape 1 : upload si un nouveau fichier est sélectionné
+        var uploadStep;
+        if (file) {
+            setStatus('⏳ Upload du logo…');
+            uploadStep = uploadCooperativeLogo(file);
+        } else {
+            // Pas de nouveau fichier → passer l'URL telle quelle :
+            //   ''         = aucun logo ou logo retiré → RPC efface (logo_url = NULL)
+            //   'https://…' = logo existant inchangé   → RPC conserve la même URL
+            uploadStep = Promise.resolve(logoUrl);
+        }
+
+        // Étape 2 : sauvegarder en base
+        uploadStep.then(function(finalLogoUrl) {
+            setStatus('');
+            return supabase.rpc('save_cooperative', {
+                p_user_id:        currentUser.id,
+                p_nom:            nom,
+                p_description:    desc || null,
+                p_cooperative_id: id,
+                p_logo_url:       finalLogoUrl
+            });
         }).then(function(res) {
             if (res.error) throw res.error;
             closeCooperativeModal();
             loadAdminCooperatives();
         }).catch(function(e) {
+            setStatus('');
             setCooperativeModalMsg('❌ ' + (e.message || 'Erreur lors de l\'enregistrement.'), 'error');
         }).finally(function() {
             btn.disabled = false; btn.textContent = '💾 Enregistrer';
@@ -8981,6 +9115,9 @@
     window.closeCooperativeModal  = closeCooperativeModal;
     window.saveCooperative        = saveCooperative;
     window.deleteCooperative      = deleteCooperative;
+    window.uploadCooperativeLogo  = uploadCooperativeLogo;
+    window.previewCoopLogo        = previewCoopLogo;
+    window.removeCoopLogo         = removeCoopLogo;
 
 })();
 </script>
