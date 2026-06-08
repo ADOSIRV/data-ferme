@@ -105,9 +105,24 @@
         /* Session bar */
         .session-bar { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.8rem; z-index: 1000; }
         .session-user { font-weight: 500; }
+        .session-user-btn { font-weight: 500; background: none; border: none; color: inherit; font: inherit; padding: 0; cursor: pointer; border-radius: 4px; transition: color 0.15s; }
+        .session-user-btn:hover { color: var(--blue); text-decoration: underline; }
         .session-role { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
         .session-role.eleveur { background: var(--green-light); color: var(--green); }
         .session-role.admin { background: var(--orange-light); color: var(--orange); }
+
+        /* ── Profil éleveur (modal) ── */
+        .profile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2500; display: none; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem; overflow-y: auto; }
+        .profile-overlay.show { display: flex; }
+        .profile-panel { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 620px; margin: auto; border: 1px solid var(--border); box-shadow: 0 24px 64px rgba(0,0,0,0.35); }
+        .profile-header { display: flex; align-items: center; gap: 1rem; padding: 1.3rem 1.5rem; border-bottom: 1px solid var(--border); }
+        .profile-avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--blue)); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .profile-title { font-size: 1.08rem; font-weight: 700; }
+        .profile-subtitle { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.15rem; }
+        .profile-body { padding: 1.4rem 1.5rem; }
+        .profile-section { margin-bottom: 1.4rem; }
+        .profile-section-title { font-size: 0.71rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.8rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.4rem; }
+        .profile-footer { display: flex; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border); justify-content: flex-end; }
         
         /* Theme toggle button */
         .theme-toggle { 
@@ -1504,6 +1519,132 @@
     </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODALE PROFIL ÉLEVEUR
+     ══════════════════════════════════════════════════════════ -->
+<div class="profile-overlay" id="profileModal">
+    <div class="profile-panel">
+        <!-- En-tête -->
+        <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar">👨‍🌾</div>
+            <div style="flex:1; min-width:0;">
+                <div class="profile-title" id="profileTitle">Mon profil</div>
+                <div class="profile-subtitle" id="profileSubtitle">Éleveur</div>
+            </div>
+            <button style="border:none;background:none;font-size:1.5rem;cursor:pointer;color:var(--text-dim);padding:0 4px;line-height:1;flex-shrink:0;" onclick="closeProfileModal()">&times;</button>
+        </div>
+        <!-- Corps -->
+        <div class="profile-body">
+            <div class="alert" id="profileAlert"></div>
+
+            <!-- Identité -->
+            <div class="profile-section">
+                <div class="profile-section-title">👤 Identité</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="profPrenom" class="form-input" placeholder="Jean-Pierre" autocomplete="given-name">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Nom *</label>
+                        <input type="text" id="profNom" class="form-input" placeholder="DUPONT" autocomplete="family-name">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact -->
+            <div class="profile-section">
+                <div class="profile-section-title">📞 Contact</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Email *</label>
+                        <input type="email" id="profEmail" class="form-input" placeholder="email@exemple.com" autocomplete="email">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" id="profTelephone" class="form-input" placeholder="06 XX XX XX XX" autocomplete="tel">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adresse -->
+            <div class="profile-section">
+                <div class="profile-section-title">📍 Adresse</div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Rue / Lieu-dit</label>
+                    <input type="text" id="profRue" class="form-input" placeholder="123 Route de la Ferme" autocomplete="street-address">
+                </div>
+                <div style="display:grid;grid-template-columns:140px 1fr;gap:0.75rem;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Code postal</label>
+                        <input type="text" id="profCodePostal" class="form-input" placeholder="29000" maxlength="10" autocomplete="postal-code">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Ville</label>
+                        <input type="text" id="profVille" class="form-input" placeholder="Quimper" autocomplete="address-level2">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coopérative -->
+            <div class="profile-section">
+                <div class="profile-section-title">🤝 Coopérative de rattachement</div>
+                <div class="form-group" style="margin:0;">
+                    <select id="profCooperative" class="form-input">
+                        <option value="">— Aucune coopérative —</option>
+                    </select>
+                    <div style="font-size:0.77rem;color:var(--text-dim);margin-top:0.3rem;">Liste gérée par l'administrateur.</div>
+                </div>
+            </div>
+
+            <!-- Mot de passe -->
+            <div class="profile-section" style="margin-bottom:0;">
+                <div class="profile-section-title">🔒 Changer le mot de passe</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Nouveau mot de passe</label>
+                        <input type="password" id="profNewPassword" class="form-input" placeholder="Laisser vide = inchangé" autocomplete="new-password" minlength="6">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Confirmer</label>
+                        <input type="password" id="profConfirmPassword" class="form-input" placeholder="Répéter le mot de passe" autocomplete="new-password">
+                    </div>
+                </div>
+                <div style="font-size:0.77rem;color:var(--text-dim);margin-top:0.4rem;">Minimum 6 caractères. Laisser vide pour conserver l'actuel.</div>
+            </div>
+        </div>
+        <!-- Pied -->
+        <div class="profile-footer">
+            <button class="btn btn-secondary" onclick="closeProfileModal()">Fermer</button>
+            <button class="btn btn-primary" id="btnSaveProfil" onclick="saveProfile()">💾 Enregistrer le profil</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE COOPÉRATIVE (admin — créer / modifier) -->
+<div class="modal-overlay" id="cooperativeModal">
+    <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+            <div class="modal-title" id="cooperativeModalTitle">Nouvelle coopérative</div>
+            <button class="modal-close" onclick="closeCooperativeModal()">&times;</button>
+        </div>
+        <div class="alert" id="cooperativeModalAlert"></div>
+        <input type="hidden" id="cooperativeModalId">
+        <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" id="cooperativeModalNom" class="form-input" placeholder="ex : Maïsadour, Terrena…" maxlength="150">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="cooperativeModalDesc" class="form-input" rows="2" placeholder="Description optionnelle…" style="resize:vertical;"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeCooperativeModal()">Annuler</button>
+            <button class="btn btn-primary" id="btnSaveCooperative" onclick="saveCooperative()">💾 Enregistrer</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODALE SOUCHE (créer / modifier) -->
 <div class="modal-overlay" id="soucheModal">
     <div class="modal-content" style="max-width:460px;">
@@ -1616,7 +1757,7 @@
 <!-- SESSION BAR -->
 <div class="session-bar" id="sessionBar">
     <button class="theme-toggle" id="themeToggle" title="Changer de thème">🌙</button>
-    <span class="session-user" id="sessionUser">👤</span>
+    <button class="session-user-btn" id="sessionUser" title="Mon profil" onclick="openProfileModal()">👤</button>
     <span class="session-role" id="sessionRole">-</span>
     <button class="session-btn" id="btnLogout">Déconnexion</button>
 </div>
@@ -1672,6 +1813,9 @@
             </button>
             <button class="admin-menu-btn" id="menuSouches" data-panel="souches">
                 <span class="menu-icon">🧬</span> Souches &amp; Standards
+            </button>
+            <button class="admin-menu-btn" id="menuCooperatives" data-panel="cooperatives">
+                <span class="menu-icon">🤝</span> Coopératives
             </button>
         </div>
     </div>
@@ -2253,6 +2397,38 @@
             </div>
         </div><!-- /panelSouches -->
 
+        <!-- PANEL: Coopératives (admin uniquement) -->
+        <div class="admin-panel" id="panelCooperatives">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🤝</span>
+                <div>
+                    <div class="admin-panel-title">Coopératives</div>
+                    <div class="admin-panel-subtitle">Gérer la liste des coopératives — les éleveurs peuvent ensuite sélectionner leur coopérative dans leur profil</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="alert" id="cooperativesAlert"></div>
+                <div style="display:flex; justify-content:flex-end; margin-bottom:1rem;">
+                    <button class="btn btn-primary btn-sm" onclick="openCooperativeModal(null)">➕ Nouvelle coopérative</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="souches-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Description</th>
+                                <th style="text-align:center;">Éleveurs rattachés</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cooperativesTbody">
+                            <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /panelCooperatives -->
+
         </div><!-- /sectionExploitation -->
 
         <!-- ================================================
@@ -2760,7 +2936,8 @@
         if (panelName === 'aliments')   loadAliments();
         if (panelName === 'typesLot')   loadAdminTypesLot();
         if (panelName === 'bdAvicole')  initBdAvicolePanel();
-        if (panelName === 'souches')    loadAdminSouches();
+        if (panelName === 'souches')       loadAdminSouches();
+        if (panelName === 'cooperatives')  loadAdminCooperatives();
     }
 
     // =====================================================
@@ -8405,6 +8582,361 @@
         reader.readAsText(file, 'UTF-8');
     }
 
+    // =====================================================
+    // PROFIL UTILISATEUR
+    // =====================================================
+    function openProfileModal() {
+        var user = currentUser;
+        if (!user) return;
+
+        var role        = user.role || '';
+        var isEleveur   = role === 'eleveur';
+        var displayName = [user.prenom || '', user.nom || ''].join(' ').trim() || user.nom || '—';
+
+        // En-tête
+        $('profileTitle').textContent    = displayName;
+        $('profileSubtitle').textContent = role.toUpperCase();
+
+        // Pré-remplir les champs identité / contact
+        $('profPrenom').value    = user.prenom || '';
+        $('profNom').value       = user.nom    || '';
+        $('profEmail').value     = user.email  || '';
+        $('profNewPassword').value    = '';
+        $('profConfirmPassword').value = '';
+
+        // Champs éleveur-spécifiques
+        var tel = '', rue = '', cp = '', vil = '', coopId = null;
+        if (isEleveur && currentEleveur) {
+            tel    = currentEleveur.telephone   || '';
+            rue    = currentEleveur.rue         || '';
+            cp     = currentEleveur.code_postal || '';
+            vil    = currentEleveur.ville       || '';
+            coopId = currentEleveur.cooperative_id || null;
+            // Fallback adresse_json si colonnes plates vides
+            if (!rue && currentEleveur.adresse_json) {
+                var aj = currentEleveur.adresse_json;
+                rue = aj.street  || '';
+                cp  = aj.zipCode || '';
+                vil = aj.city    || '';
+            }
+        }
+        $('profTelephone').value  = tel;
+        $('profRue').value        = rue;
+        $('profCodePostal').value = cp;
+        $('profVille').value      = vil;
+
+        // Sections visibles seulement pour éleveur
+        var coopSection = document.querySelector('#profCooperative') &&
+                          document.querySelector('#profCooperative').closest('.profile-section');
+        var pwdSection  = document.querySelector('#profNewPassword') &&
+                          document.querySelector('#profNewPassword').closest('.profile-section');
+        if (coopSection) coopSection.style.display = isEleveur ? '' : 'none';
+        if (pwdSection)  pwdSection.style.display  = isEleveur ? '' : 'none';
+
+        // Rendre les champs en lecture seule pour les rôles non-éleveur
+        var editableIds = ['profPrenom','profNom','profEmail','profTelephone',
+                           'profRue','profCodePostal','profVille'];
+        editableIds.forEach(function(id) {
+            var el = $(id);
+            if (el) el.readOnly = !isEleveur;
+        });
+
+        // Bouton Enregistrer
+        $('btnSaveProfil').style.display = isEleveur ? '' : 'none';
+
+        // Dropdown coopérative (chargement async)
+        if (isEleveur) {
+            loadCooperativesDropdown('profCooperative', coopId);
+        }
+
+        // Reset alerte
+        var alertEl = $('profileAlert');
+        alertEl.textContent = '';
+        alertEl.className = 'alert';
+        alertEl.style.cssText = '';
+
+        $('profileModal').classList.add('show');
+    }
+
+    function closeProfileModal() {
+        $('profileModal').classList.remove('show');
+    }
+
+    function loadCooperativesDropdown(selectId, selectedId) {
+        var sel = $(selectId);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— Aucune coopérative —</option>';
+        supabase.from('cooperatives').select('id, nom').order('nom')
+            .then(function(res) {
+                if (res.error) return;
+                (res.data || []).forEach(function(c) {
+                    var opt        = document.createElement('option');
+                    opt.value      = c.id;
+                    opt.textContent = c.nom;
+                    if (selectedId && c.id === selectedId) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            });
+    }
+
+    function saveProfile() {
+        var user = currentUser;
+        if (!user) return;
+
+        var nom    = ($('profNom').value       || '').trim();
+        var prenom = ($('profPrenom').value    || '').trim();
+        var email  = ($('profEmail').value     || '').trim();
+        var tel    = ($('profTelephone').value || '').trim();
+        var rue    = ($('profRue').value       || '').trim();
+        var cp     = ($('profCodePostal').value|| '').trim();
+        var ville  = ($('profVille').value     || '').trim();
+        var coopEl = $('profCooperative');
+        var coopId = coopEl && coopEl.value ? coopEl.value : null;
+        var pwd    = ($('profNewPassword').value    || '');
+        var pwd2   = ($('profConfirmPassword').value|| '');
+
+        if (!nom)   { setProfileMsg('❌ Le nom est obligatoire.', 'error');  return; }
+        if (!email) { setProfileMsg('❌ L\'email est obligatoire.', 'error'); return; }
+        if (pwd && pwd.length < 6) {
+            setProfileMsg('❌ Le mot de passe doit contenir au moins 6 caractères.', 'error');
+            return;
+        }
+        if (pwd && pwd !== pwd2) {
+            setProfileMsg('❌ Les deux mots de passe ne correspondent pas.', 'error');
+            return;
+        }
+
+        var btn = $('btnSaveProfil');
+        btn.disabled = true;
+        btn.textContent = '⏳ Enregistrement…';
+
+        supabase.rpc('save_profil_eleveur', {
+            p_user_id:        user.id,
+            p_nom:            nom,
+            p_prenom:         prenom  || null,
+            p_email:          email,
+            p_telephone:      tel     || null,
+            p_rue:            rue     || null,
+            p_code_postal:    cp      || null,
+            p_ville:          ville   || null,
+            p_cooperative_id: coopId,
+            p_new_password:   pwd     || null
+        }).then(function(res) {
+            if (res.error) throw res.error;
+
+            // Mettre à jour les données session locales
+            user.nom    = nom;
+            user.prenom = prenom || null;
+            user.email  = email;
+
+            // Mettre à jour la barre de session
+            var dispName = [prenom, nom].filter(Boolean).join(' ') || nom;
+            $('sessionUser').textContent = '👤 ' + dispName;
+
+            // Mettre à jour le cache éleveur + la bannière
+            if (currentEleveur) {
+                currentEleveur.nom           = nom;
+                currentEleveur.prenom        = prenom || null;
+                currentEleveur.email         = email;
+                currentEleveur.telephone     = tel   || null;
+                currentEleveur.rue           = rue   || null;
+                currentEleveur.code_postal   = cp    || null;
+                currentEleveur.ville         = ville || null;
+                currentEleveur.cooperative_id = coopId;
+                // Rafraîchir la bannière
+                $('eleveurBannerName').textContent = nom + (prenom ? ' ' + prenom : '');
+            }
+
+            setProfileMsg('✅ Profil enregistré avec succès.', 'success');
+        }).catch(function(e) {
+            setProfileMsg('❌ ' + (e.message || 'Erreur lors de l\'enregistrement.'), 'error');
+        }).finally(function() {
+            btn.disabled = false;
+            btn.textContent = '💾 Enregistrer le profil';
+        });
+    }
+
+    function setProfileMsg(msg, type) {
+        var el = $('profileAlert');
+        el.textContent = msg;
+        el.style.display = msg ? 'block' : 'none';
+        el.style.padding = '0.6rem 1rem';
+        el.style.borderRadius = '8px';
+        el.style.marginBottom = '0.75rem';
+        if (type === 'success') {
+            el.style.background = 'rgba(34,197,94,0.12)';
+            el.style.color      = 'var(--green)';
+            el.style.border     = '1px solid var(--green)';
+        } else {
+            el.style.background = 'rgba(239,68,68,0.12)';
+            el.style.color      = 'var(--red)';
+            el.style.border     = '1px solid var(--red)';
+        }
+    }
+
+    // =====================================================
+    // ADMIN – COOPÉRATIVES
+    // =====================================================
+    var adminCooperativesCache = [];
+
+    function loadAdminCooperatives() {
+        var tbody   = $('cooperativesTbody');
+        var alertEl = $('cooperativesAlert');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
+        if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
+
+        supabase.from('cooperatives').select('id, nom, description, created_at').order('nom')
+            .then(function(res) {
+                if (res.error) throw res.error;
+                adminCooperativesCache = res.data || [];
+                // Compter les éleveurs par coopérative
+                return supabase.from('eleveurs')
+                    .select('cooperative_id')
+                    .eq('is_active', true)
+                    .then(function(r2) {
+                        var counts = {};
+                        (r2.data || []).forEach(function(e) {
+                            if (e.cooperative_id) {
+                                counts[e.cooperative_id] = (counts[e.cooperative_id] || 0) + 1;
+                            }
+                        });
+                        renderCooperativesAdmin(adminCooperativesCache, counts);
+                    });
+            })
+            .catch(function(e) {
+                if (alertEl) {
+                    alertEl.textContent = '❌ Erreur : ' + (e.message || 'impossible de charger les coopératives');
+                    alertEl.style.cssText = 'display:block;padding:0.6rem 1rem;border-radius:8px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid var(--red);';
+                }
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);">Erreur de chargement</td></tr>';
+            });
+    }
+
+    function renderCooperativesAdmin(list, counts) {
+        var tbody   = $('cooperativesTbody');
+        var alertEl = $('cooperativesAlert');
+        if (!tbody) return;
+        if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
+
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">Aucune coopérative — cliquez ➕ pour en créer une</td></tr>';
+            return;
+        }
+
+        var html = '';
+        list.forEach(function(c) {
+            var cnt = counts[c.id] || 0;
+            var cntBadge = cnt > 0
+                ? '<span style="display:inline-block;background:rgba(59,130,246,0.12);color:var(--blue);border-radius:20px;padding:0.1rem 0.65rem;font-size:0.82rem;font-weight:600;">' + cnt + '</span>'
+                : '<span style="color:var(--text-dim);font-size:0.82rem;">0</span>';
+            var delBtn = cnt === 0
+                ? '<button class="btn btn-sm" style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid var(--red);" onclick="deleteCooperative(\'' + escAttr(c.id) + '\',\'' + escAttr(c.nom) + '\')">🗑️</button>'
+                : '<button class="btn btn-sm" style="opacity:0.38;cursor:not-allowed;" title="Impossible : ' + cnt + ' éleveur(s) rattaché(s)" disabled>🗑️</button>';
+
+            html += '<tr>';
+            html += '<td style="font-weight:600;">' + escHtml(c.nom) + '</td>';
+            html += '<td style="color:var(--text-dim);font-size:0.87rem;">' + escHtml(c.description || '—') + '</td>';
+            html += '<td style="text-align:center;">' + cntBadge + '</td>';
+            html += '<td style="text-align:right;white-space:nowrap;">';
+            html += '<button class="btn btn-secondary btn-sm" onclick="openCooperativeModal(\'' + escAttr(c.id) + '\')" style="margin-right:0.4rem;">✏️ Modifier</button>';
+            html += delBtn;
+            html += '</td></tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    function openCooperativeModal(id) {
+        var alertEl = $('cooperativeModalAlert');
+        $('cooperativeModalTitle').textContent = id ? 'Modifier la coopérative' : 'Nouvelle coopérative';
+        $('cooperativeModalId').value  = id || '';
+        $('cooperativeModalNom').value  = '';
+        $('cooperativeModalDesc').value = '';
+        if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
+
+        if (id) {
+            var coop = null;
+            for (var i = 0; i < adminCooperativesCache.length; i++) {
+                if (adminCooperativesCache[i].id === id) { coop = adminCooperativesCache[i]; break; }
+            }
+            if (coop) {
+                $('cooperativeModalNom').value  = coop.nom         || '';
+                $('cooperativeModalDesc').value = coop.description || '';
+            }
+        }
+
+        $('cooperativeModal').classList.add('show');
+        setTimeout(function() { $('cooperativeModalNom').focus(); }, 50);
+    }
+
+    function closeCooperativeModal() {
+        $('cooperativeModal').classList.remove('show');
+    }
+
+    function saveCooperative() {
+        if (!currentUser) return;
+        var id   = $('cooperativeModalId').value || null;
+        var nom  = ($('cooperativeModalNom').value  || '').trim();
+        var desc = ($('cooperativeModalDesc').value || '').trim();
+
+        if (!nom) { setCooperativeModalMsg('❌ Le nom est obligatoire.', 'error'); return; }
+
+        var btn = $('btnSaveCooperative');
+        btn.disabled = true; btn.textContent = '⏳…';
+
+        supabase.rpc('save_cooperative', {
+            p_user_id:        currentUser.id,
+            p_nom:            nom,
+            p_description:    desc || null,
+            p_cooperative_id: id
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            closeCooperativeModal();
+            loadAdminCooperatives();
+        }).catch(function(e) {
+            setCooperativeModalMsg('❌ ' + (e.message || 'Erreur lors de l\'enregistrement.'), 'error');
+        }).finally(function() {
+            btn.disabled = false; btn.textContent = '💾 Enregistrer';
+        });
+    }
+
+    function setCooperativeModalMsg(msg, type) {
+        var el = $('cooperativeModalAlert');
+        if (!el) return;
+        el.textContent = msg;
+        el.style.display = msg ? 'block' : 'none';
+        el.style.padding = '0.6rem 1rem';
+        el.style.borderRadius = '8px';
+        el.style.marginBottom = '0.75rem';
+        if (type === 'success') {
+            el.style.background = 'rgba(34,197,94,0.12)';
+            el.style.color      = 'var(--green)';
+            el.style.border     = '1px solid var(--green)';
+        } else {
+            el.style.background = 'rgba(239,68,68,0.12)';
+            el.style.color      = 'var(--red)';
+            el.style.border     = '1px solid var(--red)';
+        }
+    }
+
+    function deleteCooperative(id, nom) {
+        if (!currentUser) return;
+        if (!confirm('Supprimer la coopérative "' + nom + '" ?\nCette action est irréversible.')) return;
+        var alertEl = $('cooperativesAlert');
+        supabase.rpc('delete_cooperative', {
+            p_user_id:        currentUser.id,
+            p_cooperative_id: id
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            loadAdminCooperatives();
+        }).catch(function(e) {
+            if (alertEl) {
+                alertEl.textContent = '❌ ' + (e.message || 'Erreur lors de la suppression.');
+                alertEl.style.cssText = 'display:block;padding:0.6rem 1rem;border-radius:8px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid var(--red);';
+            }
+        });
+    }
+
     // Exposer les fonctions appelées via onclick= dans le HTML (hors portée IIFE)
     window.openLotEditMode       = openLotEditMode;
     window.closeLotEditMode      = closeLotEditMode;
@@ -8436,6 +8968,19 @@
     window.saveStandardsGrid    = saveStandardsGrid;
     window.exportStandardsCSV   = exportStandardsCSV;
     window.importStandardsCSV   = importStandardsCSV;
+
+    // Profil éleveur
+    window.openProfileModal           = openProfileModal;
+    window.closeProfileModal          = closeProfileModal;
+    window.saveProfile                = saveProfile;
+    window.loadCooperativesDropdown   = loadCooperativesDropdown;
+
+    // Admin Coopératives
+    window.loadAdminCooperatives  = loadAdminCooperatives;
+    window.openCooperativeModal   = openCooperativeModal;
+    window.closeCooperativeModal  = closeCooperativeModal;
+    window.saveCooperative        = saveCooperative;
+    window.deleteCooperative      = deleteCooperative;
 
 })();
 </script>
