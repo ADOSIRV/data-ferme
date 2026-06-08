@@ -131,6 +131,26 @@
         .coop-logo-upload-box:hover { border-color: var(--blue); }
         .coop-logo-upload-box img { width: 100%; height: 100%; object-fit: contain; }
 
+        /* ── Déclarations sortie sur le parcours ── */
+        .decl-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 1.2rem 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+        .decl-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 600px) { .decl-form-grid { grid-template-columns: 1fr; } }
+        .decl-cdc-option { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0.8rem; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 0.35rem; }
+        .decl-cdc-option:hover { border-color: var(--blue); background: rgba(59,130,246,0.05); }
+        .decl-cdc-option.selected { border-color: var(--blue); background: rgba(59,130,246,0.1); }
+        .decl-cdc-option input[type="radio"] { margin-top: 0.18rem; accent-color: var(--blue); flex-shrink: 0; cursor: pointer; }
+        .decl-cdc-label { font-size: 0.85rem; line-height: 1.4; color: var(--text); cursor: pointer; }
+        .decl-signature-box { border: 1.5px solid var(--border); border-radius: 8px; background: #fff; overflow: hidden; max-width: 420px; }
+        #signatureCanvas { display: block; cursor: crosshair; touch-action: none; width: 100%; }
+        .decl-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+        .decl-history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .decl-history-table th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.72rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
+        .decl-history-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .decl-history-table tr:last-child td { border-bottom: none; }
+        .decl-history-table tr:hover td { background: rgba(59,130,246,0.04); }
+        .badge-decl { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(34,197,94,0.12); color: var(--green); border-radius: 20px; padding: 0.1rem 0.6rem; font-size: 0.78rem; font-weight: 600; }
+        .icon-decl-sortie { font-size: 0.95rem; cursor: default; vertical-align: middle; }
+
         /* Theme toggle button */
         .theme-toggle { 
             background: var(--bg-input); 
@@ -1646,6 +1666,11 @@
             <label class="form-label">Description</label>
             <textarea id="cooperativeModalDesc" class="form-input" rows="2" placeholder="Description optionnelle…" style="resize:vertical;"></textarea>
         </div>
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="cooperativeModalEmail" class="form-input" placeholder="email@cooperative.fr" maxlength="255">
+            <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem;">Pré-rempli comme destinataire dans les déclarations de sortie sur le parcours</div>
+        </div>
         <!-- Logo -->
         <div class="form-group" style="margin-bottom:0.5rem;">
             <label class="form-label">Logo</label>
@@ -1944,6 +1969,7 @@
             <div class="exploit-tabs" id="exploitTabs">
                 <button class="exploit-tab active" data-tab="graphiques">📊 Graphiques</button>
                 <button class="exploit-tab" data-tab="tableau">📋 Données exploitation</button>
+                <button class="exploit-tab" data-tab="declaration" id="tabDeclaration" style="display:none;">🌿 Déclarations</button>
             </div>
 
             <!-- ── Panel : Graphiques ── -->
@@ -2104,6 +2130,107 @@
                     <div class="tableau-loading" id="tableauContent">📊 Chargement...</div>
                 </div>
             </div><!-- /exploitTableau -->
+
+            <!-- ── Panel : Déclarations sortie sur le parcours ── -->
+            <div class="exploit-panel" id="exploitDeclaration">
+
+                <!-- Formulaire nouvelle déclaration -->
+                <div class="card" style="margin-bottom:1rem;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+                        <div>
+                            <div style="font-weight:700; font-size:1rem; color:var(--text);">🌿 Nouvelle déclaration de sortie sur le parcours</div>
+                            <div style="font-size:0.78rem; color:var(--text-dim); margin-top:0.2rem;">Document E/006/C — MAJ : 01/08/2023</div>
+                        </div>
+                        <span id="declLotLabel" style="font-size:0.82rem; color:var(--text-dim); white-space:nowrap;"></span>
+                    </div>
+
+                    <div id="declNoLotMsg" style="display:none; color:var(--text-dim); text-align:center; padding:2rem 1rem;">
+                        ⚠️ Sélectionnez un lot pour créer une déclaration.
+                    </div>
+
+                    <div id="declFormContent">
+                        <!-- Ligne 1 : date + signataire -->
+                        <div class="decl-section-title">Informations de sortie</div>
+                        <div class="decl-form-grid">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">Date de sortie sur le parcours *</label>
+                                <input type="date" id="declDateSortie" class="form-input">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">Nom et prénom du signataire *</label>
+                                <input type="text" id="declSignataire" class="form-input" placeholder="Prénom NOM">
+                            </div>
+                        </div>
+
+                        <!-- Cahier des charges -->
+                        <div class="decl-section-title">Cahier des charges (sélectionner une option) *</div>
+                        <div id="declCdcOptions">
+                            <label class="decl-cdc-option" onclick="selectCdc(this)">
+                                <input type="radio" name="declCdc" value="AB - Agriculture Biologique">
+                                <span class="decl-cdc-label"><strong>AB</strong> — Agriculture Biologique</span>
+                            </label>
+                            <label class="decl-cdc-option" onclick="selectCdc(this)">
+                                <input type="radio" name="declCdc" value="Plein air">
+                                <span class="decl-cdc-label"><strong>Plein air</strong></span>
+                            </label>
+                            <label class="decl-cdc-option" onclick="selectCdc(this)">
+                                <input type="radio" name="declCdc" value="Label Rouge">
+                                <span class="decl-cdc-label"><strong>Label Rouge</strong></span>
+                            </label>
+                            <label class="decl-cdc-option" onclick="selectCdc(this)">
+                                <input type="radio" name="declCdc" value="Nature &amp; Progrès">
+                                <span class="decl-cdc-label"><strong>Nature &amp; Progrès</strong></span>
+                            </label>
+                            <label class="decl-cdc-option" onclick="selectCdc(this)">
+                                <input type="radio" name="declCdc" value="Bleu-Blanc-Cœur">
+                                <span class="decl-cdc-label"><strong>Bleu-Blanc-Cœur</strong></span>
+                            </label>
+                            <label class="decl-cdc-option" onclick="selectCdc(this)" id="declCdcAutreOption">
+                                <input type="radio" name="declCdc" value="__autre__">
+                                <span class="decl-cdc-label"><strong>Autre :</strong>
+                                    <input type="text" id="declCdcAutreText" class="form-input" placeholder="Préciser…"
+                                        style="display:inline-block; width:auto; min-width:180px; margin-left:0.5rem; padding:0.2rem 0.5rem; font-size:0.82rem; vertical-align:middle;"
+                                        onclick="event.stopPropagation(); selectCdc(this.closest('.decl-cdc-option'));"
+                                        oninput="event.stopPropagation();">
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Signature -->
+                        <div class="decl-section-title">Signature</div>
+                        <div class="decl-signature-box">
+                            <canvas id="signatureCanvas" width="420" height="130"></canvas>
+                        </div>
+                        <button type="button" onclick="clearSignature()" class="btn btn-secondary btn-sm" style="margin-top:0.4rem; font-size:0.8rem;">🗑️ Effacer la signature</button>
+
+                        <!-- Email destinataire -->
+                        <div class="decl-section-title">Envoi par email</div>
+                        <div class="form-group" style="max-width:420px; margin-bottom:0;">
+                            <label class="form-label">Email destinataire</label>
+                            <input type="email" id="declEmailDestinataire" class="form-input" placeholder="destinataire@cooperative.fr">
+                            <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Pré-rempli avec l'email de la coopérative (modifiable)</div>
+                        </div>
+
+                        <!-- Alerte formulaire -->
+                        <div class="alert" id="declAlert" style="margin-top:0.75rem;"></div>
+
+                        <!-- Boutons d'action -->
+                        <div class="decl-actions">
+                            <button class="btn btn-secondary" onclick="saveAndDownloadDeclaration()">📄 Générer &amp; Télécharger le PDF</button>
+                            <button class="btn btn-primary" onclick="saveAndSendDeclaration()">📧 Générer &amp; Envoyer par email</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historique des déclarations -->
+                <div class="card">
+                    <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.75rem; color:var(--text);">📋 Historique des déclarations (lot en cours)</div>
+                    <div id="declHistoriqueContent">
+                        <div style="color:var(--text-dim); text-align:center; padding:1.5rem; font-size:0.87rem;">Chargement…</div>
+                    </div>
+                </div>
+
+            </div><!-- /exploitDeclaration -->
 
             <!-- Empty -->
             <div class="chart-card show" id="emptyState">
@@ -2450,12 +2577,13 @@
                                 <th style="width:52px; text-align:center;">Logo</th>
                                 <th>Nom</th>
                                 <th>Description</th>
+                                <th>Email</th>
                                 <th style="text-align:center;">Éleveurs rattachés</th>
                                 <th style="text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="cooperativesTbody">
-                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -4019,7 +4147,7 @@
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
             var soucheForStd = lot.souche_id_manuel || lot.souche_id;
             if (soucheForStd) loadStandards(soucheForStd);
-            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] }; showDataPanels(); updateUI(); renderTableau(); }
+            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] }; showDataPanels(); updateUI(); renderTableau(); loadDeclarations(); }
         }).catch(function(err) {
             console.error('Erreur chargement données lot:', err);
             showDataPanels();
@@ -4063,6 +4191,7 @@
             showDataPanels();
             updateUI();
             renderTableau();
+            loadDeclarations();
         });
     }
 
@@ -4288,7 +4417,14 @@
             }
             html += '<td class="col-id">' + jourCell + '</td>';
             var dateFmt = row.date_mesure ? new Date(row.date_mesure).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
-            html += '<td class="col-id col-border">' + dateFmt + '</td>';
+            // Icône 🌿 si une déclaration de sortie correspond à cette date
+            var declIcon = '';
+            if (row.date_mesure && currentDeclarations && currentDeclarations.length > 0) {
+                var rowDateStr = row.date_mesure.slice(0, 10); // 'YYYY-MM-DD'
+                var hasDecl = currentDeclarations.some(function(d) { return d.date_sortie === rowDateStr; });
+                if (hasDecl) declIcon = '<span class="icon-decl-sortie" title="Déclaration de sortie sur le parcours enregistrée ce jour">🌿</span>';
+            }
+            html += '<td class="col-id col-border">' + dateFmt + declIcon + '</td>';
 
             activeFields.forEach(function(f, i) {
                 var borderLeft = (i === 0 || f.group !== activeFields[i - 1].group) ? 'border-left:2px solid var(--border);' : '';
@@ -4545,11 +4681,19 @@
         document.querySelectorAll('.exploit-tab').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
         });
+        $('exploitGraphiques').classList.remove('show');
+        $('exploitTableau').classList.remove('show');
+        if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+
         if (tab === 'graphiques') {
             $('exploitGraphiques').classList.add('show');
-            $('exploitTableau').classList.remove('show');
+        } else if (tab === 'declaration') {
+            if ($('exploitDeclaration')) {
+                $('exploitDeclaration').classList.add('show');
+                if (!silent) initDeclarationTab();
+            }
         } else {
-            $('exploitGraphiques').classList.remove('show');
+            // tableau
             $('exploitTableau').classList.add('show');
             if (!silent && currentLotInfo) renderTableau();
         }
@@ -4648,13 +4792,24 @@
         if ($('btnAddJour') && currentUser && ['admin','technicien','eleveur'].indexOf(currentUser.role) !== -1) {
             $('btnAddJour').style.display = '';
         }
+        // Onglet Déclarations — uniquement pour les éleveurs
+        var tabDecl = $('tabDeclaration');
+        if (tabDecl) {
+            tabDecl.style.display = (currentUser && currentUser.role === 'eleveur') ? '' : 'none';
+        }
         // Afficher le bon panel selon l'onglet actif
-        if (currentExploitTab === 'tableau') {
+        if (currentExploitTab === 'declaration') {
+            if ($('exploitDeclaration')) $('exploitDeclaration').classList.add('show');
+            $('exploitGraphiques').classList.remove('show');
+            $('exploitTableau').classList.remove('show');
+        } else if (currentExploitTab === 'tableau') {
             $('exploitTableau').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
+            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         } else {
             $('exploitGraphiques').classList.add('show');
             $('exploitTableau').classList.remove('show');
+            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
             $('graphsContainer').classList.add('show');
             $('statsRow').classList.add('show');
             $('exportSection').classList.add('show');
@@ -4671,6 +4826,7 @@
         $('exploitTabs').classList.remove('show');
         $('exploitGraphiques').classList.remove('show');
         $('exploitTableau').classList.remove('show');
+        if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         $('graphsContainer').classList.remove('show');
         $('statsRow').classList.remove('show');
         $('exportSection').classList.remove('show');
@@ -4680,9 +4836,10 @@
         document.querySelectorAll('.exploit-tab').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-tab') === 'graphiques');
         });
-        // Vider les corrections
+        // Vider les corrections et déclarations
         allCorrections = [];
         activeCorrections = {};
+        currentDeclarations = [];
     }
     
     // =====================================================
@@ -8816,10 +8973,10 @@
         var tbody   = $('cooperativesTbody');
         var alertEl = $('cooperativesAlert');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>';
         if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
 
-        supabase.from('cooperatives').select('id, nom, description, logo_url, created_at').order('nom')
+        supabase.from('cooperatives').select('id, nom, description, logo_url, email, created_at').order('nom')
             .then(function(res) {
                 if (res.error) throw res.error;
                 adminCooperativesCache = res.data || [];
@@ -8841,7 +8998,7 @@
                     alertEl.textContent = '❌ Erreur : ' + (e.message || 'impossible de charger les coopératives');
                     alertEl.style.cssText = 'display:block;padding:0.6rem 1rem;border-radius:8px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid var(--red);';
                 }
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);">Erreur de chargement</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">Erreur de chargement</td></tr>';
             });
     }
 
@@ -8852,7 +9009,7 @@
         if (alertEl) { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
 
         if (!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Aucune coopérative — cliquez ➕ pour en créer une</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim);">Aucune coopérative — cliquez ➕ pour en créer une</td></tr>';
             return;
         }
 
@@ -8862,6 +9019,9 @@
             var logoCell = c.logo_url
                 ? '<img src="' + escHtml(c.logo_url) + '" class="coop-logo-thumb" alt="' + escAttr(c.nom) + '" loading="lazy">'
                 : '<div class="coop-logo-placeholder" title="Aucun logo">🏢</div>';
+            var emailCell = c.email
+                ? '<a href="mailto:' + escAttr(c.email) + '" style="font-size:0.83rem;color:var(--blue);">' + escHtml(c.email) + '</a>'
+                : '<span style="color:var(--text-dim);font-size:0.82rem;">—</span>';
             var cntBadge = cnt > 0
                 ? '<span style="display:inline-block;background:rgba(59,130,246,0.12);color:var(--blue);border-radius:20px;padding:0.1rem 0.65rem;font-size:0.82rem;font-weight:600;">' + cnt + '</span>'
                 : '<span style="color:var(--text-dim);font-size:0.82rem;">0</span>';
@@ -8873,6 +9033,7 @@
             html += '<td style="text-align:center; padding:0.4rem 0.6rem;">' + logoCell + '</td>';
             html += '<td style="font-weight:600;">' + escHtml(c.nom) + '</td>';
             html += '<td style="color:var(--text-dim);font-size:0.87rem;">' + escHtml(c.description || '—') + '</td>';
+            html += '<td>' + emailCell + '</td>';
             html += '<td style="text-align:center;">' + cntBadge + '</td>';
             html += '<td style="text-align:right;white-space:nowrap;">';
             html += '<button class="btn btn-secondary btn-sm" onclick="openCooperativeModal(\'' + escAttr(c.id) + '\')" style="margin-right:0.4rem;">✏️ Modifier</button>';
@@ -8892,6 +9053,7 @@
         $('cooperativeModalId').value           = id || '';
         $('cooperativeModalNom').value          = '';
         $('cooperativeModalDesc').value         = '';
+        if ($('cooperativeModalEmail')) $('cooperativeModalEmail').value = '';
         $('cooperativeModalLogoUrl').value      = '';
         $('coopLogoInput').value                = '';
         if (alertEl)   { alertEl.textContent = ''; alertEl.className = 'alert'; alertEl.style.cssText = ''; }
@@ -8909,6 +9071,7 @@
             if (coop) {
                 $('cooperativeModalNom').value  = coop.nom         || '';
                 $('cooperativeModalDesc').value = coop.description || '';
+                if ($('cooperativeModalEmail')) $('cooperativeModalEmail').value = coop.email || '';
                 if (coop.logo_url) {
                     $('cooperativeModalLogoUrl').value = coop.logo_url;
                     if (preview) preview.innerHTML = '<img src="' + escHtml(coop.logo_url) + '" style="width:100%;height:100%;object-fit:contain;" loading="lazy">';
@@ -8981,6 +9144,7 @@
         var id        = $('cooperativeModalId').value || null;
         var nom       = ($('cooperativeModalNom').value  || '').trim();
         var desc      = ($('cooperativeModalDesc').value || '').trim();
+        var email     = ($('cooperativeModalEmail') ? ($('cooperativeModalEmail').value || '') : '').trim();
         var logoUrl   = $('cooperativeModalLogoUrl').value; // '' = retiré, valeur = URL existante ou vide si nouveau
         var fileInput = $('coopLogoInput');
         var file      = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
@@ -9020,7 +9184,8 @@
                 p_nom:            nom,
                 p_description:    desc || null,
                 p_cooperative_id: id,
-                p_logo_url:       finalLogoUrl
+                p_logo_url:       finalLogoUrl,
+                p_email:          email !== '' ? email : null
             });
         }).then(function(res) {
             if (res.error) throw res.error;
@@ -9071,6 +9236,655 @@
         });
     }
 
+    // =====================================================
+    // DÉCLARATIONS SORTIE SUR LE PARCOURS
+    // =====================================================
+
+    var currentDeclarations = [];         // déclarations du lot courant
+    var _signatureDrawing   = false;      // état dessin canvas
+    var _signatureHasStroke = false;      // signature non-vide ?
+    var _signatureLastX     = 0;
+    var _signatureLastY     = 0;
+    var _declCoopInfo       = null;       // { email, logo_url, nom } de la coop courante
+
+    // ── Charger les déclarations du lot courant ───────────────────
+    function loadDeclarations() {
+        currentDeclarations = [];
+        if (!currentUser || !currentEleveur || !currentLotInfo) return;
+        var lotId = currentLotInfo.id;
+        supabase.rpc('get_declarations_sortie', {
+            p_user_id:    currentUser.id,
+            p_eleveur_id: currentEleveur.id
+        }).then(function(res) {
+            if (res.error) { console.error('loadDeclarations:', res.error); return; }
+            var all = res.data ? (Array.isArray(res.data) ? res.data : [res.data]) : [];
+            // Filtrer par lot courant
+            currentDeclarations = all.filter(function(d) { return d.lot_id === lotId; });
+            // Mettre à jour le tableau si visible (icônes 🌿)
+            if (currentExploitTab === 'tableau') renderTableau();
+            // Mettre à jour l'historique si l'onglet déclaration est actif
+            if (currentExploitTab === 'declaration') renderDeclarationsHistory(currentDeclarations);
+        }).catch(function(err) {
+            console.error('loadDeclarations error:', err);
+        });
+    }
+
+    // ── Initialiser l'onglet Déclarations ────────────────────────
+    function initDeclarationTab() {
+        if (!currentLotInfo) {
+            var noMsg = $('declNoLotMsg');
+            var form  = $('declFormContent');
+            if (noMsg) noMsg.style.display = '';
+            if (form)  form.style.display  = 'none';
+            $('declHistoriqueContent').innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:1.5rem;font-size:0.87rem;">Sélectionnez un lot.</div>';
+            return;
+        }
+
+        var noMsg = $('declNoLotMsg');
+        var form  = $('declFormContent');
+        if (noMsg) noMsg.style.display = 'none';
+        if (form)  form.style.display  = '';
+
+        // Label lot
+        var lotLabel = $('declLotLabel');
+        if (lotLabel) {
+            lotLabel.textContent = 'Lot : ' + (currentLotInfo.code_lot || '--')
+                + (currentBatiment ? ' · Bât. ' + currentBatiment.nom : '');
+        }
+
+        // Pré-remplir signataire depuis currentUser / currentEleveur
+        var declSig = $('declSignataire');
+        if (declSig && !declSig.value) {
+            var prenom = (currentUser && currentUser.prenom) || (currentEleveur && currentEleveur.prenom) || '';
+            var nom    = (currentUser && currentUser.nom)    || (currentEleveur && currentEleveur.nom)    || '';
+            declSig.value = (prenom + ' ' + nom).trim();
+        }
+
+        // Pré-remplir date (aujourd'hui par défaut si vide)
+        var declDate = $('declDateSortie');
+        if (declDate && !declDate.value) {
+            declDate.value = new Date().toISOString().slice(0, 10);
+        }
+
+        // Initialiser le canvas de signature
+        initSignatureCanvas();
+
+        // Charger email coop pour pré-remplir le destinataire
+        _declCoopInfo = null;
+        var coopId = currentEleveur && currentEleveur.cooperative_id;
+        if (coopId) {
+            supabase.from('cooperatives').select('id, nom, email, logo_url').eq('id', coopId).maybeSingle()
+                .then(function(r) {
+                    if (r && r.data) {
+                        _declCoopInfo = r.data;
+                        var emailEl = $('declEmailDestinataire');
+                        if (emailEl && !emailEl.value && r.data.email) {
+                            emailEl.value = r.data.email;
+                        }
+                    }
+                }).catch(function() {});
+        }
+
+        // Afficher l'historique
+        renderDeclarationsHistory(currentDeclarations);
+    }
+
+    // ── Rendre l'historique des déclarations ─────────────────────
+    function renderDeclarationsHistory(list) {
+        var container = $('declHistoriqueContent');
+        if (!container) return;
+        if (!list || list.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:1.5rem;font-size:0.87rem;">Aucune déclaration enregistrée pour ce lot.</div>';
+            return;
+        }
+        var html = '<div style="overflow-x:auto;">';
+        html += '<table class="decl-history-table">';
+        html += '<thead><tr>';
+        html += '<th>Date sortie</th>';
+        html += '<th>Cahier des charges</th>';
+        html += '<th>Signataire</th>';
+        html += '<th>Destinataire</th>';
+        html += '<th>PDF</th>';
+        html += '<th></th>';
+        html += '</tr></thead><tbody>';
+        list.forEach(function(d) {
+            var dateFmt = d.date_sortie
+                ? new Date(d.date_sortie + 'T12:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
+                : '—';
+            var pdfLink = d.pdf_url
+                ? '<a href="' + escHtml(d.pdf_url) + '" target="_blank" class="btn btn-secondary btn-sm" style="font-size:0.78rem;">📄 PDF</a>'
+                : '<span style="color:var(--text-dim);font-size:0.82rem;">—</span>';
+            html += '<tr>';
+            html += '<td><span class="badge-decl">🌿 ' + dateFmt + '</span></td>';
+            html += '<td style="font-size:0.83rem;">' + escHtml(d.cahier_des_charges || '—') + '</td>';
+            html += '<td style="font-size:0.83rem;">' + escHtml(d.nom_signataire || '—') + '</td>';
+            html += '<td style="font-size:0.83rem;">' + escHtml(d.email_destinataire || '—') + '</td>';
+            html += '<td>' + pdfLink + '</td>';
+            html += '<td style="text-align:right;">';
+            html += '<button class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--red);border:1px solid var(--red);" onclick="deleteDeclaration(\'' + escAttr(d.id) + '\')">🗑️</button>';
+            html += '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    // ── Canvas de signature ──────────────────────────────────────
+    function initSignatureCanvas() {
+        var canvas = $('signatureCanvas');
+        if (!canvas || canvas._declInited) return;
+        canvas._declInited = true;
+        _signatureHasStroke = false;
+
+        var ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth   = 2;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+
+        function getPos(e) {
+            var rect = canvas.getBoundingClientRect();
+            var scaleX = canvas.width  / rect.width;
+            var scaleY = canvas.height / rect.height;
+            if (e.touches && e.touches[0]) {
+                return {
+                    x: (e.touches[0].clientX - rect.left) * scaleX,
+                    y: (e.touches[0].clientY - rect.top)  * scaleY
+                };
+            }
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top)  * scaleY
+            };
+        }
+
+        function startDraw(e) {
+            e.preventDefault();
+            _signatureDrawing = true;
+            var p = getPos(e);
+            _signatureLastX = p.x; _signatureLastY = p.y;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+        }
+        function draw(e) {
+            if (!_signatureDrawing) return;
+            e.preventDefault();
+            var p = getPos(e);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            _signatureLastX = p.x; _signatureLastY = p.y;
+            _signatureHasStroke = true;
+        }
+        function endDraw(e) {
+            if (!_signatureDrawing) return;
+            e.preventDefault();
+            _signatureDrawing = false;
+            ctx.beginPath();
+        }
+
+        canvas.addEventListener('mousedown',  startDraw);
+        canvas.addEventListener('mousemove',  draw);
+        canvas.addEventListener('mouseup',    endDraw);
+        canvas.addEventListener('mouseleave', endDraw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove',  draw,      { passive: false });
+        canvas.addEventListener('touchend',   endDraw,   { passive: false });
+    }
+
+    function clearSignature() {
+        var canvas = $('signatureCanvas');
+        if (!canvas) return;
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        _signatureHasStroke = false;
+    }
+
+    // ── Sélection du cahier des charges ─────────────────────────
+    function selectCdc(labelEl) {
+        document.querySelectorAll('.decl-cdc-option').forEach(function(opt) {
+            opt.classList.remove('selected');
+        });
+        if (labelEl) {
+            labelEl.classList.add('selected');
+            var radio = labelEl.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+        }
+    }
+
+    // ── Lire la valeur CDC sélectionnée ─────────────────────────
+    function getSelectedCdc() {
+        var radio = document.querySelector('input[name="declCdc"]:checked');
+        if (!radio) return '';
+        if (radio.value === '__autre__') {
+            var txt = ($('declCdcAutreText') && $('declCdcAutreText').value || '').trim();
+            return txt || 'Autre';
+        }
+        return radio.value;
+    }
+
+    // ── Valider le formulaire de déclaration ─────────────────────
+    function validateDeclForm() {
+        var alertEl = $('declAlert');
+        function setErr(msg) {
+            if (alertEl) {
+                alertEl.textContent = msg;
+                alertEl.style.display = msg ? 'block' : 'none';
+                alertEl.style.padding = '0.6rem 1rem';
+                alertEl.style.borderRadius = '8px';
+                alertEl.style.background = 'rgba(239,68,68,0.12)';
+                alertEl.style.color = 'var(--red)';
+                alertEl.style.border = '1px solid var(--red)';
+            }
+        }
+        if (alertEl) { alertEl.textContent = ''; alertEl.style.display = 'none'; }
+
+        var dateSortie = ($('declDateSortie').value || '').trim();
+        if (!dateSortie) { setErr('❌ Veuillez indiquer la date de sortie sur le parcours.'); return null; }
+
+        var signataire = ($('declSignataire').value || '').trim();
+        if (!signataire) { setErr('❌ Veuillez indiquer le nom du signataire.'); return null; }
+
+        var cdc = getSelectedCdc();
+        if (!cdc) { setErr('❌ Veuillez sélectionner un cahier des charges.'); return null; }
+
+        return { dateSortie: dateSortie, signataire: signataire, cdc: cdc };
+    }
+
+    // ── Générer le PDF (jsPDF) ───────────────────────────────────
+    function generateDeclarationPDF(data, callback) {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc   = new jsPDF('portrait', 'mm', 'a4');
+        var pageW = doc.internal.pageSize.getWidth();
+        var margin = 15;
+        var y = margin;
+
+        // ── HEADER ─────────────────────────────────────────────
+        // Bande bleue de fond
+        doc.setFillColor(241, 245, 249);
+        doc.rect(0, 0, pageW, 30, 'F');
+
+        // Logo coopérative (si disponible)
+        var headerStartX = margin;
+        if (_declCoopInfo && _declCoopInfo.logo_url) {
+            // On dessine le logo après chargement dans le callback
+            // Pour l'instant on laisse de l'espace
+            headerStartX = margin + 32;
+        }
+
+        // Titre central
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Déclaration', pageW / 2, 11, { align: 'center' });
+        doc.setFontSize(11);
+        doc.text('sortie sur le parcours', pageW / 2, 18, { align: 'center' });
+
+        // Référence droite
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text('E/006/C', pageW - margin, 11, { align: 'right' });
+        doc.text('MAJ : 01/08/2023', pageW - margin, 16, { align: 'right' });
+
+        y = 38;
+
+        // ── CORPS ──────────────────────────────────────────────
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+
+        // Date de sortie
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date de la sortie sur le parcours :', margin, y);
+        doc.setFont('helvetica', 'normal');
+        var dateFmt = data.dateSortie
+            ? new Date(data.dateSortie + 'T12:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
+            : data.dateSortie;
+        doc.text(dateFmt, margin + 82, y);
+        y += 10;
+
+        // Séparateur
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.line(margin, y - 2, pageW - margin, y - 2);
+        y += 4;
+
+        // Je soussigné(e)
+        doc.setFont('helvetica', 'normal');
+        doc.text('Je soussigné(e) :', margin, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(data.signataire, margin + 40, y);
+        y += 8;
+
+        // Nom exploitation
+        var exploitNom = (currentEleveur && currentEleveur.raison_sociale) || '';
+        if (!exploitNom && currentEleveur) exploitNom = (currentEleveur.prenom || '') + ' ' + (currentEleveur.nom || '');
+        exploitNom = exploitNom.trim() || '—';
+        doc.setFont('helvetica', 'normal');
+        doc.text('Nom de l\'exploitation :', margin, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(exploitNom, margin + 55, y);
+        y += 8;
+
+        // Domicile
+        var rue  = (currentEleveur && currentEleveur.rue)         || '';
+        var cp   = (currentEleveur && currentEleveur.code_postal)  || '';
+        var vil  = (currentEleveur && currentEleveur.ville)        || '';
+        var dom  = [rue, (cp + ' ' + vil).trim()].filter(Boolean).join(', ') || '—';
+        doc.setFont('helvetica', 'normal');
+        doc.text('Domicilié(e) :', margin, y);
+        doc.setFont('helvetica', 'bold');
+        var domLines = doc.splitTextToSize(dom, pageW - margin - (margin + 40));
+        doc.text(domLines, margin + 40, y);
+        y += (domLines.length > 1 ? domLines.length * 6 : 8);
+
+        y += 4;
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin, y - 2, pageW - margin, y - 2);
+        y += 4;
+
+        // Lot / mise en place
+        var dateMEP = (currentLotInfo && currentLotInfo.date_mise_place)
+            ? new Date(currentLotInfo.date_mise_place + 'T12:00:00').toLocaleDateString('fr-FR')
+            : '—';
+        var batNom  = currentBatiment ? currentBatiment.nom : '—';
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Déclare que le lot de poules pondeuses mis en place le :', margin, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(dateMEP, pageW - margin, y, { align: 'right' });
+        y += 8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.text('Dans le(s) bâtiments N° :', margin, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(batNom, margin + 60, y);
+        y += 8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.text('est sorti sur le parcours extérieur conformément au cahier des charges :', margin, y);
+        y += 12;
+
+        // ── Cahier des charges ──────────────────────────────────
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(margin, y - 5, pageW - 2 * margin, 12, 2, 2, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(22, 163, 74); // vert
+        doc.text('✓  ' + data.cdc, margin + 5, y + 4);
+        doc.setTextColor(30, 41, 59);
+        y += 18;
+
+        // ── Signature ──────────────────────────────────────────
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Signature de l\'éleveur :', margin, y);
+        y += 4;
+
+        // Cadre signature
+        var sigW = 85; var sigH = 35;
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.5);
+        doc.rect(margin, y, sigW, sigH);
+
+        // Image signature (si présente)
+        var canvas = $('signatureCanvas');
+        if (canvas && _signatureHasStroke) {
+            try {
+                var sigData = canvas.toDataURL('image/png');
+                doc.addImage(sigData, 'PNG', margin + 2, y + 2, sigW - 4, sigH - 4);
+            } catch(e) { /* ignore */ }
+        }
+
+        // Date à droite
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Fait le :', pageW - margin - 60, y + 10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(10);
+        doc.text(dateFmt, pageW - margin - 60, y + 18);
+
+        y += sigH + 10;
+
+        // ── Séparateur "Partie réservée à l'organisme" ────────
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.8);
+        doc.setLineDash([2, 2]);
+        doc.line(margin, y, pageW - margin, y);
+        doc.setLineDash([]);
+        y += 6;
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text('Partie réservée à l\'organisme de production', pageW / 2, y, { align: 'center' });
+
+        // ── Insérer le logo coopérative en haut à gauche ──────
+        function finalize() {
+            var pdfBase64 = doc.output('datauristring');
+            if (callback) callback(pdfBase64, doc);
+        }
+
+        if (_declCoopInfo && _declCoopInfo.logo_url) {
+            var img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                try {
+                    var c2 = document.createElement('canvas');
+                    c2.width = 100; c2.height = 28;
+                    var ctx2 = c2.getContext('2d');
+                    // Garder les proportions
+                    var ratio = Math.min(100 / img.width, 28 / img.height);
+                    var nw = img.width * ratio; var nh = img.height * ratio;
+                    ctx2.drawImage(img, (100 - nw) / 2, (28 - nh) / 2, nw, nh);
+                    var fmt = _declCoopInfo.logo_url.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
+                    doc.addImage(c2.toDataURL('image/' + fmt.toLowerCase()), fmt, margin, 1, 28, 28);
+                } catch(e) { /* ignore */ }
+                finalize();
+            };
+            img.onerror = finalize;
+            img.src = _declCoopInfo.logo_url;
+        } else {
+            finalize();
+        }
+    }
+
+    // ── Sauvegarder une déclaration en base + upload PDF ─────────
+    function persistDeclaration(formData, pdfBase64) {
+        // Extraire le binaire depuis data URI
+        var base64Only = pdfBase64.split(',')[1] || pdfBase64;
+        var byteCharacters = atob(base64Only);
+        var byteNumbers = new Array(byteCharacters.length);
+        for (var i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        var byteArray = new Uint8Array(byteNumbers);
+        var blob = new Blob([byteArray], { type: 'application/pdf' });
+
+        var filename = 'decl_sortie_' + (currentEleveur ? currentEleveur.id.slice(0, 8) : 'x')
+            + '_' + formData.dateSortie.replace(/-/g, '')
+            + '_' + Date.now() + '.pdf';
+
+        return supabase.storage.from('declarations-pdf')
+            .upload(filename, blob, { contentType: 'application/pdf', upsert: false })
+            .then(function(res) {
+                if (res.error) throw res.error;
+                var pub = supabase.storage.from('declarations-pdf').getPublicUrl(filename);
+                var pdfUrl = pub.data && pub.data.publicUrl ? pub.data.publicUrl : '';
+                return supabase.rpc('save_declaration_sortie', {
+                    p_user_id:            currentUser.id,
+                    p_eleveur_id:         currentEleveur.id,
+                    p_lot_id:             currentLotInfo ? currentLotInfo.id : null,
+                    p_date_sortie:        formData.dateSortie,
+                    p_cahier_des_charges: formData.cdc,
+                    p_nom_signataire:     formData.signataire,
+                    p_email_destinataire: formData.email || null,
+                    p_pdf_url:            pdfUrl
+                });
+            })
+            .then(function(res) {
+                if (res.error) throw res.error;
+                return res.data;
+            });
+    }
+
+    // ── Enregistrer et télécharger ───────────────────────────────
+    function saveAndDownloadDeclaration() {
+        var validated = validateDeclForm();
+        if (!validated) return;
+        validated.email = ($('declEmailDestinataire').value || '').trim();
+
+        var alertEl = $('declAlert');
+        if (alertEl) {
+            alertEl.textContent = '⏳ Génération du PDF…';
+            alertEl.style.display = 'block';
+            alertEl.style.padding = '0.6rem 1rem';
+            alertEl.style.borderRadius = '8px';
+            alertEl.style.background = 'rgba(59,130,246,0.1)';
+            alertEl.style.color = 'var(--blue)';
+            alertEl.style.border = '1px solid var(--blue)';
+        }
+
+        generateDeclarationPDF(validated, function(pdfBase64) {
+            // Téléchargement immédiat
+            var link = document.createElement('a');
+            link.href = pdfBase64;
+            link.download = 'Declaration_sortie_parcours_' + validated.dateSortie + '.pdf';
+            link.click();
+
+            // Persistance en base
+            persistDeclaration(validated, pdfBase64)
+                .then(function() {
+                    if (alertEl) {
+                        alertEl.textContent = '✅ Déclaration enregistrée avec succès.';
+                        alertEl.style.background = 'rgba(34,197,94,0.12)';
+                        alertEl.style.color = 'var(--green)';
+                        alertEl.style.border = '1px solid var(--green)';
+                    }
+                    loadDeclarations();
+                })
+                .catch(function(err) {
+                    if (alertEl) {
+                        alertEl.textContent = '⚠️ PDF téléchargé mais erreur d\'archivage : ' + (err.message || err);
+                        alertEl.style.background = 'rgba(239,68,68,0.12)';
+                        alertEl.style.color = 'var(--red)';
+                        alertEl.style.border = '1px solid var(--red)';
+                    }
+                });
+        });
+    }
+
+    // ── Enregistrer et envoyer par email ─────────────────────────
+    function saveAndSendDeclaration() {
+        var validated = validateDeclForm();
+        if (!validated) return;
+        validated.email = ($('declEmailDestinataire').value || '').trim();
+
+        if (!validated.email) {
+            var alertEl = $('declAlert');
+            if (alertEl) {
+                alertEl.textContent = '❌ Veuillez saisir un email destinataire pour l\'envoi.';
+                alertEl.style.display = 'block';
+                alertEl.style.padding = '0.6rem 1rem';
+                alertEl.style.borderRadius = '8px';
+                alertEl.style.background = 'rgba(239,68,68,0.12)';
+                alertEl.style.color = 'var(--red)';
+                alertEl.style.border = '1px solid var(--red)';
+            }
+            return;
+        }
+
+        var alertEl = $('declAlert');
+        if (alertEl) {
+            alertEl.textContent = '⏳ Génération et envoi en cours…';
+            alertEl.style.display = 'block';
+            alertEl.style.padding = '0.6rem 1rem';
+            alertEl.style.borderRadius = '8px';
+            alertEl.style.background = 'rgba(59,130,246,0.1)';
+            alertEl.style.color = 'var(--blue)';
+            alertEl.style.border = '1px solid var(--blue)';
+        }
+
+        generateDeclarationPDF(validated, function(pdfBase64) {
+            persistDeclaration(validated, pdfBase64)
+                .then(function() {
+                    loadDeclarations();
+                    return envoyerEmailDeclaration(pdfBase64, validated.email, validated.dateSortie, validated.signataire);
+                })
+                .then(function() {
+                    if (alertEl) {
+                        alertEl.textContent = '✅ Déclaration archivée et email envoyé à ' + validated.email + '.';
+                        alertEl.style.background = 'rgba(34,197,94,0.12)';
+                        alertEl.style.color = 'var(--green)';
+                        alertEl.style.border = '1px solid var(--green)';
+                    }
+                })
+                .catch(function(err) {
+                    if (alertEl) {
+                        alertEl.textContent = '⚠️ ' + (err.message || String(err));
+                        alertEl.style.background = 'rgba(239,68,68,0.12)';
+                        alertEl.style.color = 'var(--red)';
+                        alertEl.style.border = '1px solid var(--red)';
+                    }
+                });
+        });
+    }
+
+    // ── Envoyer par email via N8N ────────────────────────────────
+    function envoyerEmailDeclaration(pdfBase64, recipient, dateStr, signataire) {
+        var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-declaration-sortie';
+        var dateFmt = dateStr
+            ? new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
+            : dateStr;
+        var eleveurNom = currentEleveur ? (currentEleveur.prenom || '') + ' ' + (currentEleveur.nom || '') : '';
+        var coopNom    = (_declCoopInfo && _declCoopInfo.nom) ? _declCoopInfo.nom : '';
+        return fetch(n8nUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pdfBase64:    pdfBase64,
+                recipient:    recipient,
+                dateSortie:   dateFmt,
+                signataire:   signataire,
+                eleveurNom:   eleveurNom.trim(),
+                cooperative:  coopNom,
+                subject:      'Déclaration sortie parcours — ' + eleveurNom.trim() + ' — ' + dateFmt
+            })
+        }).then(function(response) {
+            return response.json().then(function(data) {
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.error || data.message || 'Erreur lors de l\'envoi de l\'email');
+                }
+                return data;
+            });
+        });
+    }
+
+    // ── Supprimer une déclaration ────────────────────────────────
+    function deleteDeclaration(id) {
+        if (!currentUser || !id) return;
+        if (!confirm('Supprimer cette déclaration ?\nCette action est irréversible.')) return;
+        supabase.rpc('delete_declaration_sortie', {
+            p_user_id:        currentUser.id,
+            p_declaration_id: id
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            // Supprimer aussi le PDF en storage si URL connue
+            var data = res.data && typeof res.data === 'object' ? res.data : {};
+            if (data.pdf_url) {
+                var parts = data.pdf_url.split('/declarations-pdf/');
+                if (parts.length === 2) {
+                    supabase.storage.from('declarations-pdf').remove([parts[1]]).catch(function(){});
+                }
+            }
+            loadDeclarations();
+        }).catch(function(err) {
+            alert('❌ Erreur lors de la suppression : ' + (err.message || err));
+        });
+    }
+
     // Exposer les fonctions appelées via onclick= dans le HTML (hors portée IIFE)
     window.openLotEditMode       = openLotEditMode;
     window.closeLotEditMode      = closeLotEditMode;
@@ -9118,6 +9932,14 @@
     window.uploadCooperativeLogo  = uploadCooperativeLogo;
     window.previewCoopLogo        = previewCoopLogo;
     window.removeCoopLogo         = removeCoopLogo;
+
+    // Déclarations sortie sur le parcours
+    window.selectCdc                   = selectCdc;
+    window.clearSignature              = clearSignature;
+    window.saveAndDownloadDeclaration  = saveAndDownloadDeclaration;
+    window.saveAndSendDeclaration      = saveAndSendDeclaration;
+    window.deleteDeclaration           = deleteDeclaration;
+    window.loadDeclarations            = loadDeclarations;
 
 })();
 </script>
