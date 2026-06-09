@@ -9614,6 +9614,15 @@
         doc.setTextColor(30, 41, 59);
         y += 18;
 
+        // ── Engagement ─────────────────────────────────────────
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        var engagementText = 'En signant cette déclaration, je prends l\'engagement de faire sortir les poules quotidiennement, faute de quoi des sanctions pourraient être prises à mon encontre.';
+        var engagementLines = doc.splitTextToSize(engagementText, pageW - 2 * margin);
+        doc.text(engagementLines, margin, y);
+        y += engagementLines.length * 5 + 6;
+
         // ── Signature ──────────────────────────────────────────
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
