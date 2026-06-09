@@ -2126,7 +2126,7 @@
                     <div style="display:flex;gap:0.5rem;align-items:center;">
                         <button class="btn-add-jour" id="btnAddJour" onclick="openManualEntryModal()" style="display:none;">➕ Saisir données</button>
                         <button class="btn-journal" id="btnJournal">📋 Journal des corrections</button>
-                        <button class="btn-export-excel" id="btnExportExcel" onclick="exportTableauExcel()" style="display:none;" title="Exporter les données du lot en fichier Excel">⬇️ Export Excel</button>
+                        <button class="btn-export-excel" id="btnExportTableau" onclick="exportTableauExcel()" style="display:none;" title="Exporter les données du lot en fichier Excel">⬇️ Export Excel</button>
                     </div>
                 </div>
                 <div class="tableau-scroll-wrapper">
@@ -4795,8 +4795,8 @@
         if ($('btnAddJour') && currentUser && ['admin','technicien','eleveur'].indexOf(currentUser.role) !== -1) {
             $('btnAddJour').style.display = '';
         }
-        // Bouton "Export Excel" — visible pour tous les rôles quand un lot est sélectionné
-        if ($('btnExportExcel')) $('btnExportExcel').style.display = '';
+        // Bouton "Export Excel tableau" — visible pour tous les rôles quand un lot est sélectionné
+        if ($('btnExportTableau')) $('btnExportTableau').style.display = '';
         // Onglet Déclarations — uniquement pour les éleveurs
         var tabDecl = $('tabDeclaration');
         if (tabDecl) {
@@ -4825,7 +4825,7 @@
         closeLotEditMode();
         if ($('btnModifierLot')) $('btnModifierLot').style.display = 'none';
         if ($('btnAddJour'))     $('btnAddJour').style.display = 'none';
-        if ($('btnExportExcel')) $('btnExportExcel').style.display = 'none';
+        if ($('btnExportTableau')) $('btnExportTableau').style.display = 'none';
         if (currentLotInfo) currentLotInfo.type_lot_nom = '';
         updatePonteGraphVisibility(); // remasquer le graphique ponte
         $('lotCard').classList.remove('show');
