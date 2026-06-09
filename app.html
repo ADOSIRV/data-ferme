@@ -9709,15 +9709,23 @@
             img.crossOrigin = 'anonymous';
             img.onload = function() {
                 try {
+                    var natW = img.naturalWidth  || img.width;
+                    var natH = img.naturalHeight || img.height;
+                    // Canvas à la résolution naturelle de l'image (pas de downscale)
                     var c2 = document.createElement('canvas');
-                    c2.width = 100; c2.height = 28;
+                    c2.width  = natW;
+                    c2.height = natH;
                     var ctx2 = c2.getContext('2d');
-                    // Garder les proportions
-                    var ratio = Math.min(100 / img.width, 28 / img.height);
-                    var nw = img.width * ratio; var nh = img.height * ratio;
-                    ctx2.drawImage(img, (100 - nw) / 2, (28 - nh) / 2, nw, nh);
-                    var fmt = _declCoopInfo.logo_url.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
-                    doc.addImage(c2.toDataURL('image/' + fmt.toLowerCase()), fmt, margin, 1, 28, 28);
+                    ctx2.drawImage(img, 0, 0, natW, natH);
+                    // Dimensions dans le PDF (mm) — max 38 × 26, ratio conservé
+                    var maxW = 38, maxH = 26;
+                    var r    = Math.min(maxW / natW, maxH / natH);
+                    var pdfW = natW * r;
+                    var pdfH = natH * r;
+                    // Y centré dans la bande header (30 mm)
+                    var pdfY = (30 - pdfH) / 2;
+                    // Toujours PNG pour ne pas perdre de qualité
+                    doc.addImage(c2.toDataURL('image/png'), 'PNG', margin, pdfY, pdfW, pdfH);
                 } catch(e) { /* ignore */ }
                 finalize();
             };
