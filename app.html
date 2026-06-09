@@ -9767,11 +9767,10 @@
                     p_nom_signataire:     formData.signataire,
                     p_email_destinataire: formData.email || null,
                     p_pdf_url:            pdfUrl
+                }).then(function(rpcRes) {
+                    if (rpcRes.error) throw rpcRes.error;
+                    return pdfUrl; // retourner l'URL publique pour l'envoi email
                 });
-            })
-            .then(function(res) {
-                if (res.error) throw res.error;
-                return res.data;
             });
     }
 
@@ -9853,18 +9852,18 @@
         }
 
         generateDeclarationPDF(validated, function(pdfBase64) {
-            // Archivage et envoi email en parallèle — l'un ne bloque pas l'autre
-            var archivePromise = persistDeclaration(validated, pdfBase64)
-                .then(function() { loadDeclarations(); })
-                .catch(function(e) {
-                    console.warn('Archivage déclaration échoué (non bloquant) :', e.message || e);
-                });
-
-            var emailPromise = envoyerEmailDeclaration(
-                pdfBase64, validated.email, validated.dateSortie, validated.signataire
-            );
-
-            Promise.all([archivePromise, emailPromise])
+            // 1. Archiver d'abord → récupérer l'URL publique Supabase
+            // 2. Envoyer l'URL à N8N (N8N télécharge le PDF directement, pas de base64)
+            persistDeclaration(validated, pdfBase64)
+                .then(function(pdfUrl) {
+                    loadDeclarations();
+                    if (alertEl) {
+                        alertEl.textContent = '⏳ PDF archivé, envoi de l\'email…';
+                    }
+                    return envoyerEmailDeclaration(
+                        pdfUrl, validated.email, validated.dateSortie, validated.signataire
+                    );
+                })
                 .then(function() {
                     if (alertEl) {
                         alertEl.textContent = '✅ Déclaration archivée et email envoyé à ' + validated.email + '.';
@@ -9885,7 +9884,7 @@
     }
 
     // ── Envoyer par email via N8N ────────────────────────────────
-    function envoyerEmailDeclaration(pdfBase64, recipient, dateStr, signataire) {
+    function envoyerEmailDeclaration(pdfUrl, recipient, dateStr, signataire) {
         var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/send-declaration-sortie';
         var dateFmt = dateStr
             ? new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
@@ -9896,7 +9895,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                pdfBase64:    pdfBase64,
+                pdfUrl:       pdfUrl,   // URL Supabase Storage (N8N télécharge le PDF)
                 recipient:    recipient,
                 dateSortie:   dateFmt,
                 signataire:   signataire,
