@@ -9660,6 +9660,34 @@
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
         doc.text('Partie réservée à l\'organisme de production', pageW / 2, y, { align: 'center' });
+        y += 10;
+
+        // ── Vérification effectuée le (gauche) ────────────────
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Vérification effectuée le :', margin, y);
+        // Tirets pour DD / MM / YYYY
+        doc.setDrawColor(100, 116, 139);
+        doc.setLineWidth(0.3);
+        doc.line(margin + 52, y + 0.5, margin + 62, y + 0.5);   // jour
+        doc.text('/', margin + 62.5, y);
+        doc.line(margin + 65, y + 0.5, margin + 75, y + 0.5);   // mois
+        doc.text('/', margin + 75.5, y);
+        doc.line(margin + 78, y + 0.5, margin + 94, y + 0.5);   // année
+
+        // ── Par (droite) ───────────────────────────────────────
+        var rxOrg = pageW / 2 + 5;
+        doc.text('Par :', rxOrg, y);
+        doc.setDrawColor(100, 116, 139);
+        doc.setLineWidth(0.3);
+        doc.line(rxOrg + 11, y + 0.5, pageW - margin, y + 0.5);
+
+        y += 12;
+
+        // ── Visa (droite) ──────────────────────────────────────
+        doc.text('Visa :', rxOrg, y);
+        doc.line(rxOrg + 13, y + 0.5, pageW - margin, y + 0.5);
 
         // ── Insérer le logo coopérative en haut à gauche ──────
         function finalize() {
@@ -9808,11 +9836,18 @@
         }
 
         generateDeclarationPDF(validated, function(pdfBase64) {
-            persistDeclaration(validated, pdfBase64)
-                .then(function() {
-                    loadDeclarations();
-                    return envoyerEmailDeclaration(pdfBase64, validated.email, validated.dateSortie, validated.signataire);
-                })
+            // Archivage et envoi email en parallèle — l'un ne bloque pas l'autre
+            var archivePromise = persistDeclaration(validated, pdfBase64)
+                .then(function() { loadDeclarations(); })
+                .catch(function(e) {
+                    console.warn('Archivage déclaration échoué (non bloquant) :', e.message || e);
+                });
+
+            var emailPromise = envoyerEmailDeclaration(
+                pdfBase64, validated.email, validated.dateSortie, validated.signataire
+            );
+
+            Promise.all([archivePromise, emailPromise])
                 .then(function() {
                     if (alertEl) {
                         alertEl.textContent = '✅ Déclaration archivée et email envoyé à ' + validated.email + '.';
@@ -9853,8 +9888,20 @@
                 subject:      'Déclaration sortie parcours — ' + eleveurNom.trim() + ' — ' + dateFmt
             })
         }).then(function(response) {
-            return response.json().then(function(data) {
-                if (!response.ok || data.success === false) {
+            // Lire le corps comme texte d'abord pour éviter l'erreur
+            // "Unexpected end of JSON input" si le corps est vide ou HTML
+            return response.text().then(function(text) {
+                var data = {};
+                try { if (text && text.trim().charAt(0) === '{') data = JSON.parse(text); }
+                catch(e) { /* corps non-JSON ignoré */ }
+                if (!response.ok) {
+                    var msg = data.error || data.message || ('Erreur HTTP ' + response.status);
+                    if (response.status === 404) {
+                        msg = 'Workflow N8N introuvable (vérifiez qu\'il est bien activé)';
+                    }
+                    throw new Error(msg);
+                }
+                if (data.success === false) {
                     throw new Error(data.error || data.message || 'Erreur lors de l\'envoi de l\'email');
                 }
                 return data;
