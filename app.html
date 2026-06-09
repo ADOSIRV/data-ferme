@@ -319,6 +319,8 @@
         .tableau-info strong { color: var(--text); }
         .btn-journal { padding: 0.45rem 1rem; border: 1.5px solid var(--blue); background: var(--blue-light); color: var(--blue); border-radius: 8px; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .btn-journal:hover { background: var(--blue); color: #fff; }
+        .btn-export-excel { padding: 0.45rem 1rem; border: 1.5px solid #16a34a; background: rgba(22,163,74,0.1); color: #16a34a; border-radius: 8px; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-left: 0.5rem; }
+        .btn-export-excel:hover { background: #16a34a; color: #fff; }
         .tableau-scroll-wrapper { overflow-x: auto; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow); }
         .tableau-jours { width: 100%; border-collapse: collapse; font-size: 0.81rem; }
         .tableau-jours th, .tableau-jours td { padding: 0.42rem 0.65rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -2121,9 +2123,10 @@
             <div class="exploit-panel" id="exploitTableau">
                 <div class="tableau-toolbar">
                     <div class="tableau-info" id="tableauInfo">Sélectionnez un lot pour afficher les données journalières.</div>
-                    <div style="display:flex;gap:0.5rem;">
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
                         <button class="btn-add-jour" id="btnAddJour" onclick="openManualEntryModal()" style="display:none;">➕ Saisir données</button>
                         <button class="btn-journal" id="btnJournal">📋 Journal des corrections</button>
+                        <button class="btn-export-excel" id="btnExportExcel" onclick="exportTableauExcel()" style="display:none;" title="Exporter les données du lot en fichier Excel">⬇️ Export Excel</button>
                     </div>
                 </div>
                 <div class="tableau-scroll-wrapper">
@@ -4792,6 +4795,8 @@
         if ($('btnAddJour') && currentUser && ['admin','technicien','eleveur'].indexOf(currentUser.role) !== -1) {
             $('btnAddJour').style.display = '';
         }
+        // Bouton "Export Excel" — visible pour tous les rôles quand un lot est sélectionné
+        if ($('btnExportExcel')) $('btnExportExcel').style.display = '';
         // Onglet Déclarations — uniquement pour les éleveurs
         var tabDecl = $('tabDeclaration');
         if (tabDecl) {
@@ -4819,7 +4824,8 @@
     function hideDataPanels() {
         closeLotEditMode();
         if ($('btnModifierLot')) $('btnModifierLot').style.display = 'none';
-        if ($('btnAddJour')) $('btnAddJour').style.display = 'none';
+        if ($('btnAddJour'))     $('btnAddJour').style.display = 'none';
+        if ($('btnExportExcel')) $('btnExportExcel').style.display = 'none';
         if (currentLotInfo) currentLotInfo.type_lot_nom = '';
         updatePonteGraphVisibility(); // remasquer le graphique ponte
         $('lotCard').classList.remove('show');
@@ -9995,6 +10001,75 @@
     window.uploadCooperativeLogo  = uploadCooperativeLogo;
     window.previewCoopLogo        = previewCoopLogo;
     window.removeCoopLogo         = removeCoopLogo;
+
+    // ── Export Excel tableau données exploitation ─────────────────
+    function exportTableauExcel() {
+        var rows = buildTableauRows();
+        if (!rows || rows.length === 0) {
+            alert('Aucune donnée à exporter pour ce lot.');
+            return;
+        }
+
+        var lot = currentLotInfo || {};
+        var lotCode = lot.code_lot || '—';
+
+        var isPondeuse = !!(currentLotInfo && currentLotInfo.type_lot_nom
+            && currentLotInfo.type_lot_nom.trim().toLowerCase() === 'pondeuse');
+        var activeFields = TABLEAU_FIELDS.filter(function(f) { return !f.pondeuse_only || isPondeuse; });
+
+        // ── En-tête des colonnes ──────────────────────────────────
+        var header = ['Lot', 'Jour', 'Date'];
+        activeFields.forEach(function(f) {
+            header.push(f.label + (f.unit ? ' (' + f.unit + ')' : ''));
+        });
+
+        // ── Lignes de données ─────────────────────────────────────
+        var wsData = [header];
+        rows.forEach(function(row) {
+            var dateFmt = row.date_mesure
+                ? new Date(row.date_mesure).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
+                : '';
+            var dataRow = [lotCode, row.jour_age, dateFmt];
+            activeFields.forEach(function(f) {
+                var val = row[f.key];
+                if (val != null && val !== '') {
+                    if (f.displayMult) val = val * f.displayMult;
+                    // Arrondir au nombre de décimales défini dans TABLEAU_FIELDS
+                    var factor = Math.pow(10, f.digits);
+                    val = Math.round(val * factor) / factor;
+                    dataRow.push(val);
+                } else {
+                    dataRow.push('');
+                }
+            });
+            wsData.push(dataRow);
+        });
+
+        // ── Construire le fichier Excel (SheetJS) ─────────────────
+        var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Largeurs de colonnes
+        var colWidths = [{ wch: 14 }, { wch: 6 }, { wch: 12 }];
+        activeFields.forEach(function() { colWidths.push({ wch: 14 }); });
+        ws['!cols'] = colWidths;
+
+        // Figer la première ligne (en-tête)
+        ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Données exploitation');
+
+        // ── Nom du fichier ────────────────────────────────────────
+        var elevNom = currentEleveur
+            ? ((currentEleveur.prenom || '') + '_' + (currentEleveur.nom || ''))
+                .trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')
+            : 'eleveur';
+        var cleanLot = lotCode.replace(/[^a-zA-Z0-9_\-]/g, '_');
+        var filename = 'Donnees_' + cleanLot + '_' + elevNom + '.xlsx';
+
+        XLSX.writeFile(wb, filename);
+    }
+    window.exportTableauExcel = exportTableauExcel;
 
     // Déclarations sortie sur le parcours
     window.selectCdc                   = selectCdc;
