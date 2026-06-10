@@ -2882,6 +2882,11 @@
     var cacheSites = {};
     var cacheBatiments = {};
     var cacheLots = {};
+    // Caches noms souche/type_lot — évitent des requêtes répétées à chaque sélection de lot
+    var _cacheSoucheNom   = {};  // { [soucheId]: 'nom' }
+    var _cacheTypeLotNom  = {};  // { [typeId]:   'nom' }
+    // Timer debounce pour renderTableau — évite les doubles rendus après corrections
+    var _renderTableauTimer = null;
     
     var INDICATORS = {
         poids:      { label: 'Croissance en poids', unit: 'g',       color: '#2563eb', colorArea: 'rgba(37,99,235,0.2)',   colorBorder: 'rgba(37,99,235,0.5)',   icon: '📈', dataField: 'poids_moyen',         stdMinField: 'poids_min',                stdMaxField: 'poids_max',                tableEau: false },
@@ -4073,91 +4078,147 @@
         if (!id) { hideDataPanels(); return; }
         var lot = cacheLots[id] || {};
         currentLotInfo = lot;
-        
-        $('lotCode').textContent = lot.code_lot || '--';
-        $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
-        $('lotDate').textContent = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
-        $('lotAge').textContent = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
-        $('lotStatut').textContent = lot.statut || '--';
 
-        // Bouton Modifier : visible pour éleveur, technicien, admin (pas salarié)
+        // ── Mise à jour immédiate de la carte lot (UI synchrone) ──
+        $('lotCode').textContent    = lot.code_lot || '--';
+        $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
+        $('lotDate').textContent    = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
+        $('lotAge').textContent     = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
+        $('lotStatut').textContent  = lot.statut || '--';
+
         var btnMod = $('btnModifierLot');
         if (btnMod) {
             var canEdit = currentUser && ['admin','technicien','eleveur'].indexOf(currentUser.role) !== -1;
             btnMod.style.display = canEdit ? '' : 'none';
         }
-        // Fermer le mode édition si on change de lot
         closeLotEditMode();
 
-        // Souche : priorité souche_id_manuel, sinon souche_id (Tuffigo)
+        // Affichage provisoire depuis le cache (instantané si déjà vu)
         var soucheEffId = lot.souche_id_manuel || lot.souche_id;
-        $('lotSouche').textContent = '--';
-        if (soucheEffId) {
-            supabase.from('souches').select('id, nom').eq('id', soucheEffId).single()
-                .then(function(r) {
-                    if (r.data && r.data.nom) {
-                        currentLotInfo.souche_nom = r.data.nom;
-                        $('lotSouche').textContent = r.data.nom + (lot.souche_id_manuel ? ' ✏️' : '');
-                    } else { $('lotSouche').textContent = '--'; }
-                })
-                .catch(function() { $('lotSouche').textContent = '--'; });
+        currentLotInfo.type_lot_nom = '';
+        updatePonteGraphVisibility();
+
+        if (soucheEffId && _cacheSoucheNom[soucheEffId]) {
+            currentLotInfo.souche_nom = _cacheSoucheNom[soucheEffId];
+            $('lotSouche').textContent = _cacheSoucheNom[soucheEffId] + (lot.souche_id_manuel ? ' ✏️' : '');
+        } else {
+            $('lotSouche').textContent = '--';
+        }
+        if (lot.type_lot_id && _cacheTypeLotNom[lot.type_lot_id]) {
+            var cachedNom = _cacheTypeLotNom[lot.type_lot_id];
+            $('lotTypeLot').textContent  = cachedNom;
+            currentLotInfo.type_lot_nom = cachedNom;
+            updatePonteGraphVisibility();
+        } else {
+            $('lotTypeLot').textContent = '--';
         }
 
-        // Type lot
-        $('lotTypeLot').textContent = '--';
-        currentLotInfo.type_lot_nom = '';
-        updatePonteGraphVisibility(); // masquer par défaut, afficher si Pondeuse confirmée
-        if (lot.type_lot_id) {
-            var _capturedLotId = lot.id;
-            supabase.from('types_lot').select('nom').eq('id', lot.type_lot_id).single()
-                .then(function(r) {
-                    var nom = (r.data && r.data.nom) ? r.data.nom : '--';
-                    $('lotTypeLot').textContent = nom;
-                    // Vérifier que l'utilisateur n'a pas changé de lot entre-temps
-                    if (currentLotInfo && currentLotInfo.id === _capturedLotId) {
-                        currentLotInfo.type_lot_nom = (r.data && r.data.nom) ? r.data.nom : '';
-                        updatePonteGraphVisibility();
-                    }
-                }).catch(function() { $('lotTypeLot').textContent = '--'; });
-        }
-        
+        // ── Un seul Promise.all : données lot + standards + souche/type + déclarations ──
+        var STD_EMPTY = { data: [] };
+        var _capturedLotId = lot.id;
+
         Promise.all([
+            // [0-6] Données lot
             supabase.from('donnees_poids').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_mortalite').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_aliment').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_oeufs').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('donnees_eau').select('*').eq('lot_id', id).order('jour_age'),
             supabase.from('corrections_journalieres').select('*').eq('lot_id', id).order('created_at', { ascending: false }),
-            supabase.from('saisies_manuelles_journalieres').select('*').eq('lot_id', id).order('jour_age')
+            supabase.from('saisies_manuelles_journalieres').select('*').eq('lot_id', id).order('jour_age'),
+            // [7-11] Standards (en parallèle, pas après)
+            soucheEffId ? supabase.from('standards_poids').select('*').eq('souche_id', soucheEffId).order('jour_age')     : Promise.resolve(STD_EMPTY),
+            soucheEffId ? supabase.from('standards_mortalite').select('*').eq('souche_id', soucheEffId).order('jour_age') : Promise.resolve(STD_EMPTY),
+            soucheEffId ? supabase.from('standards_aliment').select('*').eq('souche_id', soucheEffId).order('jour_age')   : Promise.resolve(STD_EMPTY),
+            soucheEffId ? supabase.from('standards_oeufs').select('*').eq('souche_id', soucheEffId).order('jour_age')     : Promise.resolve(STD_EMPTY),
+            soucheEffId ? supabase.from('standards_eau').select('*').eq('souche_id', soucheEffId).order('jour_age')       : Promise.resolve(STD_EMPTY),
+            // [12-13] Souche/type_lot — seulement si absent du cache
+            (soucheEffId && !_cacheSoucheNom[soucheEffId])
+                ? supabase.from('souches').select('id, nom').eq('id', soucheEffId).single()
+                : Promise.resolve(null),
+            (lot.type_lot_id && !_cacheTypeLotNom[lot.type_lot_id])
+                ? supabase.from('types_lot').select('nom').eq('id', lot.type_lot_id).single()
+                : Promise.resolve(null),
+            // [14] Déclarations (en parallèle)
+            currentEleveur
+                ? supabase.rpc('get_declarations_sortie', { p_user_id: currentUser.id, p_eleveur_id: currentEleveur.id })
+                : Promise.resolve({ data: null })
         ]).then(function(r) {
-            lotData.poids    = (r[0] && r[0].data) ? r[0].data : [];
+            // Sécurité : l'utilisateur a peut-être changé de lot pendant le chargement
+            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
+
+            // ── Données lot ───────────────────────────────────────────
+            lotData.poids     = (r[0] && r[0].data) ? r[0].data : [];
             lotData.mortalite = (r[1] && r[1].data) ? r[1].data : [];
-            lotData.aliment  = (r[2] && r[2].data) ? r[2].data : [];
-            lotData.oeufs    = (r[3] && r[3].data) ? r[3].data : [];
-            // Les 3 indicateurs eau partagent la même table source
+            lotData.aliment   = (r[2] && r[2].data) ? r[2].data : [];
+            lotData.oeufs     = (r[3] && r[3].data) ? r[3].data : [];
             var eauData = (r[4] && r[4].data) ? r[4].data : [];
-            lotData.eau_animal   = eauData;
-            lotData.eau_ratio    = eauData;
-            lotData.eau_conso    = eauData;
-            // Homogénéité et GMQ : même source que poids (donnees_poids)
-            lotData.homogeneite  = lotData.poids;
-            lotData.gmq          = lotData.poids;
-            // Saisies manuelles journalières
-            lotData.manual = (r[6] && r[6].data) ? r[6].data : [];
-            // Indicateurs ponte dérivés (inclut les données manuelles en priorité)
+            lotData.eau_animal  = eauData;
+            lotData.eau_ratio   = eauData;
+            lotData.eau_conso   = eauData;
+            lotData.homogeneite = lotData.poids;
+            lotData.gmq         = lotData.poids;
+            lotData.manual      = (r[6] && r[6].data) ? r[6].data : [];
             rebuildOeufsIndicators();
-            // Corrections : construire la map (toutes corrections, actif ou non, pour le journal)
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
-            var soucheForStd = lot.souche_id_manuel || lot.souche_id;
-            if (soucheForStd) loadStandards(soucheForStd);
-            else { standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] }; showDataPanels(); updateUI(); renderTableau(); loadDeclarations(); }
+
+            // ── Standards ─────────────────────────────────────────────
+            standardsData.poids     = (r[7]  && r[7].data)  ? r[7].data  : [];
+            standardsData.mortalite = (r[8]  && r[8].data)  ? r[8].data  : [];
+            standardsData.aliment   = (r[9]  && r[9].data)  ? r[9].data  : [];
+            standardsData.oeufs     = (r[10] && r[10].data) ? r[10].data : [];
+            var eauStd = (r[11] && r[11].data) ? r[11].data : [];
+            standardsData.eau_animal  = eauStd;
+            standardsData.eau_ratio   = eauStd;
+            standardsData.eau_conso   = eauStd;
+            standardsData.homogeneite = standardsData.poids;
+            standardsData.gmq         = standardsData.poids;
+            standardsData.taux_ponte_pct = standardsData.oeufs.map(function(s) {
+                var clone = Object.assign({}, s);
+                clone.taux_ponte_min_pct = s.taux_ponte_min != null ? s.taux_ponte_min * 100 : null;
+                clone.taux_ponte_max_pct = s.taux_ponte_max != null ? s.taux_ponte_max * 100 : null;
+                return clone;
+            });
+            standardsData.oeufs_a = [];
+            standardsData.oeufs_b = [];
+
+            // ── Souche (mise en cache) ─────────────────────────────────
+            if (r[12] && r[12].data && r[12].data.nom) {
+                _cacheSoucheNom[soucheEffId] = r[12].data.nom;
+                currentLotInfo.souche_nom = r[12].data.nom;
+                $('lotSouche').textContent = r[12].data.nom + (lot.souche_id_manuel ? ' ✏️' : '');
+            }
+
+            // ── Type lot (mise en cache) ───────────────────────────────
+            if (r[13] && r[13].data && r[13].data.nom) {
+                _cacheTypeLotNom[lot.type_lot_id] = r[13].data.nom;
+                currentLotInfo.type_lot_nom = r[13].data.nom;
+                $('lotTypeLot').textContent = r[13].data.nom;
+                updatePonteGraphVisibility();
+            }
+
+            // ── Déclarations ──────────────────────────────────────────
+            var declData = (r[14] && r[14].data) ? r[14].data : [];
+            currentDeclarations = Array.isArray(declData) ? declData : [];
+            if (currentLotInfo && currentLotInfo.id) {
+                currentDeclarations = currentDeclarations.filter(function(d) {
+                    return !d.lot_id || d.lot_id === currentLotInfo.id;
+                });
+            }
+
+            // ── Rendu unique en fin de chargement ─────────────────────
+            showDataPanels();
+            updateUI();
+            renderTableau();
+
         }).catch(function(err) {
             console.error('Erreur chargement données lot:', err);
             showDataPanels();
             updateUI();
         });
     }
-    
+
+    // loadStandards conservé pour compatibilité (rechargement manuel si besoin)
     function loadStandards(soucheId) {
         Promise.all([
             supabase.from('standards_poids').select('*').eq('souche_id', soucheId).order('jour_age'),
@@ -4166,19 +4227,16 @@
             supabase.from('standards_oeufs').select('*').eq('souche_id', soucheId).order('jour_age'),
             supabase.from('standards_eau').select('*').eq('souche_id', soucheId).order('jour_age')
         ]).then(function(r) {
-            standardsData.poids    = (r[0] && r[0].data) ? r[0].data : [];
+            standardsData.poids     = (r[0] && r[0].data) ? r[0].data : [];
             standardsData.mortalite = (r[1] && r[1].data) ? r[1].data : [];
-            standardsData.aliment  = (r[2] && r[2].data) ? r[2].data : [];
-            standardsData.oeufs    = (r[3] && r[3].data) ? r[3].data : [];
-            // Les 3 indicateurs eau partagent la même table de standards
+            standardsData.aliment   = (r[2] && r[2].data) ? r[2].data : [];
+            standardsData.oeufs     = (r[3] && r[3].data) ? r[3].data : [];
             var eauStd = (r[4] && r[4].data) ? r[4].data : [];
-            standardsData.eau_animal   = eauStd;
-            standardsData.eau_ratio    = eauStd;
-            standardsData.eau_conso    = eauStd;
-            // Homogénéité et GMQ : même table que poids (min/max si renseignés un jour)
-            standardsData.homogeneite  = standardsData.poids;
-            standardsData.gmq          = standardsData.poids;
-            // Standards ponte dérivés (taux_ponte stocké en 0-1 → multiplié par 100 pour %)
+            standardsData.eau_animal  = eauStd;
+            standardsData.eau_ratio   = eauStd;
+            standardsData.eau_conso   = eauStd;
+            standardsData.homogeneite = standardsData.poids;
+            standardsData.gmq         = standardsData.poids;
             standardsData.taux_ponte_pct = standardsData.oeufs.map(function(s) {
                 var clone = Object.assign({}, s);
                 clone.taux_ponte_min_pct = s.taux_ponte_min != null ? s.taux_ponte_min * 100 : null;
@@ -4188,13 +4246,11 @@
             standardsData.oeufs_a = [];
             standardsData.oeufs_b = [];
         }).catch(function() {
-            // En cas d'erreur, on affiche quand même les données sans standards
             standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
         }).finally(function() {
             showDataPanels();
             updateUI();
             renderTableau();
-            loadDeclarations();
         });
     }
 
@@ -4356,6 +4412,12 @@
     }
 
     function renderTableau() {
+        // Debounce : si plusieurs appels arrivent dans les 30ms, on ne rend qu'une fois
+        if (_renderTableauTimer) { clearTimeout(_renderTableauTimer); }
+        _renderTableauTimer = setTimeout(_renderTableauNow, 30);
+    }
+    function _renderTableauNow() {
+        _renderTableauTimer = null;
         var rows = buildTableauRows();
         var totalCorrections = Object.keys(activeCorrections).length;
 
