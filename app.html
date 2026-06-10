@@ -5224,9 +5224,15 @@
                 var imgData = null;
 
                 if (src && graphState[graphId].chart) {
+                    var srcW = src.width  || 800;
+                    var srcH = src.height || 300;
+                    // Ajouter une marge blanche à droite (5%) pour éviter le clipping
+                    // des étiquettes de l'axe Y droit et améliorer la lisibilité PDF
+                    var padR = Math.round(srcW * 0.05);
+                    var padB = Math.round(srcH * 0.03);
                     var tmp = document.createElement('canvas');
-                    tmp.width  = src.width  || 800;
-                    tmp.height = src.height || 300;
+                    tmp.width  = srcW + padR;
+                    tmp.height = srcH + padB;
                     var c2 = tmp.getContext('2d');
                     c2.fillStyle = '#ffffff';
                     c2.fillRect(0, 0, tmp.width, tmp.height);
@@ -5649,9 +5655,11 @@
             doc.text(syn.title, cx + synthColW / 2, synthY + 6.2, { align: 'center', maxWidth: synthColW - 4 });
 
             // Boîte texte avec barre colorée à gauche
-            var boxY  = synthY + 9;
-            var lines = doc.splitTextToSize(syn.text, synthColW - 12);
-            var boxH  = Math.min(Math.max(20, lines.length * 5.0 + 10), availH - 9);
+            var boxY    = synthY + 9;
+            var lineH   = 5.2;  // interligne mm
+            var textW   = synthColW - 14;  // largeur texte nette (7mm offset gauche + 7mm droite)
+            var lines   = doc.splitTextToSize(syn.text, textW);
+            var boxH    = Math.min(Math.max(22, lines.length * lineH + 12), availH - 9);
 
             doc.setFillColor(248, 250, 252);
             doc.setDrawColor(226, 232, 240);
@@ -5660,9 +5668,9 @@
             // Barre colorée gauche
             doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
             doc.rect(cx, boxY, 3.5, boxH, 'F');
-            // Texte analyse
+            // Texte analyse — pas de maxWidth (évite la justification forcée jsPDF)
             doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(51, 65, 85);
-            doc.text(lines, cx + 7, boxY + 7, { maxWidth: synthColW - 10 });
+            doc.text(lines, cx + 7, boxY + 7);
         });
 
         // ── TABLEAU DÉTAIL DES DONNÉES ────────────────────────────────────────
