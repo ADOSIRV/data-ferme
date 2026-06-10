@@ -5675,7 +5675,7 @@
                 .replace(/–/g, '-')
                 .replace(/—|―/g, '--')
                 .replace(/…/g, '...')
-                .replace(/[^ -ÿ]/g, '');
+                .replace(/[Ā-￿]/g, '');
 
             // Fixer la police AVANT splitTextToSize : métriques cohérentes avec le rendu
             doc.setFont('times', 'normal');
