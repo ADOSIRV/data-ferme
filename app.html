@@ -4994,6 +4994,12 @@
         var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
         var canvas = $('chart' + suffix);
         if (!canvas) return;
+        // En mode rapport PDF : forcer 1800×650 pour haute résolution et labels axes Y visibles
+        // (doit être fait AVANT getContext et la création du chart pour être atomique)
+        if (_rapportMode) {
+            canvas.width  = 1800;
+            canvas.height = 650;
+        }
         var ctx = canvas.getContext('2d');
         if (g.chart) { g.chart.destroy(); g.chart = null; }
 
@@ -5213,34 +5219,24 @@
             graphState[graphId].selected = t2 ? [t1, t2] : [t1];
             graphState[graphId].period   = period || 'all';
 
-            // Calculer le suffix ici (nécessaire pour accéder au canvas avant updateChart)
-            var suffix   = graphId.charAt(0).toUpperCase() + graphId.slice(1);
-            var canvasEl = $('chart' + suffix);
+            var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
 
-            // ── Forcer une grande taille avant le rendu ──────────────────────────
-            // Chart.js avec responsive:false utilise canvas.width / canvas.height.
-            // En forçant 1800×650 : (1) haute résolution pour le PDF, (2) Chart.js
-            // dispose de suffisamment de place pour tracer les titres d'axes Y sans
-            // les couper. updateChart() restaure ensuite le canvas avec responsive:true.
-            if (canvasEl) {
-                canvasEl.width  = 1800;
-                canvasEl.height = 650;
-            }
-
+            // updateChart avec _rapportMode=true force canvas 1800×650 en interne
+            // puis crée le chart avec responsive:false + animation:false
             _rapportMode = true;
             updateChart(graphId);
             _rapportMode = false;
 
-            // rAF garanti que Chart.js a fini de dessiner (animation:false → synchrone)
+            // rAF garantit que Chart.js a fini de dessiner (animation:false → synchrone)
             requestAnimationFrame(function() {
                 var src     = $('chart' + suffix);
                 var imgData = null;
 
                 if (src && graphState[graphId].chart) {
-                    // Ajouter un fond blanc (canvas Chart.js est transparent par défaut)
+                    // Fond blanc (canvas Chart.js est transparent par défaut)
                     var tmp = document.createElement('canvas');
-                    tmp.width  = src.width;
-                    tmp.height = src.height;
+                    tmp.width  = src.width;   // 1800 forcé par updateChart
+                    tmp.height = src.height;  // 650 forcé par updateChart
                     var c2 = tmp.getContext('2d');
                     c2.fillStyle = '#ffffff';
                     c2.fillRect(0, 0, tmp.width, tmp.height);
@@ -5248,8 +5244,8 @@
                     imgData = tmp.toDataURL('image/png');
                 }
 
-                // Restaurer l'état UI — updateChart avec responsive:true
-                // redimensionne automatiquement le canvas à la taille du conteneur CSS
+                // Restaurer l'état UI
+                // updateChart avec responsive:true redimensionne le canvas au conteneur CSS
                 graphState[graphId].selected = savedSelected;
                 graphState[graphId].period   = savedPeriod;
                 updateChart(graphId);
