@@ -5351,11 +5351,11 @@
      */
     function genererPDFRapportLot(opts) {
         var jsPDF      = window.jspdf.jsPDF;
-        var doc        = new jsPDF('portrait', 'mm', 'a4');
-        var pageW      = doc.internal.pageSize.getWidth();   // 210
-        var pageH      = doc.internal.pageSize.getHeight();  // 297
-        var mg         = 15;
-        var cW         = pageW - 2 * mg;  // 180
+        var doc        = new jsPDF('landscape', 'mm', 'a4');
+        var pageW      = doc.internal.pageSize.getWidth();   // 297
+        var pageH      = doc.internal.pageSize.getHeight();  // 210
+        var mg         = 12;
+        var cW         = pageW - 2 * mg;  // 273
         var summary    = opts.summary;
         var analyses   = opts.analyses || {};
         var charts     = opts.charts   || {};
@@ -5364,291 +5364,284 @@
         var hasOeufs   = summary.hasOeufs;
 
         // ── Helpers ──────────────────────────────────────────────────────────
-        function checkPage(y, needed) {
-            if (y + needed > pageH - mg) { doc.addPage(); return mg; }
-            return y;
-        }
         function hRule(y, r, g, b) {
             doc.setDrawColor(r || 203, g || 213, b || 225);
-            doc.setLineWidth(0.4);
+            doc.setLineWidth(0.35);
             doc.line(mg, y, pageW - mg, y);
-            return y + 4;
+            return y + 3;
         }
-        function sectionTitle(txt, y) {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(30, 41, 59);
-            doc.text(txt, mg, y);
-            doc.setDrawColor(30, 41, 59);
+        function addChart(imgData, x, y, w, h) {
+            doc.setDrawColor(203, 213, 225);
             doc.setLineWidth(0.3);
-            doc.line(mg, y + 1.5, mg + doc.getTextWidth(txt), y + 1.5);
-            return y + 8;
-        }
-        function infoLine(label, val, x, y, w) {
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
-            doc.setTextColor(100, 116, 139);
-            doc.text(label, x, y);
-            doc.setTextColor(30, 41, 59);
-            doc.setFont('helvetica', 'bold');
-            doc.text(String(val || '—').substring(0, Math.floor(w / 2.2)), x + doc.getTextWidth(label) + 1.5, y);
-            doc.setFont('helvetica', 'normal');
-        }
-        function addChart(img, x, y, w, h) {
-            if (!img) {
-                doc.setFillColor(248, 250, 252);
-                doc.setDrawColor(203, 213, 225);
-                doc.roundedRect(x, y, w, h, 2, 2, 'FD');
+            doc.setFillColor(250, 251, 252);
+            doc.roundedRect(x, y, w, h, 2, 2, 'FD');
+            if (!imgData) {
                 doc.setTextColor(148, 163, 184);
-                doc.setFontSize(8);
-                doc.text('Aucune donnée', x + w / 2, y + h / 2, { align: 'center' });
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'italic');
+                doc.text('Aucune donnée disponible', x + w / 2, y + h / 2, { align: 'center' });
             } else {
-                try { doc.addImage(img, 'PNG', x, y, w, h); } catch(e) {
-                    doc.setFillColor(248, 250, 252);
-                    doc.roundedRect(x, y, w, h, 2, 2, 'F');
-                }
+                try { doc.addImage(imgData, 'PNG', x, y, w, h); } catch(e) {}
             }
         }
+        function pageFooter(p, total) {
+            doc.setPage(p);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.25);
+            doc.line(mg, pageH - 8, pageW - mg, pageH - 8);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(148, 163, 184);
+            doc.text('Dataferme — ADOSI', mg, pageH - 4);
+            doc.text('Lot : ' + (lot.code_lot || '—') + '  ·  Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW / 2, pageH - 4, { align: 'center' });
+            doc.text('Page ' + p + ' / ' + total, pageW - mg, pageH - 4, { align: 'right' });
+        }
 
-        // ── PAGE 1 : En-tête ─────────────────────────────────────────────────
-        doc.setFillColor(255, 255, 255);
-        doc.rect(0, 0, pageW, pageH, 'F');
+        // ── PAGE 1 : En-tête + Info Lot ──────────────────────────────────────
+        // Bandeau titre (fond sombre 30mm)
+        doc.setFillColor(30, 41, 59);
+        doc.rect(0, 0, pageW, 30, 'F');
 
-        var y = mg;
-
-        // Logo
-        var titleX = mg;
+        // Logo dans le bandeau
+        var titleOffX = mg + 4;
         if (logoBase64) {
             try {
-                var img = new Image();
-                img.src = logoBase64;
-                var nW = img.naturalWidth || img.width || 1;
-                var nH = img.naturalHeight || img.height || 1;
-                var maxW = 38, maxH = 22;
-                var r = Math.min(maxW / nW, maxH / nH);
-                doc.addImage(logoBase64, 'PNG', mg, y, nW * r, nH * r);
-                titleX = mg + 44;
+                var logoImg = new Image();
+                logoImg.src = logoBase64;
+                var lW = logoImg.naturalWidth || logoImg.width || 1;
+                var lH = logoImg.naturalHeight || logoImg.height || 1;
+                var lR = Math.min(38 / lW, 22 / lH);
+                doc.addImage(logoBase64, 'PNG', mg, 4, lW * lR, lH * lR);
+                titleOffX = mg + lW * lR + 8;
             } catch(e) {}
         }
-
-        // Titre
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.setTextColor(30, 41, 59);
-        doc.text('RAPPORT DE LOT', titleX, y + 10);
+        doc.setFontSize(22);
+        doc.setTextColor(255, 255, 255);
+        doc.text('RAPPORT DE LOT', titleOffX, 14);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(100, 116, 139);
-        var dateRapport = lot.date_mise_en_place || new Date().toLocaleDateString('fr-FR');
-        doc.text('Mise en place : ' + dateRapport + '   ·   Généré le ' + new Date().toLocaleDateString('fr-FR'), titleX, y + 17);
-
-        y = mg + 24;
-        y = hRule(y);
-
-        // Infos rapides
         doc.setFontSize(9);
-        var exploitantNom = currentEleveur ? ((currentEleveur.nom || '') + ' ' + (currentEleveur.prenom || '')).trim() : '—';
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
-        doc.text('Exploitant :', mg, y);
-        doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 41, 59);
-        doc.text(exploitantNom, mg + doc.getTextWidth('Exploitant :') + 1.5, y);
+        doc.setTextColor(148, 163, 184);
+        doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   Mise en place : ' + (lot.date_mise_en_place || '—') + '   ·   Durée : ' + (lot.nb_jours || '—') + ' jours', titleOffX, 23);
+        doc.setFontSize(8);
+        doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW - mg, 23, { align: 'right' });
 
-        y += 6;
+        // Bloc exploitation (3 colonnes sous le bandeau)
+        var y = 38;
+        var exploitantNom = currentEleveur ? ((currentEleveur.nom || '') + ' ' + (currentEleveur.prenom || '')).trim() : '—';
         var siteNom  = currentSite     ? currentSite.nom     : '—';
         var batNom   = currentBatiment ? currentBatiment.nom : '—';
-        var lotCode  = lot.code_lot    || '—';
-        var parts3   = ['Site : ' + siteNom, 'Bâtiment : ' + batNom, 'Lot : ' + lotCode];
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(71, 85, 105); doc.setFontSize(9);
-        doc.text(parts3.join('     '), mg, y);
+        var col3W    = cW / 3;
 
-        y += 6;
+        [
+            { lbl: 'Exploitant', val: exploitantNom },
+            { lbl: 'Site',       val: siteNom },
+            { lbl: 'Bâtiment', val: batNom }
+        ].forEach(function(c, i) {
+            var cx = mg + i * col3W;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+            doc.text(c.lbl, cx, y);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+            doc.text(String(c.val || '—'), cx, y + 7);
+        });
+        y += 16;
         y = hRule(y, 226, 232, 240);
 
-        // ── Section Information Lot ──────────────────────────────────────────
-        y = sectionTitle('Information Lot :', y);
-
-        var col1 = mg, col2 = mg + cW / 2 + 5;
-        var rows = [
-            ['Code Lot :',           lot.code_lot      || '—',   'Effectif prévu :',  String(lot.effectif_prevu  || '—')],
-            ['Souche :',             lot.souche        || '—',   'Effectif réel :',   String(lot.effectif_reel   || '—')],
-            ['Type de Lot :',        lot.type_lot      || '—',   'Date mise en place :', lot.date_mise_en_place || '—'],
+        // Fiche lot (2 lignes × 3 colonnes)
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+        doc.text('Information Lot', mg, y);
+        y += 8;
+        var lotRows = [
+            [['Code lot', lot.code_lot || '—'],   ['Souche', lot.souche || '—'],    ['Type', lot.type_lot || '—']],
+            [['Effectif prévu', String(lot.effectif_prevu || '—')], ['Effectif réel', String(lot.effectif_reel || '—')], ['Mise en place', lot.date_mise_en_place || '—']]
         ];
-        rows.forEach(function(row) {
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 116, 139);
-            doc.text(row[0], col1, y);
-            doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 41, 59);
-            doc.text(row[1], col1 + 28, y);
-            doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
-            doc.text(row[2], col2, y);
-            doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 41, 59);
-            doc.text(row[3], col2 + 32, y);
-            y += 6;
+        lotRows.forEach(function(rowArr) {
+            rowArr.forEach(function(cell, i) {
+                var cx = mg + i * col3W;
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+                doc.text(cell[0], cx, y);
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(30, 41, 59);
+                doc.text(String(cell[1]), cx, y + 6);
+            });
+            y += 15;
+        });
+        y = hRule(y - 2, 226, 232, 240);
+
+        // Indicateurs KPI (petites boîtes)
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+        doc.text('Résumé des performances', mg, y);
+        y += 7;
+        var cr = summary.croissance || {}, co = summary.consommation || {};
+        var kpis = [
+            ['Poids final',     (cr.poids_final_g         || '—') + ' g'],
+            ['Mortalité',  (cr.mortalite_taux_pct    || '—') + ' %'],
+            ['Homogénéité', (cr.homogeneite_moy_pct || '—') + ' %'],
+            ['GMQ moyen',       (cr.gmq_moy_gj            || '—') + ' g/j'],
+            ['Aliment moy.',    (co.aliment_moy_gj        || '—') + ' g/j'],
+            ['Ratio E/A',       (co.ratio_eau_aliment_moy || '—')]
+        ];
+        if (hasOeufs && summary.ponte) {
+            kpis.push(['Tx ponte moy.', (summary.ponte.taux_ponte_moy_pct || '—') + ' %']);
+            kpis.push(['Part Cl. A',    (summary.ponte.ratio_a_total_pct  || '—') + ' %']);
+        }
+        var kpiW  = Math.floor(cW / kpis.length) - 2;
+        kpis.forEach(function(k, i) {
+            var kx = mg + i * (cW / kpis.length);
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.2);
+            doc.roundedRect(kx, y, kpiW, 14, 1.5, 1.5, 'FD');
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+            doc.text(k[0], kx + kpiW / 2, y + 5, { align: 'center', maxWidth: kpiW - 2 });
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 41, 59);
+            doc.text(k[1], kx + kpiW / 2, y + 11, { align: 'center', maxWidth: kpiW - 2 });
         });
 
-        y += 2;
-        y = hRule(y, 226, 232, 240);
-
-        // ── Section Courbes analyse ──────────────────────────────────────────
-        y = sectionTitle('Courbes analyse :', y);
-
-        var cW2  = (cW - 8) / 2;   // largeur d'un graphique (86mm)
-        var cH   = 54;              // hauteur d'un graphique
-        var bulletNums = ['1.', '2.', '3.'];
+        // ── PAGES SECTIONS (1 page par section) ─────────────────────────────
         var sections = [
-            { label: 'Croissance & Santé', analyse: analyses.croissance, c1: charts.c1, c2: charts.c2 },
-            { label: 'Consommation',        analyse: analyses.consommation, c1: charts.c3, c2: charts.c4 }
+            { label: '1. Croissance & Santé', analyse: analyses.croissance, c1: charts.c1, c2: charts.c2, rgb: [59, 130, 246] },
+            { label: '2. Consommation',             analyse: analyses.consommation, c1: charts.c3, c2: charts.c4, rgb: [16, 185, 129] }
         ];
         if (hasOeufs) {
-            sections.push({ label: 'Ponte', analyse: analyses.ponte, c1: charts.c5, c2: charts.c6 });
+            sections.push({ label: '3. Ponte', analyse: analyses.ponte, c1: charts.c5, c2: charts.c6, rgb: [245, 158, 11] });
         }
 
-        sections.forEach(function(sec, idx) {
-            // Vérifier espace : titre(7) + graphiques(cH) + analyse(20) + espacement(6) = ~87mm
-            y = checkPage(y, 7 + cH + 24);
+        var chartW = (cW - 10) / 2;   // ~131mm
+        var chartH = 90;               // 90mm — grands graphiques lisibles
 
-            // Titre section
-            doc.setFont('helvetica', 'bolditalic');
-            doc.setFontSize(10);
-            doc.setTextColor(30, 41, 59);
-            doc.text(bulletNums[idx] + ' ' + sec.label, mg, y);
-            y += 6;
+        sections.forEach(function(sec) {
+            doc.addPage();
 
-            // 2 graphiques côte à côte
-            addChart(sec.c1, mg,          y, cW2, cH);
-            addChart(sec.c2, mg + cW2 + 8, y, cW2, cH);
-            y += cH + 3;
+            // Bandeau coloré section
+            doc.setFillColor(sec.rgb[0], sec.rgb[1], sec.rgb[2]);
+            doc.rect(0, 0, pageW, 14, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+            doc.text(sec.label, mg, 9.5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+            doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   ' + (lot.souche || '—'), pageW - mg, 9.5, { align: 'right' });
 
-            // Analyse IA
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.setTextColor(30, 41, 59);
-            doc.text('Analyse :', mg, y);
-            y += 5;
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(9);
-            doc.setTextColor(71, 85, 105);
+            // Deux graphiques côte à côte
+            var gy = 19;
+            addChart(sec.c1, mg,               gy, chartW, chartH);
+            addChart(sec.c2, mg + chartW + 10, gy, chartW, chartH);
+
+            // Boîte analyse IA
+            var ay = gy + chartH + 5;
             var analyseText = sec.analyse || 'Analyse non disponible.';
-            var lines = doc.splitTextToSize(analyseText, cW);
-            // Vérifier espace pour le texte
-            y = checkPage(y, lines.length * 4.5 + 6);
-            doc.text(lines, mg, y);
-            y += lines.length * 4.5 + 8;
+            var lines = doc.splitTextToSize(analyseText, cW - 14);
+            var boxH  = Math.max(18, lines.length * 4.8 + 10);
+
+            // Fond + bordure colorée à gauche
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(mg, ay, cW, boxH, 2, 2, 'FD');
+            doc.setFillColor(sec.rgb[0], sec.rgb[1], sec.rgb[2]);
+            doc.rect(mg, ay, 3.5, boxH, 'F');
+
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(30, 41, 59);
+            doc.text('Analyse IA', mg + 7, ay + 6.5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
+            doc.text(lines, mg + 7, ay + 12);
         });
 
-        // ── Page(s) Tableau Détail des données ───────────────────────────────
+        // ── TABLEAU DÉTAIL DES DONNÉES ────────────────────────────────────────
         doc.addPage();
-        doc.setFillColor(255, 255, 255);
-        doc.rect(0, 0, pageW, pageH, 'F');
-        y = mg;
+        var y2 = 0;
 
-        y = sectionTitle('Détail des données :', y);
+        function drawTablePageHeader(title) {
+            doc.setFillColor(30, 41, 59);
+            doc.rect(0, 0, pageW, 14, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(255, 255, 255);
+            doc.text(title, mg, 9.5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+            doc.text('Lot : ' + (lot.code_lot || '—'), pageW - mg, 9.5, { align: 'right' });
+            y2 = 19;
+        }
 
-        var rows2  = buildTableauRows();
+        drawTablePageHeader('Détail des données journalières');
+
+        var rows2 = buildTableauRows();
         if (!rows2.length) {
             doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
-            doc.text('Aucune donnée journalière disponible.', mg, y);
+            doc.text('Aucune donnée journalière disponible.', mg, y2);
         } else {
-            // Colonnes
-            var cols = hasOeufs
+            var tCols = hasOeufs
                 ? [
                     { h: 'Jour',     w: 9,  f: function(r) { return String(r.jour_age); } },
-                    { h: 'Date',     w: 15, f: function(r) { return r.date_mesure ? new Date(r.date_mesure + 'T12:00:00').toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}) : '—'; } },
+                    { h: 'Date',     w: 13, f: function(r) { return r.date_mesure ? new Date(r.date_mesure+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) : '—'; } },
                     { h: 'Morts',    w: 11, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
                     { h: 'Poids (g)',w: 14, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
-                    { h: 'GMQ',      w: 10, f: function(r) { return fmtVal(r.gmq, 1); } },
-                    { h: 'Hom. %',   w: 11, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                    { h: 'GMQ',      w: 11, f: function(r) { return fmtVal(r.gmq, 1); } },
+                    { h: 'Hom. %',   w: 12, f: function(r) { return fmtVal(r.homogeneite, 1); } },
                     { h: 'Alim g/j', w: 13, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
-                    { h: 'Eau (L)',  w: 14, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                    { h: 'Eau (L)',  w: 13, f: function(r) { return fmtVal(r.eau_litres, 0); } },
                     { h: 'Eau/poule',w: 14, f: function(r) { return fmtVal(r.eau_animal, 3); } },
                     { h: 'R.E/A',    w: 11, f: function(r) { return fmtVal(r.eau_ratio, 2); } },
-                    { h: 'Cl.A',     w: 12, f: function(r) { return fmtVal(r.oeufs_classe_a, 0); } },
-                    { h: 'Cl.B',     w: 11, f: function(r) { return fmtVal(r.oeufs_classe_b, 0); } },
+                    { h: 'Cl. A',    w: 13, f: function(r) { return fmtVal(r.oeufs_classe_a, 0); } },
+                    { h: 'Cl. B',    w: 12, f: function(r) { return fmtVal(r.oeufs_classe_b, 0); } },
                     { h: 'Tx ponte', w: 13, f: function(r) { return r.taux_ponte != null ? (r.taux_ponte * 100).toFixed(1) + '%' : '—'; } }
                   ]
                 : [
-                    { h: 'Jour',     w: 12, f: function(r) { return String(r.jour_age); } },
-                    { h: 'Date',     w: 18, f: function(r) { return r.date_mesure ? new Date(r.date_mesure + 'T12:00:00').toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '—'; } },
-                    { h: 'Morts',    w: 14, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
-                    { h: 'Poids (g)',w: 18, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
-                    { h: 'GMQ g/j',  w: 14, f: function(r) { return fmtVal(r.gmq, 1); } },
-                    { h: 'Homog. %', w: 14, f: function(r) { return fmtVal(r.homogeneite, 1); } },
-                    { h: 'Alim g/j', w: 16, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
-                    { h: 'Eau tot.',  w: 17, f: function(r) { return fmtVal(r.eau_litres, 0); } },
-                    { h: 'Eau/poule',w: 17, f: function(r) { return fmtVal(r.eau_animal, 3); } },
-                    { h: 'Ratio E/A',w: 18, f: function(r) { return fmtVal(r.eau_ratio, 2); } }
+                    { h: 'Jour',      w: 14, f: function(r) { return String(r.jour_age); } },
+                    { h: 'Date',      w: 20, f: function(r) { return r.date_mesure ? new Date(r.date_mesure+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—'; } },
+                    { h: 'Morts',     w: 18, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
+                    { h: 'Poids (g)', w: 22, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
+                    { h: 'GMQ g/j',   w: 18, f: function(r) { return fmtVal(r.gmq, 1); } },
+                    { h: 'Homog. %',  w: 18, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                    { h: 'Alim g/j',  w: 20, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
+                    { h: 'Eau tot.',  w: 20, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                    { h: 'Eau/poule', w: 20, f: function(r) { return fmtVal(r.eau_animal, 3); } },
+                    { h: 'Ratio E/A', w: 23, f: function(r) { return fmtVal(r.eau_ratio, 2); } }
                   ];
 
-            // Normaliser les largeurs pour remplir exactement cW
-            var sumW = cols.reduce(function(s, c) { return s + c.w; }, 0);
-            var scale = cW / sumW;
-            cols.forEach(function(c) { c.w = c.w * scale; });
+            var tSumW = tCols.reduce(function(s, c) { return s + c.w; }, 0);
+            var tScale = cW / tSumW;
+            tCols.forEach(function(c) { c.w = c.w * tScale; });
 
-            var rowH   = 5.5;
-            var headH  = 7;
-            var fs     = hasOeufs ? 6.5 : 7.5;
-            var fsBold = hasOeufs ? 6.5 : 7.5;
+            var tRowH  = 5.5;
+            var tHeadH = 7.5;
+            var tFs    = hasOeufs ? 7 : 8;
 
-            function drawTableHeader() {
-                var x2 = mg;
+            function drawTHeader() {
                 doc.setFillColor(30, 41, 59);
-                doc.rect(mg, y, cW, headH, 'F');
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(fsBold);
-                doc.setTextColor(255, 255, 255);
-                cols.forEach(function(c) {
-                    doc.text(c.h, x2 + c.w / 2, y + headH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                doc.rect(mg, y2, cW, tHeadH, 'F');
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(tFs); doc.setTextColor(255, 255, 255);
+                var x2 = mg;
+                tCols.forEach(function(c) {
+                    doc.text(c.h, x2 + c.w / 2, y2 + tHeadH - 1.5, { align: 'center', maxWidth: c.w - 1 });
                     x2 += c.w;
                 });
+                y2 += tHeadH;
             }
 
-            drawTableHeader();
-            y += headH;
-
+            drawTHeader();
             rows2.forEach(function(row, ri) {
-                y = checkPage(y, rowH + 2);
-                if (y <= mg + 1) { // nouvelle page → retracer le header
-                    drawTableHeader();
-                    y += headH;
+                if (y2 + tRowH > pageH - 12) {
+                    doc.addPage();
+                    drawTablePageHeader('Détail des données (suite)');
+                    drawTHeader();
                 }
-                // Fond alterné
                 if (ri % 2 === 0) {
                     doc.setFillColor(248, 250, 252);
-                    doc.rect(mg, y, cW, rowH, 'F');
+                    doc.rect(mg, y2, cW, tRowH, 'F');
                 }
-                // Bordure basse
                 doc.setDrawColor(226, 232, 240);
-                doc.setLineWidth(0.2);
-                doc.line(mg, y + rowH, mg + cW, y + rowH);
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(fs);
-                doc.setTextColor(30, 41, 59);
-
+                doc.setLineWidth(0.15);
+                doc.line(mg, y2 + tRowH, mg + cW, y2 + tRowH);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(tFs); doc.setTextColor(30, 41, 59);
                 var x2 = mg;
-                cols.forEach(function(c) {
-                    var val = c.f(row);
-                    doc.text(String(val), x2 + c.w / 2, y + rowH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                tCols.forEach(function(c) {
+                    doc.text(String(c.f(row)), x2 + c.w / 2, y2 + tRowH - 1.5, { align: 'center', maxWidth: c.w - 1 });
                     x2 += c.w;
                 });
-                y += rowH;
+                y2 += tRowH;
             });
         }
 
-        // ── Pied de page (toutes les pages) ──────────────────────────────────
+        // ── Pieds de page (toutes les pages) ─────────────────────────────────
         var totalPages = doc.internal.getNumberOfPages();
-        for (var p = 1; p <= totalPages; p++) {
-            doc.setPage(p);
-            doc.setFillColor(255, 255, 255);
-            doc.setDrawColor(203, 213, 225);
-            doc.setLineWidth(0.3);
-            doc.line(mg, pageH - 10, pageW - mg, pageH - 10);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.5);
-            doc.setTextColor(148, 163, 184);
-            doc.text('Dataferme — ADOSI', mg, pageH - 6);
-            doc.text('Page ' + p + ' / ' + totalPages, pageW - mg, pageH - 6, { align: 'right' });
-            doc.text('Lot : ' + (lot.code_lot || '—') + '  ·  Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW / 2, pageH - 6, { align: 'center' });
-        }
+        for (var p = 1; p <= totalPages; p++) { pageFooter(p, totalPages); }
 
         return doc;
     }
