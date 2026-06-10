@@ -5226,17 +5226,17 @@
                 if (src && graphState[graphId].chart) {
                     var srcW = src.width  || 800;
                     var srcH = src.height || 300;
-                    // Ajouter une marge blanche à droite (5%) pour éviter le clipping
-                    // des étiquettes de l'axe Y droit et améliorer la lisibilité PDF
-                    var padR = Math.round(srcW * 0.05);
-                    var padB = Math.round(srcH * 0.03);
+                    // Padding symétrique pour éviter le clipping des titres d'axes Y
+                    // (Chart.js place les labels en bord de canvas)
+                    var padH = Math.round(srcW * 0.06);  // 6 % gauche et droite
+                    var padV = Math.round(srcH * 0.04);  // 4 % haut et bas
                     var tmp = document.createElement('canvas');
-                    tmp.width  = srcW + padR;
-                    tmp.height = srcH + padB;
+                    tmp.width  = srcW + 2 * padH;
+                    tmp.height = srcH + 2 * padV;
                     var c2 = tmp.getContext('2d');
                     c2.fillStyle = '#ffffff';
                     c2.fillRect(0, 0, tmp.width, tmp.height);
-                    c2.drawImage(src, 0, 0);
+                    c2.drawImage(src, padH, padV);   // graphique centré dans le canvas élargi
                     imgData = tmp.toDataURL('image/png');
                 }
 
@@ -5656,10 +5656,14 @@
 
             // Boîte texte avec barre colorée à gauche
             var boxY    = synthY + 9;
-            var lineH   = 5.2;  // interligne mm
-            var textW   = synthColW - 14;  // largeur texte nette (7mm offset gauche + 7mm droite)
+            var lineH   = 5.8;  // interligne mm pour Times 11pt
+            var textW   = synthColW - 18;  // marge conservatrice (9mm de chaque côté)
+            // IMPORTANT : fixer la police AVANT splitTextToSize pour que les métriques
+            // de calcul correspondent exactement à celles utilisées lors du rendu
+            doc.setFont('times', 'normal');
+            doc.setFontSize(11);
             var lines   = doc.splitTextToSize(syn.text, textW);
-            var boxH    = Math.min(Math.max(22, lines.length * lineH + 12), availH - 9);
+            var boxH    = Math.min(Math.max(25, lines.length * lineH + 14), availH - 9);
 
             doc.setFillColor(248, 250, 252);
             doc.setDrawColor(226, 232, 240);
@@ -5668,9 +5672,9 @@
             // Barre colorée gauche
             doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
             doc.rect(cx, boxY, 3.5, boxH, 'F');
-            // Texte analyse — pas de maxWidth (évite la justification forcée jsPDF)
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(51, 65, 85);
-            doc.text(lines, cx + 7, boxY + 7);
+            // Texte analyse Times New Roman 11pt — sans maxWidth (évite la justification forcée jsPDF)
+            doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(51, 65, 85);
+            doc.text(lines, cx + 7, boxY + 8);
         });
 
         // ── TABLEAU DÉTAIL DES DONNÉES ────────────────────────────────────────
