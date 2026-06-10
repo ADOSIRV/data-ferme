@@ -5364,6 +5364,10 @@
         var hasOeufs   = summary.hasOeufs;
 
         // ── Helpers ──────────────────────────────────────────────────────────
+        function hexToRgb(hex) {
+            var r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return r ? [parseInt(r[1], 16), parseInt(r[2], 16), parseInt(r[3], 16)] : [0, 0, 0];
+        }
         function hRule(y, r, g, b) {
             doc.setDrawColor(r || 203, g || 213, b || 225);
             doc.setLineWidth(0.35);
@@ -5384,6 +5388,26 @@
                 try { doc.addImage(imgData, 'PNG', x, y, w, h); } catch(e) {}
             }
         }
+        function drawLegend(items, yPos) {
+            if (!items || !items.length) return;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            var dotSz = 3.5, dotGap = 4, itemPad = 14;
+            var sf = doc.internal.scaleFactor;
+            var itemWidths = items.map(function(item) {
+                return dotSz + dotGap + doc.getStringUnitWidth(item.label) * 8.5 / sf;
+            });
+            var totalW = itemWidths.reduce(function(s, w) { return s + w; }, 0) + (items.length - 1) * itemPad;
+            var cx = mg + (cW - totalW) / 2;
+            items.forEach(function(item, idx) {
+                var rgb = hexToRgb(item.color);
+                doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+                doc.rect(cx, yPos, dotSz, dotSz, 'F');
+                doc.setTextColor(51, 65, 85);
+                doc.text(item.label, cx + dotSz + dotGap, yPos + dotSz - 0.2);
+                cx += itemWidths[idx] + itemPad;
+            });
+        }
         function pageFooter(p, total) {
             doc.setPage(p);
             doc.setDrawColor(203, 213, 225);
@@ -5393,16 +5417,14 @@
             doc.setFontSize(7);
             doc.setTextColor(148, 163, 184);
             doc.text('Dataferme — ADOSI', mg, pageH - 4);
-            doc.text('Lot : ' + (lot.code_lot || '—') + '  ·  Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW / 2, pageH - 4, { align: 'center' });
-            doc.text('Page ' + p + ' / ' + total, pageW - mg, pageH - 4, { align: 'right' });
+            doc.text('Lot : ' + (lot.code_lot || '—') + '  ·  Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW / 2, pageH - 4, { align: 'center' });
+            doc.text('Page ' + p + ' / ' + total, pageW - mg, pageH - 4, { align: 'right' });
         }
 
-        // ── PAGE 1 : En-tête + Info Lot ──────────────────────────────────────
-        // Bandeau titre (fond sombre 30mm)
+        // ── PAGE 1 : Garde (En-tête + Info Lot + KPI) ────────────────────────
         doc.setFillColor(30, 41, 59);
         doc.rect(0, 0, pageW, 30, 'F');
 
-        // Logo dans le bandeau
         var titleOffX = mg + 4;
         if (logoBase64) {
             try {
@@ -5422,11 +5444,10 @@
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(148, 163, 184);
-        doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   Mise en place : ' + (lot.date_mise_en_place || '—') + '   ·   Durée : ' + (lot.nb_jours || '—') + ' jours', titleOffX, 23);
+        doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   Mise en place : ' + (lot.date_mise_en_place || '—') + '   ·   Durée : ' + (lot.nb_jours || '—') + ' jours', titleOffX, 23);
         doc.setFontSize(8);
         doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW - mg, 23, { align: 'right' });
 
-        // Bloc exploitation (3 colonnes sous le bandeau)
         var y = 38;
         var exploitantNom = currentEleveur ? ((currentEleveur.nom || '') + ' ' + (currentEleveur.prenom || '')).trim() : '—';
         var siteNom  = currentSite     ? currentSite.nom     : '—';
@@ -5447,7 +5468,6 @@
         y += 16;
         y = hRule(y, 226, 232, 240);
 
-        // Fiche lot (2 lignes × 3 colonnes)
         doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
         doc.text('Information Lot', mg, y);
         y += 8;
@@ -5467,24 +5487,23 @@
         });
         y = hRule(y - 2, 226, 232, 240);
 
-        // Indicateurs KPI (petites boîtes)
         doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
         doc.text('Résumé des performances', mg, y);
         y += 7;
         var cr = summary.croissance || {}, co = summary.consommation || {};
         var kpis = [
-            ['Poids final',     (cr.poids_final_g         || '—') + ' g'],
-            ['Mortalité',  (cr.mortalite_taux_pct    || '—') + ' %'],
-            ['Homogénéité', (cr.homogeneite_moy_pct || '—') + ' %'],
-            ['GMQ moyen',       (cr.gmq_moy_gj            || '—') + ' g/j'],
-            ['Aliment moy.',    (co.aliment_moy_gj        || '—') + ' g/j'],
-            ['Ratio E/A',       (co.ratio_eau_aliment_moy || '—')]
+            ['Poids final',  (cr.poids_final_g         || '—') + ' g'],
+            ['Mortalité',    (cr.mortalite_taux_pct    || '—') + ' %'],
+            ['Homogénéité',  (cr.homogeneite_moy_pct   || '—') + ' %'],
+            ['GMQ moyen',    (cr.gmq_moy_gj            || '—') + ' g/j'],
+            ['Aliment moy.', (co.aliment_moy_gj        || '—') + ' g/j'],
+            ['Ratio E/A',    (co.ratio_eau_aliment_moy || '—')]
         ];
         if (hasOeufs && summary.ponte) {
             kpis.push(['Tx ponte moy.', (summary.ponte.taux_ponte_moy_pct || '—') + ' %']);
             kpis.push(['Part Cl. A',    (summary.ponte.ratio_a_total_pct  || '—') + ' %']);
         }
-        var kpiW  = Math.floor(cW / kpis.length) - 2;
+        var kpiW = Math.floor(cW / kpis.length) - 2;
         kpis.forEach(function(k, i) {
             var kx = mg + i * (cW / kpis.length);
             doc.setFillColor(248, 250, 252);
@@ -5497,52 +5516,153 @@
             doc.text(k[1], kx + kpiW / 2, y + 11, { align: 'center', maxWidth: kpiW - 2 });
         });
 
-        // ── PAGES SECTIONS (1 page par section) ─────────────────────────────
-        var sections = [
-            { label: '1. Croissance & Santé', analyse: analyses.croissance, c1: charts.c1, c2: charts.c2, rgb: [59, 130, 246] },
-            { label: '2. Consommation',             analyse: analyses.consommation, c1: charts.c3, c2: charts.c4, rgb: [16, 185, 129] }
+        // ── PAGES GRAPHIQUES : 1 graphique pleine page par courbe ────────────
+        // Layout : bandeau 14mm | titre 13mm | graphique 153mm | légende 12mm | footer 8mm
+        var chartH = 153;
+        var chartY = 27;
+        var legendY = chartY + chartH + 4;   // 184 mm depuis le haut
+
+        var chartPages = [
+            {
+                sectionLabel: '1. Croissance & Santé',
+                rgb: [59, 130, 246],
+                title: 'Poids moyen & Mortalité',
+                imgData: charts.c1,
+                legend: [
+                    { color: '#2563eb', label: 'Poids moyen (g)' },
+                    { color: '#e11d48', label: 'Mortalité cumulée (%)' }
+                ]
+            },
+            {
+                sectionLabel: '1. Croissance & Santé',
+                rgb: [59, 130, 246],
+                title: 'Homogénéité & GMQ',
+                imgData: charts.c2,
+                legend: [
+                    { color: '#059669', label: 'Homogénéité (%)' },
+                    { color: '#d97706', label: 'GMQ (g/j)' }
+                ]
+            },
+            {
+                sectionLabel: '2. Consommation',
+                rgb: [16, 185, 129],
+                title: 'Consommation eau totale',
+                imgData: charts.c3,
+                legend: [
+                    { color: '#0369a1', label: 'Eau totale (L)' },
+                    { color: '#0284c7', label: 'Ratio eau/aliment' }
+                ]
+            },
+            {
+                sectionLabel: '2. Consommation',
+                rgb: [16, 185, 129],
+                title: 'Consommation aliment & eau/animal',
+                imgData: charts.c4,
+                legend: [
+                    { color: '#ea580c', label: 'Aliment (g/j/animal)' },
+                    { color: '#0891b2', label: 'Eau/animal (L)' }
+                ]
+            }
         ];
         if (hasOeufs) {
-            sections.push({ label: '3. Ponte', analyse: analyses.ponte, c1: charts.c5, c2: charts.c6, rgb: [245, 158, 11] });
+            chartPages.push({
+                sectionLabel: '3. Ponte',
+                rgb: [245, 158, 11],
+                title: 'Production œufs par classe',
+                imgData: charts.c5,
+                legend: [
+                    { color: '#9333ea', label: 'Œufs Classe A' },
+                    { color: '#c084fc', label: 'Œufs Classe B' }
+                ]
+            });
+            chartPages.push({
+                sectionLabel: '3. Ponte',
+                rgb: [245, 158, 11],
+                title: 'Taux de ponte (%)',
+                imgData: charts.c6,
+                legend: [
+                    { color: '#7c3aed', label: 'Taux de ponte (%)' }
+                ]
+            });
         }
 
-        var chartW = (cW - 10) / 2;   // ~131mm
-        var chartH = 90;               // 90mm — grands graphiques lisibles
-
-        sections.forEach(function(sec) {
+        chartPages.forEach(function(cp) {
             doc.addPage();
 
             // Bandeau coloré section
-            doc.setFillColor(sec.rgb[0], sec.rgb[1], sec.rgb[2]);
+            doc.setFillColor(cp.rgb[0], cp.rgb[1], cp.rgb[2]);
             doc.rect(0, 0, pageW, 14, 'F');
             doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
-            doc.text(sec.label, mg, 9.5);
+            doc.text(cp.sectionLabel, mg, 9.5);
             doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-            doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   ' + (lot.souche || '—'), pageW - mg, 9.5, { align: 'right' });
+            doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   ' + (lot.souche || '—'), pageW - mg, 9.5, { align: 'right' });
 
-            // Deux graphiques côte à côte
-            var gy = 19;
-            addChart(sec.c1, mg,               gy, chartW, chartH);
-            addChart(sec.c2, mg + chartW + 10, gy, chartW, chartH);
+            // Titre du graphique
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+            doc.text(cp.title, mg, 22);
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.3);
+            doc.line(mg, 24.5, pageW - mg, 24.5);
 
-            // Boîte analyse IA
-            var ay = gy + chartH + 5;
-            var analyseText = sec.analyse || 'Analyse non disponible.';
-            var lines = doc.splitTextToSize(analyseText, cW - 14);
-            var boxH  = Math.max(18, lines.length * 4.8 + 10);
+            // Graphique pleine largeur
+            addChart(cp.imgData, mg, chartY, cW, chartH);
 
-            // Fond + bordure colorée à gauche
+            // Fond légende + items centrés
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.2);
+            doc.roundedRect(mg, legendY - 1, cW, 9, 1.5, 1.5, 'FD');
+            drawLegend(cp.legend, legendY + 1.5);
+        });
+
+        // ── PAGE SYNTHÈSE IA ─────────────────────────────────────────────────
+        doc.addPage();
+
+        doc.setFillColor(30, 41, 59);
+        doc.rect(0, 0, pageW, 14, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+        doc.text('Synthèse & Analyse IA', mg, 9.5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+        doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   ' + (lot.souche || '—'), pageW - mg, 9.5, { align: 'right' });
+
+        var syntheses = [
+            { title: 'Croissance & Santé', text: analyses.croissance   || 'Analyse non disponible.', rgb: [59, 130, 246] },
+            { title: 'Consommation',            text: analyses.consommation || 'Analyse non disponible.', rgb: [16, 185, 129] }
+        ];
+        if (hasOeufs && analyses.ponte) {
+            syntheses.push({ title: 'Ponte', text: analyses.ponte, rgb: [245, 158, 11] });
+        }
+
+        var nbCols    = syntheses.length;   // 2 (chair) ou 3 (pondeuses)
+        var colGap    = 6;
+        var synthColW = (cW - (nbCols - 1) * colGap) / nbCols;
+        var synthY    = 18;
+        var availH    = pageH - 14 - synthY - 10;
+
+        syntheses.forEach(function(syn, i) {
+            var cx = mg + i * (synthColW + colGap);
+
+            // En-tête colonne coloré
+            doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
+            doc.rect(cx, synthY, synthColW, 9, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(255, 255, 255);
+            doc.text(syn.title, cx + synthColW / 2, synthY + 6.2, { align: 'center', maxWidth: synthColW - 4 });
+
+            // Boîte texte avec barre colorée à gauche
+            var boxY  = synthY + 9;
+            var lines = doc.splitTextToSize(syn.text, synthColW - 12);
+            var boxH  = Math.min(Math.max(20, lines.length * 5.0 + 10), availH - 9);
+
             doc.setFillColor(248, 250, 252);
             doc.setDrawColor(226, 232, 240);
             doc.setLineWidth(0.3);
-            doc.roundedRect(mg, ay, cW, boxH, 2, 2, 'FD');
-            doc.setFillColor(sec.rgb[0], sec.rgb[1], sec.rgb[2]);
-            doc.rect(mg, ay, 3.5, boxH, 'F');
-
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(30, 41, 59);
-            doc.text('Analyse IA', mg + 7, ay + 6.5);
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
-            doc.text(lines, mg + 7, ay + 12);
+            doc.rect(cx, boxY, synthColW, boxH, 'FD');
+            // Barre colorée gauche
+            doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
+            doc.rect(cx, boxY, 3.5, boxH, 'F');
+            // Texte analyse
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(51, 65, 85);
+            doc.text(lines, cx + 7, boxY + 7, { maxWidth: synthColW - 10 });
         });
 
         // ── TABLEAU DÉTAIL DES DONNÉES ────────────────────────────────────────
@@ -5555,7 +5675,7 @@
             doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(255, 255, 255);
             doc.text(title, mg, 9.5);
             doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
-            doc.text('Lot : ' + (lot.code_lot || '—'), pageW - mg, 9.5, { align: 'right' });
+            doc.text('Lot : ' + (lot.code_lot || '—'), pageW - mg, 9.5, { align: 'right' });
             y2 = 19;
         }
 
@@ -5568,19 +5688,19 @@
         } else {
             var tCols = hasOeufs
                 ? [
-                    { h: 'Jour',     w: 9,  f: function(r) { return String(r.jour_age); } },
-                    { h: 'Date',     w: 13, f: function(r) { return r.date_mesure ? new Date(r.date_mesure+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) : '—'; } },
-                    { h: 'Morts',    w: 11, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
-                    { h: 'Poids (g)',w: 14, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
-                    { h: 'GMQ',      w: 11, f: function(r) { return fmtVal(r.gmq, 1); } },
-                    { h: 'Hom. %',   w: 12, f: function(r) { return fmtVal(r.homogeneite, 1); } },
-                    { h: 'Alim g/j', w: 13, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
-                    { h: 'Eau (L)',  w: 13, f: function(r) { return fmtVal(r.eau_litres, 0); } },
-                    { h: 'Eau/poule',w: 14, f: function(r) { return fmtVal(r.eau_animal, 3); } },
-                    { h: 'R.E/A',    w: 11, f: function(r) { return fmtVal(r.eau_ratio, 2); } },
-                    { h: 'Cl. A',    w: 13, f: function(r) { return fmtVal(r.oeufs_classe_a, 0); } },
-                    { h: 'Cl. B',    w: 12, f: function(r) { return fmtVal(r.oeufs_classe_b, 0); } },
-                    { h: 'Tx ponte', w: 13, f: function(r) { return r.taux_ponte != null ? (r.taux_ponte * 100).toFixed(1) + '%' : '—'; } }
+                    { h: 'Jour',      w: 9,  f: function(r) { return String(r.jour_age); } },
+                    { h: 'Date',      w: 13, f: function(r) { return r.date_mesure ? new Date(r.date_mesure+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) : '—'; } },
+                    { h: 'Morts',     w: 11, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
+                    { h: 'Poids (g)', w: 14, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
+                    { h: 'GMQ',       w: 11, f: function(r) { return fmtVal(r.gmq, 1); } },
+                    { h: 'Hom. %',    w: 12, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                    { h: 'Alim g/j',  w: 13, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
+                    { h: 'Eau (L)',   w: 13, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                    { h: 'Eau/poule', w: 14, f: function(r) { return fmtVal(r.eau_animal, 3); } },
+                    { h: 'R.E/A',     w: 11, f: function(r) { return fmtVal(r.eau_ratio, 2); } },
+                    { h: 'Cl. A',     w: 13, f: function(r) { return fmtVal(r.oeufs_classe_a, 0); } },
+                    { h: 'Cl. B',     w: 12, f: function(r) { return fmtVal(r.oeufs_classe_b, 0); } },
+                    { h: 'Tx ponte',  w: 13, f: function(r) { return r.taux_ponte != null ? (r.taux_ponte * 100).toFixed(1) + '%' : '—'; } }
                   ]
                 : [
                     { h: 'Jour',      w: 14, f: function(r) { return String(r.jour_age); } },
