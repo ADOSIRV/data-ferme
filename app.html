@@ -5213,34 +5213,43 @@
             graphState[graphId].selected = t2 ? [t1, t2] : [t1];
             graphState[graphId].period   = period || 'all';
 
+            // Calculer le suffix ici (nécessaire pour accéder au canvas avant updateChart)
+            var suffix   = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+            var canvasEl = $('chart' + suffix);
+
+            // ── Forcer une grande taille avant le rendu ──────────────────────────
+            // Chart.js avec responsive:false utilise canvas.width / canvas.height.
+            // En forçant 1800×650 : (1) haute résolution pour le PDF, (2) Chart.js
+            // dispose de suffisamment de place pour tracer les titres d'axes Y sans
+            // les couper. updateChart() restaure ensuite le canvas avec responsive:true.
+            if (canvasEl) {
+                canvasEl.width  = 1800;
+                canvasEl.height = 650;
+            }
+
             _rapportMode = true;
             updateChart(graphId);
             _rapportMode = false;
 
-            // rAF garanti que Chart.js a dessiné (animation:false → draw() synchrone)
+            // rAF garanti que Chart.js a fini de dessiner (animation:false → synchrone)
             requestAnimationFrame(function() {
-                var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
-                var src    = $('chart' + suffix);
+                var src     = $('chart' + suffix);
                 var imgData = null;
 
                 if (src && graphState[graphId].chart) {
-                    var srcW = src.width  || 800;
-                    var srcH = src.height || 300;
-                    // Padding symétrique pour éviter le clipping des titres d'axes Y
-                    // (Chart.js place les labels en bord de canvas)
-                    var padH = Math.round(srcW * 0.06);  // 6 % gauche et droite
-                    var padV = Math.round(srcH * 0.04);  // 4 % haut et bas
+                    // Ajouter un fond blanc (canvas Chart.js est transparent par défaut)
                     var tmp = document.createElement('canvas');
-                    tmp.width  = srcW + 2 * padH;
-                    tmp.height = srcH + 2 * padV;
+                    tmp.width  = src.width;
+                    tmp.height = src.height;
                     var c2 = tmp.getContext('2d');
                     c2.fillStyle = '#ffffff';
                     c2.fillRect(0, 0, tmp.width, tmp.height);
-                    c2.drawImage(src, padH, padV);   // graphique centré dans le canvas élargi
+                    c2.drawImage(src, 0, 0);
                     imgData = tmp.toDataURL('image/png');
                 }
 
-                // Restaurer l'état UI
+                // Restaurer l'état UI — updateChart avec responsive:true
+                // redimensionne automatiquement le canvas à la taille du conteneur CSS
                 graphState[graphId].selected = savedSelected;
                 graphState[graphId].period   = savedPeriod;
                 updateChart(graphId);
