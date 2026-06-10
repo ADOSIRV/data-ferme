@@ -122,6 +122,10 @@
         .profile-body { padding: 1.4rem 1.5rem; }
         .profile-section { margin-bottom: 1.4rem; }
         .profile-section-title { font-size: 0.71rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.8rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.4rem; }
+        .consent-label { display: flex; align-items: flex-start; gap: 0.6rem; cursor: pointer; }
+        .consent-checkbox { width: 16px; height: 16px; min-width: 16px; margin-top: 2px; accent-color: var(--primary, #3b82f6); cursor: pointer; }
+        .consent-text { font-size: 0.84rem; color: var(--text-main, #e2e8f0); line-height: 1.45; }
+        .consent-label:hover .consent-text { color: #fff; }
         .profile-footer { display: flex; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border); justify-content: flex-end; }
         
         /* ── Logo coopérative ── */
@@ -1624,6 +1628,16 @@
                     </select>
                     <div style="font-size:0.77rem;color:var(--text-dim);margin-top:0.3rem;">Liste gérée par l'administrateur.</div>
                 </div>
+            </div>
+
+            <!-- Partage des données (éleveur uniquement) -->
+            <div class="profile-section" id="profilConsentSection">
+                <div class="profile-section-title">🔐 Partage des données</div>
+                <label class="consent-label">
+                    <input type="checkbox" id="profAutorisationPartage" class="consent-checkbox">
+                    <span class="consent-text">J'autorise le partage de mes données de suivi avec ma coopérative de rattachement et ses partenaires tiers à des fins d'accompagnement zootechnique.</span>
+                </label>
+                <div style="font-size:0.77rem;color:var(--text-dim);margin-top:0.5rem;">Cette autorisation permet l'export automatique de vos données vers votre coopérative. Vous pouvez la révoquer à tout moment.</div>
             </div>
 
             <!-- Mot de passe -->
@@ -8863,13 +8877,14 @@
         $('profConfirmPassword').value = '';
 
         // Champs éleveur-spécifiques
-        var tel = '', rue = '', cp = '', vil = '', coopId = null;
+        var tel = '', rue = '', cp = '', vil = '', coopId = null, autorisationPartage = false;
         if (isEleveur && currentEleveur) {
-            tel    = currentEleveur.telephone   || '';
-            rue    = currentEleveur.rue         || '';
-            cp     = currentEleveur.code_postal || '';
-            vil    = currentEleveur.ville       || '';
-            coopId = currentEleveur.cooperative_id || null;
+            tel                = currentEleveur.telephone             || '';
+            rue                = currentEleveur.rue                   || '';
+            cp                 = currentEleveur.code_postal           || '';
+            vil                = currentEleveur.ville                 || '';
+            coopId             = currentEleveur.cooperative_id        || null;
+            autorisationPartage = !!currentEleveur.autorisation_partage_donnees;
             // Fallback adresse_json si colonnes plates vides
             if (!rue && currentEleveur.adresse_json) {
                 var aj = currentEleveur.adresse_json;
@@ -8882,14 +8897,19 @@
         $('profRue').value        = rue;
         $('profCodePostal').value = cp;
         $('profVille').value      = vil;
+        // Pré-cocher la case de consentement
+        var cbPartage = $('profAutorisationPartage');
+        if (cbPartage) cbPartage.checked = autorisationPartage;
 
         // Sections visibles seulement pour éleveur
-        var coopSection = document.querySelector('#profCooperative') &&
-                          document.querySelector('#profCooperative').closest('.profile-section');
-        var pwdSection  = document.querySelector('#profNewPassword') &&
-                          document.querySelector('#profNewPassword').closest('.profile-section');
-        if (coopSection) coopSection.style.display = isEleveur ? '' : 'none';
-        if (pwdSection)  pwdSection.style.display  = isEleveur ? '' : 'none';
+        var coopSection    = document.querySelector('#profCooperative') &&
+                             document.querySelector('#profCooperative').closest('.profile-section');
+        var consentSection = $('profilConsentSection');
+        var pwdSection     = document.querySelector('#profNewPassword') &&
+                             document.querySelector('#profNewPassword').closest('.profile-section');
+        if (coopSection)    coopSection.style.display    = isEleveur ? '' : 'none';
+        if (consentSection) consentSection.style.display = isEleveur ? '' : 'none';
+        if (pwdSection)     pwdSection.style.display     = isEleveur ? '' : 'none';
 
         // Rendre les champs en lecture seule pour les rôles non-éleveur
         var editableIds = ['profPrenom','profNom','profEmail','profTelephone',
@@ -8948,8 +8968,10 @@
         var rue    = ($('profRue').value       || '').trim();
         var cp     = ($('profCodePostal').value|| '').trim();
         var ville  = ($('profVille').value     || '').trim();
-        var coopEl = $('profCooperative');
-        var coopId = coopEl && coopEl.value ? coopEl.value : null;
+        var coopEl     = $('profCooperative');
+        var coopId     = coopEl && coopEl.value ? coopEl.value : null;
+        var cbPartage  = $('profAutorisationPartage');
+        var autorisation = cbPartage ? cbPartage.checked : null;
         var pwd    = ($('profNewPassword').value    || '');
         var pwd2   = ($('profConfirmPassword').value|| '');
 
@@ -8969,16 +8991,17 @@
         btn.textContent = '⏳ Enregistrement…';
 
         supabase.rpc('save_profil_eleveur', {
-            p_user_id:        user.id,
-            p_nom:            nom,
-            p_prenom:         prenom  || null,
-            p_email:          email,
-            p_telephone:      tel     || null,
-            p_rue:            rue     || null,
-            p_code_postal:    cp      || null,
-            p_ville:          ville   || null,
-            p_cooperative_id: coopId,
-            p_new_password:   pwd     || null
+            p_user_id:               user.id,
+            p_nom:                   nom,
+            p_prenom:                prenom  || null,
+            p_email:                 email,
+            p_telephone:             tel     || null,
+            p_rue:                   rue     || null,
+            p_code_postal:           cp      || null,
+            p_ville:                 ville   || null,
+            p_cooperative_id:        coopId,
+            p_new_password:          pwd     || null,
+            p_autorisation_partage:  autorisation !== null ? autorisation : null
         }).then(function(res) {
             if (res.error) throw res.error;
 
@@ -8993,14 +9016,15 @@
 
             // Mettre à jour le cache éleveur + la bannière
             if (currentEleveur) {
-                currentEleveur.nom           = nom;
-                currentEleveur.prenom        = prenom || null;
-                currentEleveur.email         = email;
-                currentEleveur.telephone     = tel   || null;
-                currentEleveur.rue           = rue   || null;
-                currentEleveur.code_postal   = cp    || null;
-                currentEleveur.ville         = ville || null;
-                currentEleveur.cooperative_id = coopId;
+                currentEleveur.nom                          = nom;
+                currentEleveur.prenom                       = prenom || null;
+                currentEleveur.email                        = email;
+                currentEleveur.telephone                    = tel   || null;
+                currentEleveur.rue                          = rue   || null;
+                currentEleveur.code_postal                  = cp    || null;
+                currentEleveur.ville                        = ville || null;
+                currentEleveur.cooperative_id               = coopId;
+                currentEleveur.autorisation_partage_donnees = autorisation !== null ? autorisation : (currentEleveur.autorisation_partage_donnees || false);
                 // Rafraîchir la bannière
                 $('eleveurBannerName').textContent = nom + (prenom ? ' ' + prenom : '');
             }
