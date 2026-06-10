@@ -5657,17 +5657,30 @@
             doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
             doc.rect(cx, synthY, synthColW, 9, 'F');
             doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(255, 255, 255);
-            doc.text(syn.title, cx + synthColW / 2, synthY + 6.2, { align: 'center', maxWidth: synthColW - 4 });
+            // Pas de maxWidth sur le titre : évite toute pollution d'état jsPDF
+            doc.text(syn.title, cx + synthColW / 2, synthY + 6.2, { align: 'center' });
 
             // Boîte texte avec barre colorée à gauche
             var boxY    = synthY + 9;
             var lineH   = 5.8;  // interligne mm pour Times 11pt
-            var textW   = synthColW - 18;  // marge conservatrice (9mm de chaque côté)
-            // IMPORTANT : fixer la police AVANT splitTextToSize pour que les métriques
-            // de calcul correspondent exactement à celles utilisées lors du rendu
+            var textW   = synthColW - 20;  // marge sécurisée (10mm de chaque côté)
+
+            // Sanitiser le texte IA : remplacer les caractères Unicode hors WinAnsi
+            // (espaces insécables, guillemets typographiques, tirets spéciaux…)
+            // qui causent des artefacts de rendu avec la police times de jsPDF
+            var cleanText = (syn.text || '')
+                .replace(/ | | | | |﻿/g, ' ')
+                .replace(/‘|’|ʼ/g, "'")
+                .replace(/“|”|«|»/g, '"')
+                .replace(/–/g, '-')
+                .replace(/—|―/g, '--')
+                .replace(/…/g, '...')
+                .replace(/[^ -ÿ]/g, '');
+
+            // Fixer la police AVANT splitTextToSize : métriques cohérentes avec le rendu
             doc.setFont('times', 'normal');
             doc.setFontSize(11);
-            var lines   = doc.splitTextToSize(syn.text, textW);
+            var lines   = doc.splitTextToSize(cleanText, textW);
             var boxH    = Math.min(Math.max(25, lines.length * lineH + 14), availH - 9);
 
             doc.setFillColor(248, 250, 252);
@@ -5677,9 +5690,21 @@
             // Barre colorée gauche
             doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
             doc.rect(cx, boxY, 3.5, boxH, 'F');
-            // Texte analyse Times New Roman 11pt — sans maxWidth (évite la justification forcée jsPDF)
-            doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(51, 65, 85);
-            doc.text(lines, cx + 7, boxY + 8);
+
+            // ── Rendu ligne par ligne ─────────────────────────────────────────
+            // Passer un array à doc.text() en jsPDF 2.5.1 peut déclencher une
+            // justification automatique (espacement forcé). En rendant chaque
+            // ligne individuellement avec align:'left', on garantit un rendu
+            // homogène Times New Roman 11pt sans distorsion.
+            doc.setFont('times', 'normal');
+            doc.setFontSize(11);
+            doc.setTextColor(51, 65, 85);
+            var maxLineY = boxY + boxH - 2;
+            for (var li = 0; li < lines.length; li++) {
+                var lineY = boxY + 8 + li * lineH;
+                if (lineY > maxLineY) break;
+                doc.text(lines[li], cx + 7, lineY, { align: 'left' });
+            }
         });
 
         // ── TABLEAU DÉTAIL DES DONNÉES ────────────────────────────────────────
