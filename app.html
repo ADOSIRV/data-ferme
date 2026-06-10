@@ -307,6 +307,7 @@
         .export-btn .export-icon { font-size: 1.2rem; }
         .export-btn.pdf:hover { border-color: var(--red); background: var(--red-light); }
         .export-btn.excel:hover { border-color: var(--green); background: var(--green-light); }
+        .export-btn.rapport:hover { border-color: #7c3aed; background: rgba(124,58,237,0.12); color: #7c3aed; }
 
         /* ── Onglets Exploitation ── */
         .exploit-tabs { display: none; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0; }
@@ -2128,6 +2129,9 @@
                     <button class="export-btn excel" id="btnExportExcel">
                         <span class="export-icon">📊</span> Export Excel
                     </button>
+                    <button class="export-btn rapport" id="btnRapportLot">
+                        <span class="export-icon">📋</span> Rapport lot
+                    </button>
                 </div>
             </div>
             
@@ -2901,6 +2905,7 @@
     var _cacheTypeLotNom  = {};  // { [typeId]:   'nom' }
     // Timer debounce pour renderTableau — évite les doubles rendus après corrections
     var _renderTableauTimer = null;
+    var _rapportMode = false;  // désactive les animations Chart.js lors de la capture rapport
     
     var INDICATORS = {
         poids:      { label: 'Croissance en poids', unit: 'g',       color: '#2563eb', colorArea: 'rgba(37,99,235,0.2)',   colorBorder: 'rgba(37,99,235,0.5)',   icon: '📈', dataField: 'poids_moyen',         stdMinField: 'poids_min',                stdMaxField: 'poids_max',                tableEau: false },
@@ -5175,21 +5180,586 @@
         };
         
         g.chart = new Chart(ctx, {
-            type: 'line', 
+            type: 'line',
             data: { labels: labels, datasets: datasets },
             options: {
-                responsive: true, 
+                animation: _rapportMode ? false : undefined,
+                responsive: !_rapportMode,
                 maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
-                plugins: { 
-                    legend: { display: false }, 
-                    tooltip: tooltipConfig
+                plugins: {
+                    legend: { display: false },
+                    tooltip: _rapportMode ? { enabled: false } : tooltipConfig
                 },
                 scales: scales
             }
         });
     }
     
+    // =====================================================
+    // RAPPORT LOT PDF + ANALYSE IA
+    // =====================================================
+
+    /**
+     * Capture un graphique Chart.js en image PNG base64 (fond blanc).
+     * Modifie temporairement graphState[graphId] pour forcer les indicateurs
+     * voulus, rend sans animation (_rapportMode), capture, puis restaure.
+     */
+    function captureChartForReport(graphId, t1, t2, period) {
+        return new Promise(function(resolve) {
+            var savedSelected = graphState[graphId].selected.slice();
+            var savedPeriod   = graphState[graphId].period;
+
+            graphState[graphId].selected = t2 ? [t1, t2] : [t1];
+            graphState[graphId].period   = period || 'all';
+
+            _rapportMode = true;
+            updateChart(graphId);
+            _rapportMode = false;
+
+            // rAF garanti que Chart.js a dessiné (animation:false → draw() synchrone)
+            requestAnimationFrame(function() {
+                var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+                var src    = $('chart' + suffix);
+                var imgData = null;
+
+                if (src && graphState[graphId].chart) {
+                    var tmp = document.createElement('canvas');
+                    tmp.width  = src.width  || 800;
+                    tmp.height = src.height || 300;
+                    var c2 = tmp.getContext('2d');
+                    c2.fillStyle = '#ffffff';
+                    c2.fillRect(0, 0, tmp.width, tmp.height);
+                    c2.drawImage(src, 0, 0);
+                    imgData = tmp.toDataURL('image/png');
+                }
+
+                // Restaurer l'état UI
+                graphState[graphId].selected = savedSelected;
+                graphState[graphId].period   = savedPeriod;
+                updateChart(graphId);
+                updateLegend(graphId);
+
+                resolve(imgData);
+            });
+        });
+    }
+
+    /** Construit le résumé chiffré du lot pour les prompts IA */
+    function buildDataSummaryForAI() {
+        var lot = currentLotInfo;
+        if (!lot) return null;
+
+        function avg(arr, field) {
+            var vals = (arr || []).filter(function(d) { return d[field] != null && !isNaN(parseFloat(d[field])); });
+            if (!vals.length) return null;
+            return (vals.reduce(function(s, d) { return s + parseFloat(d[field]); }, 0) / vals.length).toFixed(1);
+        }
+        function lastVal(arr, field) {
+            for (var i = (arr || []).length - 1; i >= 0; i--) {
+                if (arr[i][field] != null && !isNaN(parseFloat(arr[i][field]))) return parseFloat(arr[i][field]).toFixed(1);
+            }
+            return null;
+        }
+        function sumVal(arr, field) {
+            return (arr || []).reduce(function(s, d) { return s + (parseFloat(d[field]) || 0); }, 0);
+        }
+
+        var stdPoids = standardsData.poids || [];
+        var lastStd  = stdPoids.length ? stdPoids[stdPoids.length - 1] : null;
+
+        var poidsData  = lotData.poids     || [];
+        var mortData   = lotData.mortalite || [];
+        var homogData  = lotData.homogeneite || [];
+        var gmqData    = lotData.gmq       || [];
+        var alimentData = lotData.aliment  || [];
+        var eauData    = lotData.eau_conso  || [];
+        var eauAnimal  = lotData.eau_animal || [];
+        var eauRatioD  = lotData.eau_ratio  || [];
+        var oeufsAData = lotData.oeufs_a   || [];
+        var oeufsBData = lotData.oeufs_b   || [];
+        var tauxPonteD = lotData.taux_ponte_pct || [];
+
+        var hasOeufs   = oeufsAData.length > 0 || tauxPonteD.length > 0;
+        var totalMorts = sumVal(mortData, 'nombre_morts');
+        var totalA     = sumVal(oeufsAData, 'oeufs_classe_a');
+        var totalB     = sumVal(oeufsBData, 'oeufs_classe_b');
+        var ratioAB    = (totalA + totalB) > 0 ? (totalA / (totalA + totalB) * 100).toFixed(1) : null;
+        var mortTaux   = lot.effectif_depart && totalMorts ? (totalMorts / lot.effectif_depart * 100).toFixed(1) : null;
+        var nbJours    = poidsData.length ? poidsData[poidsData.length - 1].jour_age : '--';
+
+        return {
+            lot: {
+                code_lot:          lot.code_lot || '--',
+                type_lot:          lot.type_lot_nom || '--',
+                souche:            lot.souche_nom || '--',
+                effectif_prevu:    lot.effectif_depart || '--',
+                effectif_reel:     lot.effectif_reel || lot.effectif_depart || '--',
+                date_mise_en_place: lot.date_mise_place || '--',
+                nb_jours:          nbJours
+            },
+            croissance: {
+                poids_final_g:      lastVal(poidsData, 'poids_moyen'),
+                poids_std_max_g:    lastStd ? parseFloat(lastStd.poids_max || 0).toFixed(0) : null,
+                poids_std_min_g:    lastStd ? parseFloat(lastStd.poids_min || 0).toFixed(0) : null,
+                mortalite_total:    Math.round(totalMorts),
+                mortalite_taux_pct: mortTaux,
+                homogeneite_moy_pct: avg(homogData, 'homogeneite'),
+                gmq_moy_gj:         avg(gmqData, 'gmq')
+            },
+            consommation: {
+                aliment_final_gj:       lastVal(alimentData, 'conso_par_animal'),
+                aliment_moy_gj:         avg(alimentData, 'conso_par_animal'),
+                eau_totale_finale_l:    lastVal(eauData, 'consommation_litres'),
+                eau_poule_finale_lj:    lastVal(eauAnimal, 'conso_par_animal'),
+                ratio_eau_aliment_moy:  avg(eauRatioD, 'ratio_eau_aliment')
+            },
+            ponte: hasOeufs ? {
+                taux_ponte_moy_pct:  avg(tauxPonteD, 'taux_ponte_pct'),
+                taux_ponte_max_pct:  lastVal(tauxPonteD, 'taux_ponte_pct'),
+                oeufs_a_total:       Math.round(totalA),
+                oeufs_b_total:       Math.round(totalB),
+                ratio_a_total_pct:   ratioAB
+            } : null,
+            hasOeufs: hasOeufs
+        };
+    }
+
+    /** Appelle le workflow N8N → renvoie { croissance, consommation, ponte } */
+    function appelN8NRapportLot(summary) {
+        var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/generate-rapport-lot';
+        return fetch(n8nUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(summary)
+        })
+        .then(function(r) {
+            if (!r.ok) throw new Error('N8N HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function(data) {
+            if (!data.success) throw new Error(data.error || 'Erreur N8N inconnue');
+            return data.analyses;
+        });
+    }
+
+    /**
+     * Génère le PDF rapport de lot (portrait A4 jsPDF).
+     * opts = { summary, analyses, charts, logoBase64 }
+     *   charts = { c1..c6: base64|null }
+     *   analyses = { croissance, consommation, ponte }
+     */
+    function genererPDFRapportLot(opts) {
+        var jsPDF      = window.jspdf.jsPDF;
+        var doc        = new jsPDF('portrait', 'mm', 'a4');
+        var pageW      = doc.internal.pageSize.getWidth();   // 210
+        var pageH      = doc.internal.pageSize.getHeight();  // 297
+        var mg         = 15;
+        var cW         = pageW - 2 * mg;  // 180
+        var summary    = opts.summary;
+        var analyses   = opts.analyses || {};
+        var charts     = opts.charts   || {};
+        var logoBase64 = opts.logoBase64;
+        var lot        = summary.lot || {};
+        var hasOeufs   = summary.hasOeufs;
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+        function checkPage(y, needed) {
+            if (y + needed > pageH - mg) { doc.addPage(); return mg; }
+            return y;
+        }
+        function hRule(y, r, g, b) {
+            doc.setDrawColor(r || 203, g || 213, b || 225);
+            doc.setLineWidth(0.4);
+            doc.line(mg, y, pageW - mg, y);
+            return y + 4;
+        }
+        function sectionTitle(txt, y) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(30, 41, 59);
+            doc.text(txt, mg, y);
+            doc.setDrawColor(30, 41, 59);
+            doc.setLineWidth(0.3);
+            doc.line(mg, y + 1.5, mg + doc.getTextWidth(txt), y + 1.5);
+            return y + 8;
+        }
+        function infoLine(label, val, x, y, w) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text(label, x, y);
+            doc.setTextColor(30, 41, 59);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(val || '—').substring(0, Math.floor(w / 2.2)), x + doc.getTextWidth(label) + 1.5, y);
+            doc.setFont('helvetica', 'normal');
+        }
+        function addChart(img, x, y, w, h) {
+            if (!img) {
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(203, 213, 225);
+                doc.roundedRect(x, y, w, h, 2, 2, 'FD');
+                doc.setTextColor(148, 163, 184);
+                doc.setFontSize(8);
+                doc.text('Aucune donnée', x + w / 2, y + h / 2, { align: 'center' });
+            } else {
+                try { doc.addImage(img, 'PNG', x, y, w, h); } catch(e) {
+                    doc.setFillColor(248, 250, 252);
+                    doc.roundedRect(x, y, w, h, 2, 2, 'F');
+                }
+            }
+        }
+
+        // ── PAGE 1 : En-tête ─────────────────────────────────────────────────
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageW, pageH, 'F');
+
+        var y = mg;
+
+        // Logo
+        var titleX = mg;
+        if (logoBase64) {
+            try {
+                var img = new Image();
+                img.src = logoBase64;
+                var nW = img.naturalWidth || img.width || 1;
+                var nH = img.naturalHeight || img.height || 1;
+                var maxW = 38, maxH = 22;
+                var r = Math.min(maxW / nW, maxH / nH);
+                doc.addImage(logoBase64, 'PNG', mg, y, nW * r, nH * r);
+                titleX = mg + 44;
+            } catch(e) {}
+        }
+
+        // Titre
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(30, 41, 59);
+        doc.text('RAPPORT DE LOT', titleX, y + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        var dateRapport = lot.date_mise_en_place || new Date().toLocaleDateString('fr-FR');
+        doc.text('Mise en place : ' + dateRapport + '   ·   Généré le ' + new Date().toLocaleDateString('fr-FR'), titleX, y + 17);
+
+        y = mg + 24;
+        y = hRule(y);
+
+        // Infos rapides
+        doc.setFontSize(9);
+        var exploitantNom = currentEleveur ? ((currentEleveur.nom || '') + ' ' + (currentEleveur.prenom || '')).trim() : '—';
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
+        doc.text('Exploitant :', mg, y);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 41, 59);
+        doc.text(exploitantNom, mg + doc.getTextWidth('Exploitant :') + 1.5, y);
+
+        y += 6;
+        var siteNom  = currentSite     ? currentSite.nom     : '—';
+        var batNom   = currentBatiment ? currentBatiment.nom : '—';
+        var lotCode  = lot.code_lot    || '—';
+        var parts3   = ['Site : ' + siteNom, 'Bâtiment : ' + batNom, 'Lot : ' + lotCode];
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(71, 85, 105); doc.setFontSize(9);
+        doc.text(parts3.join('     '), mg, y);
+
+        y += 6;
+        y = hRule(y, 226, 232, 240);
+
+        // ── Section Information Lot ──────────────────────────────────────────
+        y = sectionTitle('Information Lot :', y);
+
+        var col1 = mg, col2 = mg + cW / 2 + 5;
+        var rows = [
+            ['Code Lot :',           lot.code_lot      || '—',   'Effectif prévu :',  String(lot.effectif_prevu  || '—')],
+            ['Souche :',             lot.souche        || '—',   'Effectif réel :',   String(lot.effectif_reel   || '—')],
+            ['Type de Lot :',        lot.type_lot      || '—',   'Date mise en place :', lot.date_mise_en_place || '—'],
+        ];
+        rows.forEach(function(row) {
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 116, 139);
+            doc.text(row[0], col1, y);
+            doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 41, 59);
+            doc.text(row[1], col1 + 28, y);
+            doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
+            doc.text(row[2], col2, y);
+            doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 41, 59);
+            doc.text(row[3], col2 + 32, y);
+            y += 6;
+        });
+
+        y += 2;
+        y = hRule(y, 226, 232, 240);
+
+        // ── Section Courbes analyse ──────────────────────────────────────────
+        y = sectionTitle('Courbes analyse :', y);
+
+        var cW2  = (cW - 8) / 2;   // largeur d'un graphique (86mm)
+        var cH   = 54;              // hauteur d'un graphique
+        var bulletNums = ['1.', '2.', '3.'];
+        var sections = [
+            { label: 'Croissance & Santé', analyse: analyses.croissance, c1: charts.c1, c2: charts.c2 },
+            { label: 'Consommation',        analyse: analyses.consommation, c1: charts.c3, c2: charts.c4 }
+        ];
+        if (hasOeufs) {
+            sections.push({ label: 'Ponte', analyse: analyses.ponte, c1: charts.c5, c2: charts.c6 });
+        }
+
+        sections.forEach(function(sec, idx) {
+            // Vérifier espace : titre(7) + graphiques(cH) + analyse(20) + espacement(6) = ~87mm
+            y = checkPage(y, 7 + cH + 24);
+
+            // Titre section
+            doc.setFont('helvetica', 'bolditalic');
+            doc.setFontSize(10);
+            doc.setTextColor(30, 41, 59);
+            doc.text(bulletNums[idx] + ' ' + sec.label, mg, y);
+            y += 6;
+
+            // 2 graphiques côte à côte
+            addChart(sec.c1, mg,          y, cW2, cH);
+            addChart(sec.c2, mg + cW2 + 8, y, cW2, cH);
+            y += cH + 3;
+
+            // Analyse IA
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(30, 41, 59);
+            doc.text('Analyse :', mg, y);
+            y += 5;
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.setTextColor(71, 85, 105);
+            var analyseText = sec.analyse || 'Analyse non disponible.';
+            var lines = doc.splitTextToSize(analyseText, cW);
+            // Vérifier espace pour le texte
+            y = checkPage(y, lines.length * 4.5 + 6);
+            doc.text(lines, mg, y);
+            y += lines.length * 4.5 + 8;
+        });
+
+        // ── Page(s) Tableau Détail des données ───────────────────────────────
+        doc.addPage();
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageW, pageH, 'F');
+        y = mg;
+
+        y = sectionTitle('Détail des données :', y);
+
+        var rows2  = buildTableauRows();
+        if (!rows2.length) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
+            doc.text('Aucune donnée journalière disponible.', mg, y);
+        } else {
+            // Colonnes
+            var cols = hasOeufs
+                ? [
+                    { h: 'Jour',     w: 9,  f: function(r) { return String(r.jour_age); } },
+                    { h: 'Date',     w: 15, f: function(r) { return r.date_mesure ? new Date(r.date_mesure + 'T12:00:00').toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}) : '—'; } },
+                    { h: 'Morts',    w: 11, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
+                    { h: 'Poids (g)',w: 14, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
+                    { h: 'GMQ',      w: 10, f: function(r) { return fmtVal(r.gmq, 1); } },
+                    { h: 'Hom. %',   w: 11, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                    { h: 'Alim g/j', w: 13, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
+                    { h: 'Eau (L)',  w: 14, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                    { h: 'Eau/poule',w: 14, f: function(r) { return fmtVal(r.eau_animal, 3); } },
+                    { h: 'R.E/A',    w: 11, f: function(r) { return fmtVal(r.eau_ratio, 2); } },
+                    { h: 'Cl.A',     w: 12, f: function(r) { return fmtVal(r.oeufs_classe_a, 0); } },
+                    { h: 'Cl.B',     w: 11, f: function(r) { return fmtVal(r.oeufs_classe_b, 0); } },
+                    { h: 'Tx ponte', w: 13, f: function(r) { return r.taux_ponte != null ? (r.taux_ponte * 100).toFixed(1) + '%' : '—'; } }
+                  ]
+                : [
+                    { h: 'Jour',     w: 12, f: function(r) { return String(r.jour_age); } },
+                    { h: 'Date',     w: 18, f: function(r) { return r.date_mesure ? new Date(r.date_mesure + 'T12:00:00').toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '—'; } },
+                    { h: 'Morts',    w: 14, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
+                    { h: 'Poids (g)',w: 18, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
+                    { h: 'GMQ g/j',  w: 14, f: function(r) { return fmtVal(r.gmq, 1); } },
+                    { h: 'Homog. %', w: 14, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                    { h: 'Alim g/j', w: 16, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
+                    { h: 'Eau tot.',  w: 17, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                    { h: 'Eau/poule',w: 17, f: function(r) { return fmtVal(r.eau_animal, 3); } },
+                    { h: 'Ratio E/A',w: 18, f: function(r) { return fmtVal(r.eau_ratio, 2); } }
+                  ];
+
+            // Normaliser les largeurs pour remplir exactement cW
+            var sumW = cols.reduce(function(s, c) { return s + c.w; }, 0);
+            var scale = cW / sumW;
+            cols.forEach(function(c) { c.w = c.w * scale; });
+
+            var rowH   = 5.5;
+            var headH  = 7;
+            var fs     = hasOeufs ? 6.5 : 7.5;
+            var fsBold = hasOeufs ? 6.5 : 7.5;
+
+            function drawTableHeader() {
+                var x2 = mg;
+                doc.setFillColor(30, 41, 59);
+                doc.rect(mg, y, cW, headH, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(fsBold);
+                doc.setTextColor(255, 255, 255);
+                cols.forEach(function(c) {
+                    doc.text(c.h, x2 + c.w / 2, y + headH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                    x2 += c.w;
+                });
+            }
+
+            drawTableHeader();
+            y += headH;
+
+            rows2.forEach(function(row, ri) {
+                y = checkPage(y, rowH + 2);
+                if (y <= mg + 1) { // nouvelle page → retracer le header
+                    drawTableHeader();
+                    y += headH;
+                }
+                // Fond alterné
+                if (ri % 2 === 0) {
+                    doc.setFillColor(248, 250, 252);
+                    doc.rect(mg, y, cW, rowH, 'F');
+                }
+                // Bordure basse
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.2);
+                doc.line(mg, y + rowH, mg + cW, y + rowH);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(fs);
+                doc.setTextColor(30, 41, 59);
+
+                var x2 = mg;
+                cols.forEach(function(c) {
+                    var val = c.f(row);
+                    doc.text(String(val), x2 + c.w / 2, y + rowH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                    x2 += c.w;
+                });
+                y += rowH;
+            });
+        }
+
+        // ── Pied de page (toutes les pages) ──────────────────────────────────
+        var totalPages = doc.internal.getNumberOfPages();
+        for (var p = 1; p <= totalPages; p++) {
+            doc.setPage(p);
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.3);
+            doc.line(mg, pageH - 10, pageW - mg, pageH - 10);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            doc.text('Dataferme — ADOSI', mg, pageH - 6);
+            doc.text('Page ' + p + ' / ' + totalPages, pageW - mg, pageH - 6, { align: 'right' });
+            doc.text('Lot : ' + (lot.code_lot || '—') + '  ·  Généré le ' + new Date().toLocaleDateString('fr-FR'), pageW / 2, pageH - 6, { align: 'center' });
+        }
+
+        return doc;
+    }
+
+    /**
+     * Fonction principale : capture les graphiques, appelle l'IA via N8N,
+     * génère le PDF, archive sur Supabase Storage et déclenche le téléchargement.
+     */
+    function genererRapportLot() {
+        if (!currentLotInfo) {
+            alert('Sélectionnez d\'abord un lot pour générer le rapport.');
+            return;
+        }
+
+        var btn = $('btnRapportLot');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="export-icon">⏳</span> Génération…'; }
+
+        var summary  = null;
+        var analyses = null;
+        var charts   = {};
+
+        showLoading('Capture des graphiques…');
+
+        Promise.resolve()
+            // ── 1. Capturer les 6 graphiques ──────────────────────────────
+            .then(function() {
+                return captureChartForReport('sante', 'poids',    'mortalite', 'all');
+            })
+            .then(function(img) { charts.c1 = img;
+                return captureChartForReport('sante', 'homogeneite', 'gmq', 'all');
+            })
+            .then(function(img) { charts.c2 = img;
+                return captureChartForReport('conso', 'eau_conso',  'eau_ratio', 'all');
+            })
+            .then(function(img) { charts.c3 = img;
+                return captureChartForReport('conso', 'eau_animal', 'aliment', 'all');
+            })
+            .then(function(img) { charts.c4 = img;
+                var hasOeufs = !!(lotData.oeufs_a && lotData.oeufs_a.length > 0 || lotData.taux_ponte_pct && lotData.taux_ponte_pct.length > 0);
+                if (hasOeufs) {
+                    return captureChartForReport('ponte', 'oeufs_a', 'oeufs_b', 'all')
+                        .then(function(img) { charts.c5 = img;
+                            return captureChartForReport('ponte', 'taux_ponte_pct', null, 'all');
+                        })
+                        .then(function(img) { charts.c6 = img; });
+                }
+            })
+            // ── 2. Construire résumé et appeler N8N pour analyses IA ──────
+            .then(function() {
+                summary = buildDataSummaryForAI();
+                if (!summary) throw new Error('Impossible de construire le résumé du lot.');
+                showLoading('Analyse IA en cours (15-25 sec)…');
+                return appelN8NRapportLot(summary);
+            })
+            .then(function(result) {
+                analyses = result;
+                // ── 3. Charger le logo ─────────────────────────────────────
+                showLoading('Génération du PDF…');
+                var logoUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'Logo_Dataferme.png';
+                if (currentEleveur && currentEleveur.cooperative_logo_url) {
+                    logoUrl = currentEleveur.cooperative_logo_url;
+                }
+                return chargerLogoBase64(logoUrl).catch(function() { return null; });
+            })
+            // ── 4. Générer le PDF ──────────────────────────────────────────
+            .then(function(logoBase64) {
+                var doc = genererPDFRapportLot({
+                    summary:    summary,
+                    analyses:   analyses,
+                    charts:     charts,
+                    logoBase64: logoBase64
+                });
+
+                // ── 5. Archiver sur Supabase Storage ───────────────────────
+                var pdfBase64 = doc.output('datauristring').split(',')[1];
+                var byteArr   = atob(pdfBase64);
+                var bytes     = new Uint8Array(byteArr.length);
+                for (var i = 0; i < byteArr.length; i++) bytes[i] = byteArr.charCodeAt(i);
+                var blob      = new Blob([bytes], { type: 'application/pdf' });
+
+                var codeLot = (currentLotInfo.code_lot || 'lot').replace(/[^a-zA-Z0-9_-]/g, '_');
+                var filename = 'rapport_' + codeLot + '_' + Date.now() + '.pdf';
+
+                return supabase.storage.from('rapports-lot')
+                    .upload(filename, blob, { contentType: 'application/pdf', upsert: false })
+                    .then(function() {
+                        // Téléchargement local indépendamment du succès Storage
+                        return doc;
+                    })
+                    .catch(function(e) {
+                        console.warn('Archivage Supabase échoué (bucket "rapports-lot" peut-être absent) :', e.message);
+                        return doc; // On télécharge quand même
+                    });
+            })
+            // ── 6. Télécharger ────────────────────────────────────────────
+            .then(function(doc) {
+                hideLoading();
+                var codeLot  = (currentLotInfo.code_lot || 'lot').replace(/[^a-zA-Z0-9_-]/g, '_');
+                var filename = 'Rapport_lot_' + codeLot + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+                doc.save(filename);
+            })
+            .catch(function(e) {
+                hideLoading();
+                alert('❌ Erreur lors de la génération du rapport :\n' + (e.message || e));
+                console.error('[genererRapportLot]', e);
+            })
+            .finally(function() {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span class="export-icon">📋</span> Rapport lot'; }
+            });
+    }
+
     function filterByPeriod(data, period) {
         if (!data || !data.length || period === 'all') return data;
         var maxAge = parseInt(period);
@@ -5610,6 +6180,7 @@
         // Exports
         $('btnExportPDF').addEventListener('click', exportPDF);
         $('btnExportExcel').addEventListener('click', exportExcel);
+        $('btnRapportLot').addEventListener('click', genererRapportLot);
 
         // Onglets Exploitation
         document.querySelectorAll('.exploit-tab').forEach(function(btn) {
