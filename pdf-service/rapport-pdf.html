@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport PDF – Dataferme (Headless)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --chart-grid: rgba(71,85,105,0.3);
+            --chart-text: #94a3b8;
+            --text-dim:   #64748b;
+        }
+        body { background: #fff; margin: 0; font-family: sans-serif; }
+        #status { padding: 12px; color: #555; font-size: 13px; }
+        /* Canvases hors-écran pour Chart.js */
+        #charts-container { position: fixed; left: -9999px; top: 0; width: 1800px; height: 650px; overflow: hidden; }
+        /* Éléments factices requis par updateChart() */
+        #dummy { display: none; }
+    </style>
+</head>
+<body>
+    <div id="status">En attente des données…</div>
+
+    <div id="charts-container">
+        <canvas id="chartSante" width="1800" height="650"></canvas>
+        <canvas id="chartConso"  width="1800" height="650"></canvas>
+        <canvas id="chartPonte"  width="1800" height="650"></canvas>
+    </div>
+
+    <div id="dummy">
+        <span id="chartTitleSante"></span>    <span id="chartSubtitleSante"></span>
+        <span id="chartTitleConso"></span>     <span id="chartSubtitleConso"></span>
+        <span id="chartTitlePonte"></span>     <span id="chartSubtitlePonte"></span>
+    </div>
+
+<script>
+(function () {
+'use strict';
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VARIABLES GLOBALES (miroir de app.html)
+// ══════════════════════════════════════════════════════════════════════════════
+var currentLotInfo  = null;
+var currentEleveur  = null;
+var currentSite     = null;
+var currentBatiment = null;
+var _rapportMode    = false;
+
+var lotData = {
+    poids: [], mortalite: [], aliment: [], oeufs: [],
+    eau_animal: [], eau_ratio: [], eau_conso: [],
+    homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [], manual: []
+};
+var standardsData = {
+    poids: [], mortalite: [], aliment: [], oeufs: [],
+    eau_animal: [], eau_ratio: [], eau_conso: [],
+    homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: []
+};
+var graphState = {
+    sante: { selected: [], period: 'all', chart: null },
+    conso: { selected: [], period: 'all', chart: null },
+    ponte: { selected: [], period: 'all', chart: null }
+};
+
+// $ robuste : retourne un objet factice si l'élément est absent
+function $(id) {
+    var el = document.getElementById(id);
+    if (!el) return { textContent: '', innerHTML: '', style: {}, classList: { add: function(){}, remove: function(){} } };
+    return el;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INDICATORS (copie exacte de app.html)
+// ══════════════════════════════════════════════════════════════════════════════
+var INDICATORS = {
+    poids:          { label: 'Croissance en poids',  unit: 'g',       color: '#2563eb', colorArea: 'rgba(37,99,235,0.2)',   colorBorder: 'rgba(37,99,235,0.5)',   dataField: 'poids_moyen',         stdMinField: 'poids_min',                stdMaxField: 'poids_max',                tableEau: false },
+    mortalite:      { label: 'Mortalité',             unit: 'morts',   color: '#e11d48', colorArea: 'rgba(225,29,72,0.2)',   colorBorder: 'rgba(225,29,72,0.5)',   dataField: 'nombre_morts',        stdMinField: 'mortalite_min',            stdMaxField: 'mortalite_max',            tableEau: false },
+    aliment:        { label: 'Conso. aliment',        unit: 'g/j',     color: '#ea580c', colorArea: 'rgba(234,88,12,0.2)',   colorBorder: 'rgba(234,88,12,0.5)',   dataField: 'conso_par_animal',    stdMinField: 'conso_min',                stdMaxField: 'conso_max',                tableEau: false },
+    oeufs:          { label: 'Oeufs pondus',          unit: 'oeufs',   color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)', colorBorder: 'rgba(124,58,237,0.5)',  dataField: 'nombre_oeufs',        stdMinField: 'taux_ponte_min',           stdMaxField: 'taux_ponte_max',           tableEau: false },
+    taux_ponte_pct: { label: 'Taux de ponte',         unit: '%',       color: '#7c3aed', colorArea: 'rgba(124,58,237,0.2)', colorBorder: 'rgba(124,58,237,0.5)',  dataField: 'taux_ponte_pct',      stdMinField: 'taux_ponte_min_pct',       stdMaxField: 'taux_ponte_max_pct',       tableEau: false },
+    oeufs_a:        { label: 'Oeufs Classe A',        unit: 'oeufs',   color: '#9333ea', colorArea: 'rgba(147,51,234,0.2)', colorBorder: 'rgba(147,51,234,0.5)',  dataField: 'oeufs_classe_a',      stdMinField: null,                       stdMaxField: null,                       tableEau: false },
+    oeufs_b:        { label: 'Oeufs Classe B',        unit: 'oeufs',   color: '#c084fc', colorArea: 'rgba(192,132,252,0.2)',colorBorder: 'rgba(192,132,252,0.5)', dataField: 'oeufs_classe_b',      stdMinField: null,                       stdMaxField: null,                       tableEau: false },
+    eau_animal:     { label: 'Conso. eau/poule',      unit: 'L/poule', color: '#0891b2', colorArea: 'rgba(8,145,178,0.2)',  colorBorder: 'rgba(8,145,178,0.5)',   dataField: 'conso_par_animal',    stdMinField: 'conso_par_animal_min',     stdMaxField: 'conso_par_animal_max',     tableEau: true },
+    eau_ratio:      { label: 'Ratio eau/aliment',     unit: 'ratio',   color: '#0284c7', colorArea: 'rgba(2,132,199,0.2)',  colorBorder: 'rgba(2,132,199,0.5)',   dataField: 'ratio_eau_aliment',   stdMinField: 'ratio_eau_aliment_min',    stdMaxField: 'ratio_eau_aliment_max',    tableEau: true },
+    eau_conso:      { label: 'Conso. eau totale',     unit: 'L',       color: '#0369a1', colorArea: 'rgba(3,105,161,0.2)',  colorBorder: 'rgba(3,105,161,0.5)',   dataField: 'consommation_litres', stdMinField: 'consommation_litres_min',  stdMaxField: 'consommation_litres_max',  tableEau: true },
+    homogeneite:    { label: 'Homogeneite',           unit: '%',       color: '#059669', colorArea: 'rgba(5,150,105,0.2)',  colorBorder: 'rgba(5,150,105,0.5)',   dataField: 'homogeneite',         stdMinField: 'homogeneite_min',          stdMaxField: 'homogeneite_max',          tableEau: false },
+    gmq:            { label: 'GMQ',                   unit: 'g/j',     color: '#d97706', colorArea: 'rgba(217,119,6,0.2)',  colorBorder: 'rgba(217,119,6,0.5)',   dataField: 'gmq',                 stdMinField: 'gmq_min',                  stdMaxField: 'gmq_max',                  tableEau: false }
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HELPERS (copiés de app.html)
+// ══════════════════════════════════════════════════════════════════════════════
+function filterByPeriod(data, period) {
+    if (!data || !data.length || period === 'all') return data;
+    var maxAge  = parseInt(period);
+    var maxJour = data[data.length - 1].jour_age;
+    return data.filter(function(d) { return d.jour_age > maxJour - maxAge; });
+}
+
+function fmtVal(v, digits) {
+    if (v === null || v === undefined || v === '') return '—';
+    var n = parseFloat(v);
+    if (isNaN(n)) return '—';
+    return n.toFixed(digits);
+}
+
+function rebuildOeufsIndicators() {
+    var map = {};
+    lotData.oeufs.forEach(function(d) { map[d.jour_age] = Object.assign({}, d); });
+    lotData.manual.forEach(function(d) {
+        if (d.oeufs_classe_a != null || d.oeufs_classe_b != null || d.nombre_oeufs != null) {
+            if (!map[d.jour_age]) map[d.jour_age] = { jour_age: d.jour_age, date_mesure: d.date_mesure };
+            if (d.oeufs_classe_a != null) map[d.jour_age].oeufs_classe_a = d.oeufs_classe_a;
+            if (d.oeufs_classe_b != null) map[d.jour_age].oeufs_classe_b = d.oeufs_classe_b;
+            if (d.nombre_oeufs   != null) map[d.jour_age].nombre_oeufs   = d.nombre_oeufs;
+            if (d.taux_ponte     != null) map[d.jour_age].taux_ponte     = d.taux_ponte;
+        }
+    });
+    var mergedOeufs = Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
+    lotData.taux_ponte_pct = mergedOeufs.map(function(d) {
+        var clone = Object.assign({}, d);
+        clone.taux_ponte_pct = d.taux_ponte != null ? d.taux_ponte * 100 : null;
+        return clone;
+    });
+    lotData.oeufs_a = mergedOeufs;
+    lotData.oeufs_b = mergedOeufs;
+}
+
+function buildTableauRows() {
+    var map = {};
+    function ensureRow(j, date) { if (!map[j]) map[j] = { jour_age: j, date_mesure: date || '' }; }
+    lotData.poids.forEach(function(d) {
+        ensureRow(d.jour_age, d.date_mesure);
+        map[d.jour_age].poids_moyen = d.poids_moyen;
+        map[d.jour_age].gmq         = d.gmq;
+        map[d.jour_age].homogeneite = d.homogeneite;
+    });
+    lotData.mortalite.forEach(function(d) { ensureRow(d.jour_age, d.date_mesure); map[d.jour_age].nombre_morts  = d.nombre_morts; });
+    lotData.aliment.forEach(function(d)   { ensureRow(d.jour_age, d.date_mesure); map[d.jour_age].aliment_animal = d.conso_par_animal; });
+    lotData.eau_conso.forEach(function(d) {
+        ensureRow(d.jour_age, d.date_mesure);
+        map[d.jour_age].eau_litres = d.consommation_litres;
+        map[d.jour_age].eau_animal = d.conso_par_animal;
+        map[d.jour_age].eau_ratio  = d.ratio_eau_aliment;
+    });
+    lotData.oeufs.forEach(function(d) {
+        ensureRow(d.jour_age, d.date_mesure);
+        map[d.jour_age].oeufs_classe_a = d.oeufs_classe_a;
+        map[d.jour_age].oeufs_classe_b = d.oeufs_classe_b;
+        map[d.jour_age].nombre_oeufs   = d.nombre_oeufs;
+        map[d.jour_age].taux_ponte     = d.taux_ponte;
+    });
+    lotData.manual.forEach(function(d) {
+        ensureRow(d.jour_age, d.date_mesure);
+        if (d.poids_moyen    != null) map[d.jour_age].poids_moyen    = d.poids_moyen;
+        if (d.gmq            != null) map[d.jour_age].gmq            = d.gmq;
+        if (d.homogeneite    != null) map[d.jour_age].homogeneite    = d.homogeneite;
+        if (d.nombre_morts   != null) map[d.jour_age].nombre_morts   = d.nombre_morts;
+        if (d.aliment_animal != null) map[d.jour_age].aliment_animal = d.aliment_animal;
+        if (d.oeufs_classe_a != null) map[d.jour_age].oeufs_classe_a = d.oeufs_classe_a;
+        if (d.oeufs_classe_b != null) map[d.jour_age].oeufs_classe_b = d.oeufs_classe_b;
+        if (d.taux_ponte     != null) map[d.jour_age].taux_ponte     = d.taux_ponte;
+    });
+    return Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
+}
+
+// No-op legend update (pas d'interface graphique dans ce contexte headless)
+function updateLegend() {}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// updateChart — copie exacte de app.html (avec _rapportMode)
+// ══════════════════════════════════════════════════════════════════════════════
+function updateChart(graphId) {
+    var g      = graphState[graphId];
+    var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+    var canvas = $('chart' + suffix);
+    if (!canvas || !canvas.getContext) return;
+    if (_rapportMode) {
+        canvas.width  = 1800;
+        canvas.height = 650;
+    }
+    var ctx = canvas.getContext('2d');
+    if (g.chart) { g.chart.destroy(); g.chart = null; }
+
+    var t1 = g.selected[0], t2 = g.selected[1];
+    if (!t1) { $('chartTitle' + suffix).textContent = 'Selectionnez un indicateur'; return; }
+
+    var ind1 = INDICATORS[t1];
+    var d1   = filterByPeriod(lotData[t1] || [], g.period);
+    var std1 = standardsData[t1] || [];
+
+    if (d1.length === 0) { $('chartTitle' + suffix).textContent = 'Aucune donnee'; return; }
+
+    var labels = d1.map(function(d) { return 'J' + d.jour_age; });
+    var jours  = d1.map(function(d) { return d.jour_age; });
+
+    var title = ind1.label;
+    if (t2) title += ' vs ' + INDICATORS[t2].label;
+    $('chartTitle'    + suffix).textContent = title;
+    $('chartSubtitle' + suffix).textContent = t2 ? 'Comparaison sur deux axes' : 'Evolution';
+
+    var datasets = [];
+    var toleranceData = { y1: { min: [], max: [] }, y2: { min: [], max: [] } };
+
+    // Zone Y1
+    var min1 = [], max1 = [];
+    jours.forEach(function(j) {
+        var s = std1.find(function(x) { return x.jour_age === j; });
+        min1.push(s ? (parseFloat(s[ind1.stdMinField]) || null) : null);
+        max1.push(s ? (parseFloat(s[ind1.stdMaxField]) || null) : null);
+    });
+    toleranceData.y1.min = min1;
+    toleranceData.y1.max = max1;
+    if (max1.some(function(v) { return v !== null; })) {
+        datasets.push({ label: '_z1max', data: max1, borderColor: 'transparent', backgroundColor: ind1.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y1', order: 100 });
+        datasets.push({ label: '_z1min', data: min1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
+        datasets.push({ label: '_z1maxL', data: max1, borderColor: ind1.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y1', order: 99 });
+    }
+    var v1 = d1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
+    datasets.push({ label: ind1.label, data: v1, borderColor: ind1.color, backgroundColor: ind1.color, borderWidth: 2, tension: 0.35, fill: false, pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: ind1.color, pointBorderColor: ind1.color, pointBorderWidth: 0, yAxisID: 'y1', order: 1 });
+
+    var scales = {
+        x:  { grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: '#94a3b8', maxTicksLimit: 15 }, title: { display: true, text: 'Jours du cycle', color: '#64748b' } },
+        y1: { type: 'linear', position: 'left', grid: { color: 'rgba(71,85,105,0.3)' }, ticks: { color: ind1.color }, title: { display: true, text: ind1.label + ' (' + ind1.unit + ')', color: ind1.color } }
+    };
+
+    if (t2) {
+        var ind2 = INDICATORS[t2];
+        var d2   = filterByPeriod(lotData[t2] || [], g.period);
+        var std2 = standardsData[t2] || [];
+        var min2 = [], max2 = [];
+        jours.forEach(function(j) {
+            var s = std2.find(function(x) { return x.jour_age === j; });
+            min2.push(s ? (parseFloat(s[ind2.stdMinField]) || null) : null);
+            max2.push(s ? (parseFloat(s[ind2.stdMaxField]) || null) : null);
+        });
+        toleranceData.y2.min = min2;
+        toleranceData.y2.max = max2;
+        if (max2.some(function(v) { return v !== null; })) {
+            datasets.push({ label: '_z2max', data: max2, borderColor: 'transparent', backgroundColor: ind2.colorArea, fill: '+1', pointRadius: 0, yAxisID: 'y2', order: 98 });
+            datasets.push({ label: '_z2min', data: min2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
+            datasets.push({ label: '_z2maxL', data: max2, borderColor: ind2.colorBorder, borderWidth: 1, borderDash: [5,5], backgroundColor: 'transparent', fill: false, pointRadius: 0, yAxisID: 'y2', order: 97 });
+        }
+        var v2 = jours.map(function(j) {
+            var d = d2.find(function(x) { return x.jour_age === j; });
+            return d ? (parseFloat(d[ind2.dataField]) || 0) : null;
+        });
+        datasets.push({ label: ind2.label, data: v2, borderColor: ind2.color, backgroundColor: ind2.color, borderWidth: 2, tension: 0.35, fill: false, pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: ind2.color, pointBorderColor: ind2.color, pointBorderWidth: 0, yAxisID: 'y2', order: 2 });
+        scales.y2 = { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: ind2.color }, title: { display: true, text: ind2.label + ' (' + ind2.unit + ')', color: ind2.color } };
+    }
+
+    g.chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: datasets },
+        options: {
+            animation: _rapportMode ? false : undefined,
+            responsive: !_rapportMode,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            },
+            scales: scales
+        }
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// captureChartForReport — copie exacte de app.html
+// ══════════════════════════════════════════════════════════════════════════════
+function captureChartForReport(graphId, t1, t2, period) {
+    return new Promise(function(resolve) {
+        var savedSelected = graphState[graphId].selected.slice();
+        var savedPeriod   = graphState[graphId].period;
+
+        graphState[graphId].selected = t2 ? [t1, t2] : [t1];
+        graphState[graphId].period   = period || 'all';
+
+        var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
+
+        _rapportMode = true;
+        updateChart(graphId);
+        _rapportMode = false;
+
+        requestAnimationFrame(function() {
+            var src     = $('chart' + suffix);
+            var imgData = null;
+
+            if (src && graphState[graphId].chart) {
+                var tmp = document.createElement('canvas');
+                tmp.width  = src.width;
+                tmp.height = src.height;
+                var c2 = tmp.getContext('2d');
+                c2.fillStyle = '#ffffff';
+                c2.fillRect(0, 0, tmp.width, tmp.height);
+                c2.drawImage(src, 0, 0);
+                imgData = tmp.toDataURL('image/png');
+            }
+
+            graphState[graphId].selected = savedSelected;
+            graphState[graphId].period   = savedPeriod;
+            updateChart(graphId);
+            updateLegend(graphId);
+
+            resolve(imgData);
+        });
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// buildDataSummaryForAI — copie exacte de app.html
+// ══════════════════════════════════════════════════════════════════════════════
+function buildDataSummaryForAI() {
+    var lot = currentLotInfo;
+    if (!lot) return null;
+
+    function avg(arr, field) {
+        var vals = (arr || []).filter(function(d) { return d[field] != null && !isNaN(parseFloat(d[field])); });
+        if (!vals.length) return null;
+        return (vals.reduce(function(s, d) { return s + parseFloat(d[field]); }, 0) / vals.length).toFixed(1);
+    }
+    function lastVal(arr, field) {
+        for (var i = (arr || []).length - 1; i >= 0; i--) {
+            if (arr[i][field] != null && !isNaN(parseFloat(arr[i][field]))) return parseFloat(arr[i][field]).toFixed(1);
+        }
+        return null;
+    }
+    function sumVal(arr, field) {
+        return (arr || []).reduce(function(s, d) { return s + (parseFloat(d[field]) || 0); }, 0);
+    }
+
+    var stdPoids = standardsData.poids || [];
+    var lastStd  = stdPoids.length ? stdPoids[stdPoids.length - 1] : null;
+
+    var poidsData   = lotData.poids     || [];
+    var mortData    = lotData.mortalite || [];
+    var homogData   = lotData.homogeneite || [];
+    var gmqData     = lotData.gmq       || [];
+    var alimentData = lotData.aliment   || [];
+    var eauData     = lotData.eau_conso || [];
+    var eauAnimal   = lotData.eau_animal || [];
+    var eauRatioD   = lotData.eau_ratio || [];
+    var oeufsAData  = lotData.oeufs_a   || [];
+    var oeufsBData  = lotData.oeufs_b   || [];
+    var tauxPonteD  = lotData.taux_ponte_pct || [];
+
+    var hasOeufs   = oeufsAData.length > 0 || tauxPonteD.length > 0;
+    var totalMorts = sumVal(mortData, 'nombre_morts');
+    var totalA     = sumVal(oeufsAData, 'oeufs_classe_a');
+    var totalB     = sumVal(oeufsBData, 'oeufs_classe_b');
+    var ratioAB    = (totalA + totalB) > 0 ? (totalA / (totalA + totalB) * 100).toFixed(1) : null;
+    var mortTaux   = lot.effectif_depart && totalMorts ? (totalMorts / lot.effectif_depart * 100).toFixed(1) : null;
+    var nbJours    = poidsData.length ? poidsData[poidsData.length - 1].jour_age : '--';
+
+    return {
+        lot: {
+            code_lot:          lot.code_lot || '--',
+            type_lot:          lot.type_lot_nom || '--',
+            souche:            lot.souche_nom || '--',
+            effectif_prevu:    lot.effectif_depart || '--',
+            effectif_reel:     lot.effectif_reel || lot.effectif_depart || '--',
+            date_mise_en_place: lot.date_mise_place || '--',
+            nb_jours:          nbJours
+        },
+        croissance: {
+            poids_final_g:       lastVal(poidsData, 'poids_moyen'),
+            poids_std_max_g:     lastStd ? parseFloat(lastStd.poids_max || 0).toFixed(0) : null,
+            poids_std_min_g:     lastStd ? parseFloat(lastStd.poids_min || 0).toFixed(0) : null,
+            mortalite_total:     Math.round(totalMorts),
+            mortalite_taux_pct:  mortTaux,
+            homogeneite_moy_pct: avg(homogData, 'homogeneite'),
+            gmq_moy_gj:          avg(gmqData, 'gmq')
+        },
+        consommation: {
+            aliment_final_gj:      lastVal(alimentData, 'conso_par_animal'),
+            aliment_moy_gj:        avg(alimentData, 'conso_par_animal'),
+            eau_totale_finale_l:   lastVal(eauData, 'consommation_litres'),
+            eau_poule_finale_lj:   lastVal(eauAnimal, 'conso_par_animal'),
+            ratio_eau_aliment_moy: avg(eauRatioD, 'ratio_eau_aliment')
+        },
+        ponte: hasOeufs ? {
+            taux_ponte_moy_pct: avg(tauxPonteD, 'taux_ponte_pct'),
+            taux_ponte_max_pct: lastVal(tauxPonteD, 'taux_ponte_pct'),
+            oeufs_a_total:      Math.round(totalA),
+            oeufs_b_total:      Math.round(totalB),
+            ratio_a_total_pct:  ratioAB
+        } : null,
+        hasOeufs: hasOeufs
+    };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// chargerLogoBase64 — copie exacte de app.html
+// ══════════════════════════════════════════════════════════════════════════════
+function chargerLogoBase64(url) {
+    return fetch(url)
+        .then(function(r) { return r.blob(); })
+        .then(function(blob) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onloadend = function() { resolve(reader.result); };
+                reader.onerror   = function() { resolve(null); };
+                reader.readAsDataURL(blob);
+            });
+        })
+        .catch(function() { return null; });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// genererPDFRapportLot — copie exacte de app.html
+// ══════════════════════════════════════════════════════════════════════════════
+function genererPDFRapportLot(opts) {
+    var jsPDF      = window.jspdf.jsPDF;
+    var doc        = new jsPDF('landscape', 'mm', 'a4');
+    var pageW      = doc.internal.pageSize.getWidth();
+    var pageH      = doc.internal.pageSize.getHeight();
+    var mg         = 12;
+    var cW         = pageW - 2 * mg;
+    var summary    = opts.summary;
+    var analyses   = opts.analyses || {};
+    var charts     = opts.charts   || {};
+    var logoBase64 = opts.logoBase64;
+    var lot        = summary.lot || {};
+    var hasOeufs   = summary.hasOeufs;
+
+    function hexToRgb(hex) {
+        var r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return r ? [parseInt(r[1], 16), parseInt(r[2], 16), parseInt(r[3], 16)] : [0, 0, 0];
+    }
+    function hRule(y, r, g, b) {
+        doc.setDrawColor(r || 203, g || 213, b || 225);
+        doc.setLineWidth(0.35);
+        doc.line(mg, y, pageW - mg, y);
+        return y + 3;
+    }
+    function addChart(imgData, x, y, w, h) {
+        doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.3); doc.setFillColor(250, 251, 252);
+        doc.roundedRect(x, y, w, h, 2, 2, 'FD');
+        if (!imgData) {
+            doc.setTextColor(148, 163, 184); doc.setFontSize(9); doc.setFont('helvetica', 'italic');
+            doc.text('Aucune donnee disponible', x + w / 2, y + h / 2, { align: 'center' });
+        } else {
+            try { doc.addImage(imgData, 'PNG', x, y, w, h); } catch(e) {}
+        }
+    }
+    function drawLegend(items, yPos) {
+        if (!items || !items.length) return;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+        var dotSz = 3.5, dotGap = 4, itemPad = 14;
+        var sf = doc.internal.scaleFactor;
+        var itemWidths = items.map(function(item) {
+            return dotSz + dotGap + doc.getStringUnitWidth(item.label) * 8.5 / sf;
+        });
+        var totalW = itemWidths.reduce(function(s, w) { return s + w; }, 0) + (items.length - 1) * itemPad;
+        var cx = mg + (cW - totalW) / 2;
+        items.forEach(function(item, idx) {
+            var rgb = hexToRgb(item.color);
+            doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+            doc.rect(cx, yPos, dotSz, dotSz, 'F');
+            doc.setTextColor(51, 65, 85);
+            doc.text(item.label, cx + dotSz + dotGap, yPos + dotSz - 0.2);
+            cx += itemWidths[idx] + itemPad;
+        });
+    }
+    function pageFooter(p, total) {
+        doc.setPage(p);
+        doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.25);
+        doc.line(mg, pageH - 8, pageW - mg, pageH - 8);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(148, 163, 184);
+        doc.text('Dataferme — ADOSI', mg, pageH - 4);
+        doc.text('Lot : ' + (lot.code_lot || '—') + '  ·  Genere le ' + new Date().toLocaleDateString('fr-FR'), pageW / 2, pageH - 4, { align: 'center' });
+        doc.text('Page ' + p + ' / ' + total, pageW - mg, pageH - 4, { align: 'right' });
+    }
+
+    // PAGE 1 : En-tête + Infos lot + KPI
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageW, 30, 'F');
+
+    var titleOffX = mg + 4;
+    if (logoBase64) {
+        try {
+            var logoImg = new Image();
+            logoImg.src = logoBase64;
+            var lW = logoImg.naturalWidth || logoImg.width || 1;
+            var lH = logoImg.naturalHeight || logoImg.height || 1;
+            var lR = Math.min(38 / lW, 22 / lH);
+            doc.addImage(logoBase64, 'PNG', mg, 4, lW * lR, lH * lR);
+            titleOffX = mg + lW * lR + 8;
+        } catch(e) {}
+    }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(255, 255, 255);
+    doc.text('RAPPORT DE LOT', titleOffX, 14);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
+    doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   Mise en place : ' + (lot.date_mise_en_place || '—') + '   ·   Duree : ' + (lot.nb_jours || '—') + ' jours', titleOffX, 23);
+    doc.setFontSize(8);
+    doc.text('Genere le ' + new Date().toLocaleDateString('fr-FR'), pageW - mg, 23, { align: 'right' });
+
+    var y = 38;
+    var exploitantNom = currentEleveur ? ((currentEleveur.nom || '') + ' ' + (currentEleveur.prenom || '')).trim() : '—';
+    var siteNom       = currentSite     ? (currentSite.nom     || '—') : '—';
+    var batNom        = currentBatiment ? (currentBatiment.nom || '—') : '—';
+    var col3W         = cW / 3;
+
+    [
+        { lbl: 'Exploitant', val: exploitantNom },
+        { lbl: 'Site',       val: siteNom },
+        { lbl: 'Batiment',   val: batNom }
+    ].forEach(function(c, i) {
+        var cx = mg + i * col3W;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+        doc.text(c.lbl, cx, y);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+        doc.text(String(c.val || '—'), cx, y + 7);
+    });
+    y += 16;
+    y = hRule(y, 226, 232, 240);
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+    doc.text('Information Lot', mg, y);
+    y += 8;
+    var lotRows = [
+        [['Code lot', lot.code_lot || '—'],  ['Souche', lot.souche || '—'],   ['Type', lot.type_lot || '—']],
+        [['Effectif prevu', String(lot.effectif_prevu || '—')], ['Effectif reel', String(lot.effectif_reel || '—')], ['Mise en place', lot.date_mise_en_place || '—']]
+    ];
+    lotRows.forEach(function(rowArr) {
+        rowArr.forEach(function(cell, i) {
+            var cx = mg + i * col3W;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+            doc.text(cell[0], cx, y);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(30, 41, 59);
+            doc.text(String(cell[1]), cx, y + 6);
+        });
+        y += 15;
+    });
+    y = hRule(y - 2, 226, 232, 240);
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+    doc.text('Resume des performances', mg, y);
+    y += 7;
+    var cr = summary.croissance || {}, co = summary.consommation || {};
+    var kpis = [
+        ['Poids final',  (cr.poids_final_g         || '—') + ' g'],
+        ['Mortalite',    (cr.mortalite_taux_pct    || '—') + ' %'],
+        ['Homogeneite',  (cr.homogeneite_moy_pct   || '—') + ' %'],
+        ['GMQ moyen',    (cr.gmq_moy_gj            || '—') + ' g/j'],
+        ['Aliment moy.', (co.aliment_moy_gj        || '—') + ' g/j'],
+        ['Ratio E/A',    (co.ratio_eau_aliment_moy || '—')]
+    ];
+    if (hasOeufs && summary.ponte) {
+        kpis.push(['Tx ponte moy.', (summary.ponte.taux_ponte_moy_pct || '—') + ' %']);
+        kpis.push(['Part Cl. A',    (summary.ponte.ratio_a_total_pct  || '—') + ' %']);
+    }
+    var kpiW = Math.floor(cW / kpis.length) - 2;
+    kpis.forEach(function(k, i) {
+        var kx = mg + i * (cW / kpis.length);
+        doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.2);
+        doc.roundedRect(kx, y, kpiW, 14, 1.5, 1.5, 'FD');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+        doc.text(k[0], kx + kpiW / 2, y + 5, { align: 'center', maxWidth: kpiW - 2 });
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 41, 59);
+        doc.text(k[1], kx + kpiW / 2, y + 11, { align: 'center', maxWidth: kpiW - 2 });
+    });
+
+    // PAGES GRAPHIQUES
+    var chartH = 153, chartY = 27, legendY = chartY + chartH + 4;
+    var chartPages = [
+        { sectionLabel: '1. Croissance & Sante', rgb: [59, 130, 246], title: 'Poids moyen & Mortalite', imgData: charts.c1, legend: [{ color: '#2563eb', label: 'Poids moyen (g)' }, { color: '#e11d48', label: 'Mortalite cumulee (%)' }] },
+        { sectionLabel: '1. Croissance & Sante', rgb: [59, 130, 246], title: 'Homogeneite & GMQ', imgData: charts.c2, legend: [{ color: '#059669', label: 'Homogeneite (%)' }, { color: '#d97706', label: 'GMQ (g/j)' }] },
+        { sectionLabel: '2. Consommation', rgb: [16, 185, 129], title: 'Consommation eau totale', imgData: charts.c3, legend: [{ color: '#0369a1', label: 'Eau totale (L)' }, { color: '#0284c7', label: 'Ratio eau/aliment' }] },
+        { sectionLabel: '2. Consommation', rgb: [16, 185, 129], title: 'Consommation aliment & eau/animal', imgData: charts.c4, legend: [{ color: '#ea580c', label: 'Aliment (g/j/animal)' }, { color: '#0891b2', label: 'Eau/animal (L)' }] }
+    ];
+    if (hasOeufs) {
+        chartPages.push({ sectionLabel: '3. Ponte', rgb: [245, 158, 11], title: 'Production oeufs par classe', imgData: charts.c5, legend: [{ color: '#9333ea', label: 'Oeufs Classe A' }, { color: '#c084fc', label: 'Oeufs Classe B' }] });
+        chartPages.push({ sectionLabel: '3. Ponte', rgb: [245, 158, 11], title: 'Taux de ponte (%)',            imgData: charts.c6, legend: [{ color: '#7c3aed', label: 'Taux de ponte (%)' }] });
+    }
+    chartPages.forEach(function(cp) {
+        doc.addPage();
+        doc.setFillColor(cp.rgb[0], cp.rgb[1], cp.rgb[2]);
+        doc.rect(0, 0, pageW, 14, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+        doc.text(cp.sectionLabel, mg, 9.5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+        doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   ' + (lot.souche || '—'), pageW - mg, 9.5, { align: 'right' });
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+        doc.text(cp.title, mg, 22);
+        doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.3); doc.line(mg, 24.5, pageW - mg, 24.5);
+        addChart(cp.imgData, mg, chartY, cW, chartH);
+        doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.2);
+        doc.roundedRect(mg, legendY - 1, cW, 9, 1.5, 1.5, 'FD');
+        drawLegend(cp.legend, legendY + 1.5);
+    });
+
+    // PAGE SYNTHESE IA
+    doc.addPage();
+    doc.setFillColor(30, 41, 59); doc.rect(0, 0, pageW, 14, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+    doc.text('Synthese & Analyse IA', mg, 9.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+    doc.text('Lot : ' + (lot.code_lot || '—') + '   ·   ' + (lot.souche || '—'), pageW - mg, 9.5, { align: 'right' });
+
+    var syntheses = [
+        { title: 'Croissance & Sante', text: analyses.croissance   || 'Analyse non disponible.', rgb: [59, 130, 246] },
+        { title: 'Consommation',        text: analyses.consommation || 'Analyse non disponible.', rgb: [16, 185, 129] }
+    ];
+    if (hasOeufs && analyses.ponte) { syntheses.push({ title: 'Ponte', text: analyses.ponte, rgb: [245, 158, 11] }); }
+
+    var nbCols    = syntheses.length;
+    var colGap    = 6;
+    var synthColW = (cW - (nbCols - 1) * colGap) / nbCols;
+    var synthY    = 18;
+    var availH    = pageH - 14 - synthY - 10;
+
+    syntheses.forEach(function(syn, i) {
+        var cx = mg + i * (synthColW + colGap);
+        doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
+        doc.rect(cx, synthY, synthColW, 9, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(255, 255, 255);
+        doc.text(syn.title, cx + synthColW / 2, synthY + 6.2, { align: 'center' });
+
+        var boxY   = synthY + 9;
+        var lineH  = 5.8;
+        var textW  = synthColW - 20;
+
+        var cleanText = (syn.text || '')
+            .replace(/ | | | | |﻿/g, ' ')
+            .replace(/‘|’|ʼ/g, "'")
+            .replace(/“|”|«|»/g, '"')
+            .replace(/–/g, '-')
+            .replace(/—|―/g, '--')
+            .replace(/…/g, '...')
+            .replace(/[Ā-￿]/g, '');
+
+        doc.setFont('times', 'normal'); doc.setFontSize(11);
+        var lines  = doc.splitTextToSize(cleanText, textW);
+        var boxH   = Math.min(Math.max(25, lines.length * lineH + 14), availH - 9);
+
+        doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.3);
+        doc.rect(cx, boxY, synthColW, boxH, 'FD');
+        doc.setFillColor(syn.rgb[0], syn.rgb[1], syn.rgb[2]);
+        doc.rect(cx, boxY, 3.5, boxH, 'F');
+
+        doc.setFont('times', 'normal'); doc.setFontSize(11); doc.setTextColor(51, 65, 85);
+        var maxLineY = boxY + boxH - 2;
+        for (var li = 0; li < lines.length; li++) {
+            var lineY = boxY + 8 + li * lineH;
+            if (lineY > maxLineY) break;
+            doc.text(lines[li], cx + 7, lineY, { align: 'left' });
+        }
+    });
+
+    // PAGE TABLEAU DETAILLE
+    doc.addPage();
+    var y2 = 0;
+    function drawTablePageHeader(title) {
+        doc.setFillColor(30, 41, 59); doc.rect(0, 0, pageW, 14, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(255, 255, 255);
+        doc.text(title, mg, 9.5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+        doc.text('Lot : ' + (lot.code_lot || '—'), pageW - mg, 9.5, { align: 'right' });
+        y2 = 19;
+    }
+    drawTablePageHeader('Detail des donnees journalieres');
+
+    var rows2 = buildTableauRows();
+    if (!rows2.length) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
+        doc.text('Aucune donnee journaliere disponible.', mg, y2);
+    } else {
+        var tCols = hasOeufs
+            ? [
+                { h: 'Jour',      w: 9,  f: function(r) { return String(r.jour_age); } },
+                { h: 'Date',      w: 13, f: function(r) { return r.date_mesure ? new Date(r.date_mesure+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) : '—'; } },
+                { h: 'Morts',     w: 11, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
+                { h: 'Poids (g)', w: 14, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
+                { h: 'GMQ',       w: 11, f: function(r) { return fmtVal(r.gmq, 1); } },
+                { h: 'Hom. %',    w: 12, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                { h: 'Alim g/j',  w: 13, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
+                { h: 'Eau (L)',   w: 13, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                { h: 'Eau/poule', w: 14, f: function(r) { return fmtVal(r.eau_animal, 3); } },
+                { h: 'R.E/A',     w: 11, f: function(r) { return fmtVal(r.eau_ratio, 2); } },
+                { h: 'Cl. A',     w: 13, f: function(r) { return fmtVal(r.oeufs_classe_a, 0); } },
+                { h: 'Cl. B',     w: 12, f: function(r) { return fmtVal(r.oeufs_classe_b, 0); } },
+                { h: 'Tx ponte',  w: 13, f: function(r) { return r.taux_ponte != null ? (r.taux_ponte * 100).toFixed(1) + '%' : '—'; } }
+              ]
+            : [
+                { h: 'Jour',      w: 14, f: function(r) { return String(r.jour_age); } },
+                { h: 'Date',      w: 20, f: function(r) { return r.date_mesure ? new Date(r.date_mesure+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—'; } },
+                { h: 'Morts',     w: 18, f: function(r) { return fmtVal(r.nombre_morts, 0); } },
+                { h: 'Poids (g)', w: 22, f: function(r) { return fmtVal(r.poids_moyen, 0); } },
+                { h: 'GMQ g/j',   w: 18, f: function(r) { return fmtVal(r.gmq, 1); } },
+                { h: 'Homog. %',  w: 18, f: function(r) { return fmtVal(r.homogeneite, 1); } },
+                { h: 'Alim g/j',  w: 20, f: function(r) { return fmtVal(r.aliment_animal, 1); } },
+                { h: 'Eau tot.',  w: 20, f: function(r) { return fmtVal(r.eau_litres, 0); } },
+                { h: 'Eau/poule', w: 20, f: function(r) { return fmtVal(r.eau_animal, 3); } },
+                { h: 'Ratio E/A', w: 23, f: function(r) { return fmtVal(r.eau_ratio, 2); } }
+              ];
+
+        var tSumW = tCols.reduce(function(s, c) { return s + c.w; }, 0);
+        var tScale = cW / tSumW;
+        tCols.forEach(function(c) { c.w = c.w * tScale; });
+
+        var tRowH  = 5.5, tHeadH = 7.5, tFs = hasOeufs ? 7 : 8;
+
+        function drawTHeader() {
+            doc.setFillColor(30, 41, 59); doc.rect(mg, y2, cW, tHeadH, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(tFs); doc.setTextColor(255, 255, 255);
+            var x2 = mg;
+            tCols.forEach(function(c) {
+                doc.text(c.h, x2 + c.w / 2, y2 + tHeadH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                x2 += c.w;
+            });
+            y2 += tHeadH;
+        }
+        drawTHeader();
+        rows2.forEach(function(row, ri) {
+            if (y2 + tRowH > pageH - 12) {
+                doc.addPage();
+                drawTablePageHeader('Detail des donnees (suite)');
+                drawTHeader();
+            }
+            if (ri % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(mg, y2, cW, tRowH, 'F'); }
+            doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.15);
+            doc.line(mg, y2 + tRowH, mg + cW, y2 + tRowH);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(tFs); doc.setTextColor(30, 41, 59);
+            var x2 = mg;
+            tCols.forEach(function(c) {
+                doc.text(String(c.f(row)), x2 + c.w / 2, y2 + tRowH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                x2 += c.w;
+            });
+            y2 += tRowH;
+        });
+    }
+
+    // Pieds de page
+    var totalPages = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= totalPages; p++) { pageFooter(p, totalPages); }
+
+    return doc;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INITIALISATION : attente des données injectées par Puppeteer
+// ══════════════════════════════════════════════════════════════════════════════
+function pollForData() {
+    if (window.DATA_READY && window.INJECT_DATA) {
+        $('status').textContent = 'Donnees recues — generation du PDF en cours…';
+        setTimeout(function() { initAndGenerate(window.INJECT_DATA); }, 100);
+    } else {
+        setTimeout(pollForData, 100);
+    }
+}
+pollForData();
+
+function initAndGenerate(data) {
+    try {
+        // Charger les données dans les globales
+        currentLotInfo  = data.lot;
+        currentEleveur  = data.eleveur  || null;
+        currentSite     = data.site     || null;
+        currentBatiment = data.batiment || null;
+
+        // Données de mesure du lot
+        var rawEau = data.lotData.eau_conso || data.lotData.eau_animal || [];
+        lotData.poids       = data.lotData.poids     || [];
+        lotData.mortalite   = data.lotData.mortalite  || [];
+        lotData.aliment     = data.lotData.aliment    || [];
+        lotData.oeufs       = data.lotData.oeufs      || [];
+        lotData.eau_animal  = rawEau;
+        lotData.eau_ratio   = rawEau;
+        lotData.eau_conso   = rawEau;
+        lotData.homogeneite = lotData.poids;
+        lotData.gmq         = lotData.poids;
+        lotData.manual      = data.lotData.manual || [];
+        rebuildOeufsIndicators();
+
+        // Standards
+        var rawEauStd = data.standardsData.eau_conso || data.standardsData.eau_animal || [];
+        standardsData.poids       = data.standardsData.poids     || [];
+        standardsData.mortalite   = data.standardsData.mortalite  || [];
+        standardsData.aliment     = data.standardsData.aliment    || [];
+        standardsData.oeufs       = data.standardsData.oeufs      || [];
+        standardsData.eau_animal  = rawEauStd;
+        standardsData.eau_ratio   = rawEauStd;
+        standardsData.eau_conso   = rawEauStd;
+        standardsData.homogeneite = standardsData.poids;
+        standardsData.gmq         = standardsData.poids;
+        standardsData.taux_ponte_pct = standardsData.oeufs.map(function(s) {
+            var clone = Object.assign({}, s);
+            clone.taux_ponte_min_pct = s.taux_ponte_min != null ? s.taux_ponte_min * 100 : null;
+            clone.taux_ponte_max_pct = s.taux_ponte_max != null ? s.taux_ponte_max * 100 : null;
+            return clone;
+        });
+        standardsData.oeufs_a = [];
+        standardsData.oeufs_b = [];
+
+        var charts   = {};
+        var hasOeufs = !!(lotData.oeufs_a.length || lotData.taux_ponte_pct.length);
+
+        // Capture des graphiques puis génération PDF
+        Promise.resolve()
+            .then(function() { return captureChartForReport('sante', 'poids',     'mortalite', 'all'); })
+            .then(function(img) { charts.c1 = img; return captureChartForReport('sante', 'homogeneite', 'gmq', 'all'); })
+            .then(function(img) { charts.c2 = img; return captureChartForReport('conso', 'eau_conso',   'eau_ratio', 'all'); })
+            .then(function(img) { charts.c3 = img; return captureChartForReport('conso', 'eau_animal',  'aliment', 'all'); })
+            .then(function(img) {
+                charts.c4 = img;
+                if (hasOeufs) {
+                    return captureChartForReport('ponte', 'oeufs_a', 'oeufs_b', 'all')
+                        .then(function(i5) { charts.c5 = i5; return captureChartForReport('ponte', 'taux_ponte_pct', null, 'all'); })
+                        .then(function(i6) { charts.c6 = i6; });
+                }
+            })
+            .then(function() {
+                var summary    = buildDataSummaryForAI();
+                var logoBase64 = data.logoBase64 || null;
+
+                // Charger le logo si URL fournie et pas encore en base64
+                var logoPromise = (data.logoUrl && !logoBase64)
+                    ? chargerLogoBase64(data.logoUrl).catch(function() { return null; })
+                    : Promise.resolve(logoBase64);
+
+                return logoPromise.then(function(logo) {
+                    var doc = genererPDFRapportLot({
+                        summary:    summary,
+                        analyses:   data.analyses || {},
+                        charts:     charts,
+                        logoBase64: logo
+                    });
+
+                    var codeLot = (currentLotInfo.code_lot || 'lot').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    window.RAPPORT_FILENAME = 'Rapport_lot_' + codeLot + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+                    window.RAPPORT_BASE64   = doc.output('datauristring').split(',')[1];
+                    window.RAPPORT_DONE     = true;
+                    $('status').textContent = 'PDF genere : ' + window.RAPPORT_FILENAME;
+                });
+            })
+            .catch(function(e) {
+                window.RAPPORT_ERROR = e.message;
+                window.RAPPORT_DONE  = true;
+                $('status').textContent = 'ERREUR : ' + e.message;
+                console.error('[rapport-pdf.html]', e);
+            });
+
+    } catch (e) {
+        window.RAPPORT_ERROR = e.message;
+        window.RAPPORT_DONE  = true;
+        $('status').textContent = 'ERREUR init : ' + e.message;
+        console.error('[rapport-pdf.html] init error', e);
+    }
+}
+
+})(); // fin IIFE
+</script>
+</body>
+</html>

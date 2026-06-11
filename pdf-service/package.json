@@ -1,0 +1,16 @@
+{
+  "name": "dataferme-pdf-service",
+  "version": "1.0.0",
+  "description": "Micro-service de génération PDF headless pour Dataferme (Puppeteer + jsPDF)",
+  "main": "pdf-service.js",
+  "scripts": {
+    "start": "node pdf-service.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer": "^22.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
