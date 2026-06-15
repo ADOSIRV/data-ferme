@@ -1949,6 +1949,7 @@
                 </div>
                 <div class="lot-grid">
                     <div class="lot-item"><div class="lot-label">Code</div><div class="lot-value" id="lotCode">--</div></div>
+                    <div class="lot-item"><div class="lot-label">Code externe</div><div class="lot-value" id="lotCodeExterne" style="color:var(--text-dim);font-style:italic;">--</div></div>
                     <div class="lot-item"><div class="lot-label">Souche</div><div class="lot-value" id="lotSouche">--</div></div>
                     <div class="lot-item"><div class="lot-label">Type lot</div><div class="lot-value" id="lotTypeLot">--</div></div>
                     <div class="lot-item"><div class="lot-label">Effectif</div><div class="lot-value highlight" id="lotEffectif">--</div></div>
@@ -1973,6 +1974,11 @@
                                 <option value="">-- Non défini --</option>
                             </select>
                         </div>
+                    </div>
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.3rem;">Code lot coopérative (externe)</label>
+                        <input type="text" id="editLotCodeExterne" class="selector-select" style="width:100%;" placeholder="Ex : COOP-2026-001234" maxlength="100">
+                        <div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.25rem;">Code affecté par la coopérative pour la liaison avec leur système lors des exports</div>
                     </div>
                     <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                         <button class="btn btn-primary" onclick="saveLotInfos()" id="btnSaveLot" style="font-size:0.85rem;">✅ Sauvegarder</button>
@@ -3242,8 +3248,9 @@
             })
         ]).then(function() {
             // Pré-sélectionner les valeurs actuelles une fois les listes chargées
-            if ($('editLotSouche')) $('editLotSouche').value = lot.souche_id_manuel || '';
-            if ($('editLotType'))   $('editLotType').value   = lot.type_lot_id      || '';
+            if ($('editLotSouche'))      $('editLotSouche').value      = lot.souche_id_manuel  || '';
+            if ($('editLotType'))        $('editLotType').value        = lot.type_lot_id       || '';
+            if ($('editLotCodeExterne')) $('editLotCodeExterne').value = lot.code_lot_externe  || '';
         });
     }
 
@@ -3257,22 +3264,33 @@
     function saveLotInfos() {
         var lot = currentLotInfo;
         if (!lot || !currentUser) return;
-        var soucheManuelId = $('editLotSouche').value || null;
-        var typeLotId      = $('editLotType').value   || null;
+        var soucheManuelId  = $('editLotSouche').value || null;
+        var typeLotId       = $('editLotType').value   || null;
+        var codeLotExterne  = ($('editLotCodeExterne').value || '').trim() || null;
         $('btnSaveLot').disabled = true;
 
         supabase.rpc('save_lot_infos', {
-            p_user_id:          currentUser.id,
-            p_lot_id:           lot.id,
-            p_souche_id_manuel: soucheManuelId,
-            p_type_lot_id:      typeLotId
+            p_user_id:           currentUser.id,
+            p_lot_id:            lot.id,
+            p_souche_id_manuel:  soucheManuelId,
+            p_type_lot_id:       typeLotId,
+            p_code_lot_externe:  codeLotExterne
         }).then(function(res) {
             if (res.error) throw res.error;
 
             // Mettre à jour le cache local
             cacheLots[lot.id].souche_id_manuel = soucheManuelId;
             cacheLots[lot.id].type_lot_id      = typeLotId;
+            cacheLots[lot.id].code_lot_externe = codeLotExterne;
             currentLotInfo = cacheLots[lot.id];
+
+            // Affichage code externe
+            var extEl = $('lotCodeExterne');
+            if (extEl) {
+                extEl.textContent  = codeLotExterne || '--';
+                extEl.style.color  = codeLotExterne ? '' : 'var(--text-dim)';
+                extEl.style.fontStyle = codeLotExterne ? 'normal' : 'italic';
+            }
 
             // Affichage souche : priorité manuelle, sinon Tuffigo
             var soucheEffId = soucheManuelId || lot.souche_id;
@@ -4100,6 +4118,12 @@
 
         // ── Mise à jour immédiate de la carte lot (UI synchrone) ──
         $('lotCode').textContent    = lot.code_lot || '--';
+        var _extEl = $('lotCodeExterne');
+        if (_extEl) {
+            _extEl.textContent  = lot.code_lot_externe || '--';
+            _extEl.style.color  = lot.code_lot_externe ? '' : 'var(--text-dim)';
+            _extEl.style.fontStyle = lot.code_lot_externe ? 'normal' : 'italic';
+        }
         $('lotEffectif').textContent = lot.effectif_depart ? lot.effectif_depart.toLocaleString('fr-FR') : '--';
         $('lotDate').textContent    = lot.date_mise_place ? new Date(lot.date_mise_place).toLocaleDateString('fr-FR') : '--';
         $('lotAge').textContent     = lot.date_mise_place ? Math.floor((Date.now() - new Date(lot.date_mise_place)) / 86400000) + ' jours' : '--';
@@ -5884,17 +5908,25 @@
                 for (var i = 0; i < byteArr.length; i++) bytes[i] = byteArr.charCodeAt(i);
                 var blob      = new Blob([bytes], { type: 'application/pdf' });
 
-                var codeLot = (currentLotInfo.code_lot || 'lot').replace(/[^a-zA-Z0-9_-]/g, '_');
-                var filename = 'rapport_' + codeLot + '_' + Date.now() + '.pdf';
+                var codeLot    = (currentLotInfo.code_lot || 'lot').replace(/[^a-zA-Z0-9_-]/g, '_');
+                var eleveurId  = (currentEleveur && currentEleveur.id) ? String(currentEleveur.id) : 'inconnu';
+                // Chemin : {eleveur_id}/{code_lot}.pdf
+                // Un fichier par lot, écrasé à chaque génération (upsert: true)
+                // → n8n retrouve tous les PDFs d'un éleveur en listant {eleveur_id}/
+                var storagePath = eleveurId + '/' + codeLot + '.pdf';
 
                 return supabase.storage.from('rapports-lot')
-                    .upload(filename, blob, { contentType: 'application/pdf', upsert: false })
-                    .then(function() {
-                        // Téléchargement local indépendamment du succès Storage
+                    .upload(storagePath, blob, { contentType: 'application/pdf', upsert: true })
+                    .then(function(result) {
+                        if (result.error) {
+                            console.warn('[genererRapportLot] Archivage Storage échoué :', result.error.message);
+                        } else {
+                            console.log('[genererRapportLot] PDF archivé dans Storage :', storagePath);
+                        }
                         return doc;
                     })
                     .catch(function(e) {
-                        console.warn('Archivage Supabase échoué (bucket "rapports-lot" peut-être absent) :', e.message);
+                        console.warn('[genererRapportLot] Archivage Storage exception :', e.message);
                         return doc; // On télécharge quand même
                     });
             })
