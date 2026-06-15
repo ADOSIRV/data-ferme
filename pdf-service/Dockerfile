@@ -48,6 +48,10 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
+# ── 3b. Installer Chrome dans l'image (permanent — survit aux redéploiements) ─
+ENV PUPPETEER_CACHE_DIR=/opt/puppeteer-cache
+RUN npx puppeteer browsers install chrome
+
 # ── 4. Fichiers de l'application ──────────────────────────────────────────────
 COPY pdf-service.js   ./
 COPY rapport-pdf.html ./
@@ -57,13 +61,13 @@ RUN groupadd -r pptruser \
     && useradd -r -g pptruser -G audio,video pptruser \
     && mkdir -p /home/pptruser/.cache \
     && chown -R pptruser:pptruser /home/pptruser \
-    && chown -R pptruser:pptruser /app
+    && chown -R pptruser:pptruser /app \
+    && chown -R pptruser:pptruser /opt/puppeteer-cache
 
 USER pptruser
 
 # ── 6. Variables ──────────────────────────────────────────────────────────────
 ENV PDF_SERVICE_PORT=3001
-ENV PUPPETEER_CACHE_DIR=/home/pptruser/.cache/puppeteer
 
 # ── 7. Port et healthcheck ────────────────────────────────────────────────────
 EXPOSE 3001
