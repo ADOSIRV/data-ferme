@@ -1184,6 +1184,15 @@
                 <option value="">-- Aucun --</option>
             </select>
         </div>
+        <div class="form-group" id="userProviderGroup">
+            <label class="form-label">Type d'automate</label>
+            <select class="form-input" id="userProvider">
+                <option value="none">Aucun automate</option>
+                <option value="tuffigo">Tuffigo uniquement</option>
+                <option value="sodalec">Sodalec uniquement</option>
+                <option value="both">Tuffigo + Sodalec</option>
+            </select>
+        </div>
         <div class="form-group">
             <label class="form-label">Date d'expiration</label>
             <input type="date" class="form-input" id="userExpiration">
@@ -1196,6 +1205,55 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="cancelUserModal">Annuler</button>
             <button class="btn btn-primary" id="saveUserModal">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL GESTION BATIMENTS ELEVEUR (admin) -->
+<div class="modal-overlay" id="modalBatimentsAdmin">
+    <div class="modal-content" style="max-width:860px; max-height:90vh; overflow-y:auto;">
+        <div class="modal-header">
+            <span class="modal-title" id="batimentsAdminTitle">Bâtiments</span>
+            <button class="modal-close" onclick="closeBatimentsAdmin()">&times;</button>
+        </div>
+        <div class="alert" id="batimentsAdminAlert"></div>
+
+        <!-- Ligne provider -->
+        <div style="display:flex; align-items:center; gap:1rem; padding:0.75rem 0; border-bottom:1px solid var(--border); margin-bottom:1rem; flex-wrap:wrap;">
+            <label class="form-label" style="margin:0; white-space:nowrap;">Type d'automate :</label>
+            <select class="form-input" id="batimentsAdminProvider" style="max-width:220px;">
+                <option value="none">Aucun automate</option>
+                <option value="tuffigo">Tuffigo uniquement</option>
+                <option value="sodalec">Sodalec uniquement</option>
+                <option value="both">Tuffigo + Sodalec</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="saveEleveurProvider()">💾 Enregistrer</button>
+            <span id="batimentsAdminProviderStatus" style="font-size:0.82rem; color:var(--green); display:none;">✓ Enregistré</span>
+        </div>
+
+        <!-- Contenu sites + bâtiments -->
+        <div id="batimentsAdminBody">
+            <div style="text-align:center; color:var(--text-dim); padding:2rem;">Chargement…</div>
+        </div>
+
+        <!-- Ajouter un site -->
+        <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+            <div style="font-size:0.9rem; font-weight:600; margin-bottom:0.6rem;">Ajouter un nouveau site</div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="margin:0; flex:1; min-width:150px;">
+                    <label class="form-label">Nom du site *</label>
+                    <input type="text" class="form-input" id="newSiteNom" placeholder="ex : Exploitation A">
+                </div>
+                <div class="form-group" style="margin:0; flex:1; min-width:120px;">
+                    <label class="form-label">Ville</label>
+                    <input type="text" class="form-input" id="newSiteVille" placeholder="ex : Rennes">
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="addSiteAdmin()" style="margin-bottom:0;">➕ Créer le site</button>
+            </div>
+        </div>
+
+        <div class="modal-footer" style="margin-top:1rem;">
+            <button class="btn btn-secondary" onclick="closeBatimentsAdmin()">Fermer</button>
         </div>
     </div>
 </div>
@@ -2495,13 +2553,14 @@
                                 <th>Utilisateur</th>
                                 <th>Rôle</th>
                                 <th>Éleveur</th>
+                                <th>Automate</th>
                                 <th>Expiration</th>
                                 <th>Statut</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="6" style="text-align: center; color: var(--text-dim);">Chargement...</td></tr>
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-dim);">Chargement...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -4053,16 +4112,24 @@
                     return;
                 }
                 
-                // Load eleveurs for mapping
-                return supabase.from('eleveurs').select('id, nom, prenom, code_eleveur').eq('is_active', true)
+                // Load eleveurs for mapping (with provider)
+                return supabase.from('eleveurs').select('id, nom, prenom, code_eleveur, provider').eq('is_active', true)
                     .then(function(elevRes) {
                         var eleveurs = elevRes.data || [];
                         allEleveursList = eleveurs;
-                        
+
+                        var providerLabels = {
+                            'none':    '-',
+                            'tuffigo': '<span style="color:var(--blue);font-size:0.78rem;">🔌 Tuffigo</span>',
+                            'sodalec': '<span style="color:var(--orange);font-size:0.78rem;">🤖 Sodalec</span>',
+                            'both':    '<span style="color:var(--purple);font-size:0.78rem;">🔌🤖 Les deux</span>'
+                        };
+
                         var html = '';
                         users.forEach(function(u) {
                             var eleveur = eleveurs.find(function(e) { return e.id === u.eleveur_id; });
                             var eleveurName = eleveur ? (esc(eleveur.nom) + ' ' + esc(eleveur.prenom || '')) : '-';
+                            var providerHtml = eleveur ? (providerLabels[eleveur.provider || 'none'] || '-') : '-';
 
                             var statusClass = 'status-inactive';
                             var statusText = 'Inactif';
@@ -4079,14 +4146,19 @@
                             var expDate = u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('fr-FR') : '-';
                             var safeRole = esc(u.role || 'eleveur');
                             var safeId = esc(u.id);
+                            var safeEleveurId = eleveur ? esc(eleveur.id) : '';
 
                             html += '<tr data-id="' + safeId + '">';
                             html += '<td><strong>' + esc(u.nom) + '</strong> ' + esc(u.prenom || '') + '<br><small style="color:var(--text-dim)">' + esc(u.email) + '</small></td>';
                             html += '<td><span class="session-role ' + safeRole + '">' + safeRole.toUpperCase() + '</span></td>';
                             html += '<td>' + eleveurName + '</td>';
+                            html += '<td>' + providerHtml + '</td>';
                             html += '<td>' + esc(expDate) + '</td>';
                             html += '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>';
                             html += '<td><div class="action-btns">';
+                            if (safeEleveurId) {
+                                html += '<button class="action-btn open-batiments" data-eleveur-id="' + safeEleveurId + '" data-eleveur-nom="' + esc(eleveur.nom) + ' ' + esc(eleveur.prenom || '') + '" title="Gérer les bâtiments">🏠</button>';
+                            }
                             html += '<button class="action-btn edit-user" data-id="' + safeId + '">✏️</button>';
                             html += '<button class="action-btn delete delete-user" data-id="' + safeId + '">🗑️</button>';
                             html += '</div></td>';
@@ -4101,6 +4173,11 @@
                         });
                         document.querySelectorAll('.delete-user').forEach(function(btn) {
                             btn.addEventListener('click', function() { deleteUser(this.getAttribute('data-id')); });
+                        });
+                        document.querySelectorAll('.open-batiments').forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                openBatimentsAdmin(this.getAttribute('data-eleveur-id'), this.getAttribute('data-eleveur-nom'));
+                            });
                         });
                     });
             })
@@ -4128,6 +4205,9 @@
         // S'assurer que la liste des éleveurs est chargée avant d'ouvrir la modale
         var openModal = function(selectedEleveurId) {
             populateEleveurSelect($('userEleveurId'), selectedEleveurId || null);
+            // Charger le provider de l'éleveur sélectionné
+            var elev = allEleveursList.find(function(e) { return e.id === selectedEleveurId; });
+            $('userProvider').value = elev ? (elev.provider || 'none') : 'none';
             $('userModal').classList.add('show');
         };
 
@@ -4190,6 +4270,8 @@
         var expiration = $('userExpiration').value || null;
         var isActive = $('userIsActive').checked;
         
+        var provider = $('userProvider').value || 'none';
+
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email || !nom) {
             showAlert('userModalAlert', 'error', '❌ Email et nom sont requis');
@@ -4203,9 +4285,9 @@
             showAlert('userModalAlert', 'error', '❌ Mot de passe requis pour un nouveau compte');
             return;
         }
-        
+
         showLoading('Enregistrement...');
-        
+
         var data = {
             email: email,
             nom: nom,
@@ -4216,11 +4298,11 @@
             is_active: isActive,
             updated_at: new Date().toISOString()
         };
-        
+
         if (password) {
-            data.password_hash = password; // In production, hash this!
+            data.password_hash = password;
         }
-        
+
         var promise;
         if (editingUserId) {
             promise = supabase.from('users').update(data).eq('id', editingUserId);
@@ -4228,8 +4310,18 @@
             data.created_at = new Date().toISOString();
             promise = supabase.from('users').insert(data);
         }
-        
+
         promise
+            .then(function() {
+                // Mettre à jour le provider de l'éleveur si lié
+                if (eleveurId && currentUser) {
+                    return supabase.rpc('admin_update_eleveur_provider', {
+                        p_user_id:    currentUser.id,
+                        p_eleveur_id: eleveurId,
+                        p_provider:   provider
+                    });
+                }
+            })
             .then(function() {
                 showAlert('usersAlert', 'success', '✓ Utilisateur enregistré');
                 closeUserModal();
@@ -4261,6 +4353,201 @@
             .finally(function() { hideLoading(); });
     }
     
+    // =====================================================
+    // GESTION BÂTIMENTS ADMIN
+    // =====================================================
+    var batimentsAdminEleveurId = null;
+
+    function openBatimentsAdmin(eleveurId, eleveurNom) {
+        batimentsAdminEleveurId = eleveurId;
+        $('batimentsAdminTitle').textContent = 'Bâtiments — ' + eleveurNom;
+        hideAlert('batimentsAdminAlert');
+        $('newSiteNom').value = '';
+        $('newSiteVille').value = '';
+        $('batimentsAdminProviderStatus').style.display = 'none';
+        // Pré-remplir le provider depuis la liste déjà chargée
+        var elev = allEleveursList.find(function(e) { return e.id === eleveurId; });
+        $('batimentsAdminProvider').value = elev ? (elev.provider || 'none') : 'none';
+        $('modalBatimentsAdmin').classList.add('show');
+        loadBatimentsAdmin(eleveurId);
+    }
+
+    function closeBatimentsAdmin() {
+        $('modalBatimentsAdmin').classList.remove('show');
+        batimentsAdminEleveurId = null;
+    }
+
+    function loadBatimentsAdmin(eleveurId) {
+        $('batimentsAdminBody').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">Chargement…</div>';
+        supabase.rpc('get_eleveur_sites_batiments', {
+            p_user_id:    currentUser.id,
+            p_eleveur_id: eleveurId
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            renderBatimentsAdmin(res.data || []);
+        }).catch(function(err) {
+            $('batimentsAdminBody').innerHTML = '<div style="color:var(--red);padding:1rem;">❌ ' + esc(err.message) + '</div>';
+        });
+    }
+
+    function renderBatimentsAdmin(rows) {
+        if (rows.length === 0) {
+            $('batimentsAdminBody').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:1.5rem;">Aucun site ni bâtiment. Commencez par créer un site ci-dessous.</div>';
+            return;
+        }
+        // Grouper par site
+        var sites = {};
+        rows.forEach(function(r) {
+            if (!sites[r.site_id]) {
+                sites[r.site_id] = { nom: r.site_nom, ville: r.site_ville, batiments: [] };
+            }
+            if (r.batiment_id) {
+                sites[r.site_id].batiments.push(r);
+            }
+        });
+        var html = '';
+        Object.keys(sites).forEach(function(siteId) {
+            var site = sites[siteId];
+            html += '<div style="margin-bottom:1.2rem; background:var(--bg-input); border-radius:10px; padding:1rem;">';
+            html += '<div style="font-weight:600; margin-bottom:0.6rem;">📍 ' + esc(site.nom) + (site.ville ? ' <small style="color:var(--text-dim)">(' + esc(site.ville) + ')</small>' : '') + '</div>';
+            if (site.batiments.length === 0) {
+                html += '<div style="color:var(--text-dim);font-size:0.85rem;margin-bottom:0.6rem;">Aucun bâtiment dans ce site.</div>';
+            } else {
+                html += '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
+                html += '<thead><tr style="color:var(--text-dim)"><th style="text-align:left;padding:0.3rem 0.5rem;">Bâtiment</th><th style="text-align:left;padding:0.3rem 0.5rem;">Capacité</th><th style="text-align:left;padding:0.3rem 0.5rem;">Device ID Sodalec</th><th style="padding:0.3rem 0.5rem;"></th></tr></thead><tbody>';
+                site.batiments.forEach(function(b) {
+                    var batId = esc(b.batiment_id);
+                    var safeNom = esc(b.batiment_nom);
+                    var safeDev = b.sodalec_device_id ? esc(b.sodalec_device_id) : '';
+                    var safeCap = b.batiment_capacite ? b.batiment_capacite : '';
+                    html += '<tr>';
+                    html += '<td style="padding:0.3rem 0.5rem;"><strong>' + safeNom + '</strong>' + (b.batiment_actif ? '' : ' <span style="color:var(--red);font-size:0.75rem;">(inactif)</span>') + '</td>';
+                    html += '<td style="padding:0.3rem 0.5rem;"><input type="number" class="form-input" id="cap-' + batId + '" value="' + safeCap + '" style="width:90px;padding:0.3rem 0.5rem;" placeholder="ex: 50000"></td>';
+                    html += '<td style="padding:0.3rem 0.5rem;"><input type="text" class="form-input" id="dev-' + batId + '" value="' + safeDev + '" style="min-width:280px;padding:0.3rem 0.5rem;font-family:monospace;font-size:0.8rem;" placeholder="ex: bb48941c8cde4ec9…"></td>';
+                    html += '<td style="padding:0.3rem 0.5rem;white-space:nowrap;">';
+                    html += '<button class="btn btn-primary btn-sm" onclick="saveBatimentAdmin(\'' + batId + '\',\'' + esc(siteId) + '\',\'' + safeNom + '\')">💾</button> ';
+                    html += '<button class="btn btn-danger btn-sm" onclick="deleteBatimentAdmin(\'' + batId + '\')">🗑️</button>';
+                    html += '</td></tr>';
+                });
+                html += '</tbody></table>';
+            }
+            // Formulaire ajout bâtiment dans ce site
+            html += '<div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;">';
+            html += '<input type="text" class="form-input" id="newbat-nom-' + esc(siteId) + '" placeholder="Nom du bâtiment" style="flex:1;min-width:130px;">';
+            html += '<input type="number" class="form-input" id="newbat-cap-' + esc(siteId) + '" placeholder="Capacité" style="width:110px;">';
+            html += '<input type="text" class="form-input" id="newbat-dev-' + esc(siteId) + '" placeholder="Device ID Sodalec (optionnel)" style="flex:2;min-width:200px;font-family:monospace;font-size:0.8rem;">';
+            html += '<button class="btn btn-secondary btn-sm" onclick="addBatimentAdmin(\'' + esc(siteId) + '\')">➕ Bâtiment</button>';
+            html += '</div>';
+            html += '</div>';
+        });
+        $('batimentsAdminBody').innerHTML = html;
+    }
+
+    function saveEleveurProvider() {
+        var provider = $('batimentsAdminProvider').value;
+        if (!batimentsAdminEleveurId || !currentUser) return;
+        supabase.rpc('admin_update_eleveur_provider', {
+            p_user_id:    currentUser.id,
+            p_eleveur_id: batimentsAdminEleveurId,
+            p_provider:   provider
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            var st = $('batimentsAdminProviderStatus');
+            st.style.display = 'inline';
+            setTimeout(function() { st.style.display = 'none'; }, 2000);
+            // Mettre à jour la liste locale
+            var elev = allEleveursList.find(function(e) { return e.id === batimentsAdminEleveurId; });
+            if (elev) elev.provider = provider;
+        }).catch(function(err) {
+            showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
+        });
+    }
+
+    function saveBatimentAdmin(batimentId, siteId, batimentNom) {
+        var devEl = $('dev-' + batimentId);
+        var capEl = $('cap-' + batimentId);
+        if (!devEl || !currentUser) return;
+        var deviceId = devEl.value.trim();
+        var capacite = capEl ? (parseInt(capEl.value) || null) : null;
+        showLoading('Enregistrement…');
+        supabase.rpc('admin_upsert_batiment', {
+            p_user_id:           currentUser.id,
+            p_site_id:           siteId,
+            p_nom:               batimentNom,
+            p_capacite:          capacite,
+            p_sodalec_device_id: deviceId || null,
+            p_batiment_id:       batimentId
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            showAlert('batimentsAdminAlert', 'success', '✓ Bâtiment enregistré');
+        }).catch(function(err) {
+            showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
+        }).finally(function() { hideLoading(); });
+    }
+
+    function deleteBatimentAdmin(batimentId) {
+        if (!confirm('Désactiver ce bâtiment ?')) return;
+        showLoading('Suppression…');
+        supabase.rpc('admin_delete_batiment', {
+            p_user_id:     currentUser.id,
+            p_batiment_id: batimentId
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            loadBatimentsAdmin(batimentsAdminEleveurId);
+        }).catch(function(err) {
+            showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
+        }).finally(function() { hideLoading(); });
+    }
+
+    function addSiteAdmin() {
+        var nom = $('newSiteNom').value.trim();
+        var ville = $('newSiteVille').value.trim();
+        if (!nom) { showAlert('batimentsAdminAlert', 'error', '❌ Le nom du site est requis'); return; }
+        if (!batimentsAdminEleveurId || !currentUser) return;
+        showLoading('Création du site…');
+        supabase.rpc('admin_upsert_site', {
+            p_user_id:    currentUser.id,
+            p_eleveur_id: batimentsAdminEleveurId,
+            p_nom:        nom,
+            p_ville:      ville || null,
+            p_site_id:    null
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            $('newSiteNom').value = '';
+            $('newSiteVille').value = '';
+            showAlert('batimentsAdminAlert', 'success', '✓ Site créé');
+            loadBatimentsAdmin(batimentsAdminEleveurId);
+        }).catch(function(err) {
+            showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
+        }).finally(function() { hideLoading(); });
+    }
+
+    function addBatimentAdmin(siteId) {
+        var nomEl = $('newbat-nom-' + siteId);
+        var capEl = $('newbat-cap-' + siteId);
+        var devEl = $('newbat-dev-' + siteId);
+        var nom = nomEl ? nomEl.value.trim() : '';
+        var cap = capEl ? (parseInt(capEl.value) || null) : null;
+        var dev = devEl ? devEl.value.trim() : '';
+        if (!nom) { showAlert('batimentsAdminAlert', 'error', '❌ Le nom du bâtiment est requis'); return; }
+        if (!currentUser) return;
+        showLoading('Création du bâtiment…');
+        supabase.rpc('admin_upsert_batiment', {
+            p_user_id:           currentUser.id,
+            p_site_id:           siteId,
+            p_nom:               nom,
+            p_capacite:          cap,
+            p_sodalec_device_id: dev || null,
+            p_batiment_id:       null
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            showAlert('batimentsAdminAlert', 'success', '✓ Bâtiment créé');
+            loadBatimentsAdmin(batimentsAdminEleveurId);
+        }).catch(function(err) {
+            showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
+        }).finally(function() { hideLoading(); });
+    }
+
     // =====================================================
     // DATA LOADING (Dashboard)
     // =====================================================
@@ -6589,6 +6876,12 @@
         $('closeUserModal').addEventListener('click', closeUserModal);
         $('cancelUserModal').addEventListener('click', closeUserModal);
         $('saveUserModal').addEventListener('click', saveUser);
+        // Mettre à jour le provider quand l'éleveur change dans la modale
+        $('userEleveurId').addEventListener('change', function() {
+            var elevId = this.value;
+            var elev = allEleveursList.find(function(e) { return e.id === elevId; });
+            $('userProvider').value = elev ? (elev.provider || 'none') : 'none';
+        });
         
         // Data selectors
         $('selEleveur').addEventListener('change', onEleveurChange);
