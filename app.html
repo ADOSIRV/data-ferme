@@ -4375,17 +4375,18 @@
         batimentsAdminEleveurId = null;
     }
 
-    function loadBatimentsAdmin(eleveurId) {
+    async function loadBatimentsAdmin(eleveurId) {
         $('batimentsAdminBody').innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:2rem;">Chargement…</div>';
-        supabase.rpc('get_eleveur_sites_batiments', {
-            p_user_id:    currentUser.id,
-            p_eleveur_id: eleveurId
-        }).then(function(res) {
+        try {
+            var res = await supabase.rpc('get_eleveur_sites_batiments', {
+                p_user_id:    currentUser.id,
+                p_eleveur_id: eleveurId
+            });
             if (res.error) throw res.error;
             renderBatimentsAdmin(res.data || []);
-        }).catch(function(err) {
+        } catch(err) {
             $('batimentsAdminBody').innerHTML = '<div style="color:var(--red);padding:1rem;">❌ ' + esc(err.message) + '</div>';
-        });
+        }
     }
 
     function renderBatimentsAdmin(rows) {
@@ -4441,86 +4442,95 @@
         $('batimentsAdminBody').innerHTML = html;
     }
 
-    function saveEleveurProvider() {
+    async function saveEleveurProvider() {
         var provider = $('batimentsAdminProvider').value;
         if (!batimentsAdminEleveurId || !currentUser) return;
-        supabase.rpc('admin_update_eleveur_provider', {
-            p_user_id:    currentUser.id,
-            p_eleveur_id: batimentsAdminEleveurId,
-            p_provider:   provider
-        }).then(function(res) {
+        try {
+            var res = await supabase.rpc('admin_update_eleveur_provider', {
+                p_user_id:    currentUser.id,
+                p_eleveur_id: batimentsAdminEleveurId,
+                p_provider:   provider
+            });
             if (res.error) throw res.error;
             var st = $('batimentsAdminProviderStatus');
             st.style.display = 'inline';
             setTimeout(function() { st.style.display = 'none'; }, 2000);
-            // Mettre à jour la liste locale
             var elev = allEleveursList.find(function(e) { return e.id === batimentsAdminEleveurId; });
             if (elev) elev.provider = provider;
-        }).catch(function(err) {
+        } catch(err) {
             showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
-        });
+        }
     }
 
-    function saveBatimentAdmin(batimentId, siteId, batimentNom) {
+    async function saveBatimentAdmin(batimentId, siteId, batimentNom) {
         var devEl = $('dev-' + batimentId);
         var capEl = $('cap-' + batimentId);
         if (!devEl || !currentUser) return;
         var deviceId = devEl.value.trim();
         var capacite = capEl ? (parseInt(capEl.value) || null) : null;
         showLoading('Enregistrement…');
-        supabase.rpc('admin_upsert_batiment', {
-            p_user_id:           currentUser.id,
-            p_site_id:           siteId,
-            p_nom:               batimentNom,
-            p_capacite:          capacite,
-            p_sodalec_device_id: deviceId || null,
-            p_batiment_id:       batimentId
-        }).then(function(res) {
+        try {
+            var res = await supabase.rpc('admin_upsert_batiment', {
+                p_user_id:           currentUser.id,
+                p_site_id:           siteId,
+                p_nom:               batimentNom,
+                p_capacite:          capacite,
+                p_sodalec_device_id: deviceId || null,
+                p_batiment_id:       batimentId
+            });
             if (res.error) throw res.error;
             showAlert('batimentsAdminAlert', 'success', '✓ Bâtiment enregistré');
-        }).catch(function(err) {
+        } catch(err) {
             showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
-        }).finally(function() { hideLoading(); });
+        } finally {
+            hideLoading();
+        }
     }
 
-    function deleteBatimentAdmin(batimentId) {
+    async function deleteBatimentAdmin(batimentId) {
         if (!confirm('Désactiver ce bâtiment ?')) return;
         showLoading('Suppression…');
-        supabase.rpc('admin_delete_batiment', {
-            p_user_id:     currentUser.id,
-            p_batiment_id: batimentId
-        }).then(function(res) {
+        try {
+            var res = await supabase.rpc('admin_delete_batiment', {
+                p_user_id:     currentUser.id,
+                p_batiment_id: batimentId
+            });
             if (res.error) throw res.error;
-            loadBatimentsAdmin(batimentsAdminEleveurId);
-        }).catch(function(err) {
+            await loadBatimentsAdmin(batimentsAdminEleveurId);
+        } catch(err) {
             showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
-        }).finally(function() { hideLoading(); });
+        } finally {
+            hideLoading();
+        }
     }
 
-    function addSiteAdmin() {
+    async function addSiteAdmin() {
         var nom = $('newSiteNom').value.trim();
         var ville = $('newSiteVille').value.trim();
         if (!nom) { showAlert('batimentsAdminAlert', 'error', '❌ Le nom du site est requis'); return; }
         if (!batimentsAdminEleveurId || !currentUser) return;
         showLoading('Création du site…');
-        supabase.rpc('admin_upsert_site', {
-            p_user_id:    currentUser.id,
-            p_eleveur_id: batimentsAdminEleveurId,
-            p_nom:        nom,
-            p_ville:      ville || null,
-            p_site_id:    null
-        }).then(function(res) {
+        try {
+            var res = await supabase.rpc('admin_upsert_site', {
+                p_user_id:    currentUser.id,
+                p_eleveur_id: batimentsAdminEleveurId,
+                p_nom:        nom,
+                p_ville:      ville || null,
+                p_site_id:    null
+            });
             if (res.error) throw res.error;
             $('newSiteNom').value = '';
             $('newSiteVille').value = '';
             showAlert('batimentsAdminAlert', 'success', '✓ Site créé');
-            loadBatimentsAdmin(batimentsAdminEleveurId);
-        }).catch(function(err) {
+            await loadBatimentsAdmin(batimentsAdminEleveurId);
+        } catch(err) {
             showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
-        }).finally(function() { hideLoading(); });
+        } finally {
+            hideLoading();
+        }
     }
 
-    function addBatimentAdmin(siteId) {
+    async function addBatimentAdmin(siteId) {
         var nomEl = $('newbat-nom-' + siteId);
         var capEl = $('newbat-cap-' + siteId);
         var devEl = $('newbat-dev-' + siteId);
@@ -4530,20 +4540,23 @@
         if (!nom) { showAlert('batimentsAdminAlert', 'error', '❌ Le nom du bâtiment est requis'); return; }
         if (!currentUser) return;
         showLoading('Création du bâtiment…');
-        supabase.rpc('admin_upsert_batiment', {
-            p_user_id:           currentUser.id,
-            p_site_id:           siteId,
-            p_nom:               nom,
-            p_capacite:          cap,
-            p_sodalec_device_id: dev || null,
-            p_batiment_id:       null
-        }).then(function(res) {
+        try {
+            var res = await supabase.rpc('admin_upsert_batiment', {
+                p_user_id:           currentUser.id,
+                p_site_id:           siteId,
+                p_nom:               nom,
+                p_capacite:          cap,
+                p_sodalec_device_id: dev || null,
+                p_batiment_id:       null
+            });
             if (res.error) throw res.error;
             showAlert('batimentsAdminAlert', 'success', '✓ Bâtiment créé');
-            loadBatimentsAdmin(batimentsAdminEleveurId);
-        }).catch(function(err) {
+            await loadBatimentsAdmin(batimentsAdminEleveurId);
+        } catch(err) {
             showAlert('batimentsAdminAlert', 'error', '❌ ' + err.message);
-        }).finally(function() { hideLoading(); });
+        } finally {
+            hideLoading();
+        }
     }
 
     // =====================================================
