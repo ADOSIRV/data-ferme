@@ -1258,6 +1258,44 @@
     </div>
 </div>
 
+<!-- MODAL CRÉER / MODIFIER ÉLEVEUR (admin) -->
+<div class="modal-overlay" id="modalEleveurAdmin">
+    <div class="modal-content" style="max-width:460px;">
+        <div class="modal-header">
+            <span class="modal-title" id="eleveurModalTitle">Nouvel éleveur</span>
+            <button class="modal-close" onclick="closeEleveurModal()">&times;</button>
+        </div>
+        <div class="alert" id="eleveurModalAlert"></div>
+
+        <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" class="form-input" id="eleveurNom" placeholder="ex : MARTIN" style="text-transform:uppercase;">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input type="text" class="form-input" id="eleveurPrenom" placeholder="ex : Marie">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Code éleveur</label>
+            <input type="text" class="form-input" id="eleveurCode" placeholder="ex : FR-12345">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Type d'automate *</label>
+            <select class="form-input" id="eleveurProvider">
+                <option value="sodalec">Sodalec uniquement</option>
+                <option value="both">Tuffigo + Sodalec</option>
+                <option value="tuffigo">Tuffigo uniquement</option>
+                <option value="none">Aucun automate</option>
+            </select>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeEleveurModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveEleveur()">💾 Enregistrer</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODALE TYPE DE LOT (admin) -->
 <div class="modal-overlay" id="typeLotModal">
     <div class="modal-content" style="max-width:420px;">
@@ -1934,6 +1972,9 @@
             <button class="admin-menu-btn" id="menuSodalec" data-panel="sodalec">
                 <span class="menu-icon">🤖</span> Config Sodalec
             </button>
+            <button class="admin-menu-btn" id="menuEleveurs" data-panel="eleveurs">
+                <span class="menu-icon">🐓</span> Gestion éleveurs
+            </button>
             <button class="admin-menu-btn" id="menuUsers" data-panel="users">
                 <span class="menu-icon">👥</span> Gestion utilisateurs
             </button>
@@ -2505,23 +2546,47 @@
                 </div>
             </div>
 
-            <!-- Liaison bâtiments ↔ devices -->
-            <div class="card" style="margin-top:1rem;">
-                <div class="alert" id="sodalecBatimentsAlert"></div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <div>
-                        <div style="font-weight:600; font-size:1rem;">🏠 Liaison Bâtiments ↔ Devices Megavi</div>
-                        <div style="font-size:0.8rem; color:var(--text-dim); margin-top:0.25rem;">Pour chaque bâtiment équipé d'un automate Sodalec, renseignez l'UUID du device Megavi (fourni dans le portail Sodalec).</div>
-                    </div>
-                    <button class="btn btn-secondary" id="btnRefreshSodalecBatiments" style="flex-shrink:0;">🔄 Rafraîchir</button>
+        </div>
+
+        <!-- PANEL: Gestion Éleveurs -->
+        <div class="admin-panel" id="panelEleveurs">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">🐓</span>
+                <div>
+                    <div class="admin-panel-title">Gestion des éleveurs</div>
+                    <div class="admin-panel-subtitle">Tous les éleveurs (Tuffigo + Sodalec) — créer les éleveurs Sodalec manuellement</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="alert" id="eleveursAlert"></div>
+
+                <div style="padding:0.7rem 1rem; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; font-size:0.82rem; color:var(--text-dim); margin-bottom:1.1rem; line-height:1.6;">
+                    ℹ️ Les éleveurs <strong>Tuffigo</strong> apparaissent automatiquement lors de la synchronisation Tuffigo — leurs données (nom, code) sont gérées par Tuffigo.<br>
+                    Les éleveurs <strong>Sodalec</strong> doivent être créés manuellement ici, puis un compte utilisateur leur est rattaché dans <em>Gestion Utilisateurs</em>.
                 </div>
 
-                <div style="background:var(--bg-input); border:1px solid var(--border); border-radius:8px; padding:0.6rem 0.85rem; margin-bottom:1rem; font-size:0.8rem; color:var(--text-dim);">
-                    💡 <strong>Comment trouver le Device ID ?</strong> Connectez-vous au portail Sodalec → section Megavi → cliquez sur l'automate → copiez l'identifiant UUID affiché (format : <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>).
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                    <span id="eleveursCount" style="color:var(--text-dim);">0 éleveur(s)</span>
+                    <button class="btn btn-primary" onclick="openEleveurModal(null)">➕ Nouvel éleveur Sodalec</button>
                 </div>
 
-                <div id="sodalecBatimentsTable">
-                    <p style="color:var(--text-dim); text-align:center; padding:1rem;">Chargement...</p>
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Éleveur</th>
+                                <th>Code</th>
+                                <th>Automate</th>
+                                <th>Sites</th>
+                                <th>Bâtiments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eleveursTableBody">
+                            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);">Chargement…</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -3259,6 +3324,7 @@
         // Load panel data
         if (panelName === 'apiConfig')  loadApiConfig();
         if (panelName === 'sodalec')    loadSodalecConfig();
+        if (panelName === 'eleveurs')   loadEleveurs();
         if (panelName === 'users')      loadUsers();
         if (panelName === 'aliments')   loadAliments();
         if (panelName === 'typesLot')   loadAdminTypesLot();
@@ -3950,7 +4016,6 @@
             .catch(function(err) {
                 $('sodalecConfigStatus').innerHTML = '<p style="color:var(--red);">❌ Erreur: ' + esc(err.message) + '</p>';
             });
-        loadSodalecBatiments();
     }
 
     function saveSodalecConfig() {
@@ -4354,18 +4419,155 @@
     // =====================================================
     // GESTION BÂTIMENTS ADMIN
     // =====================================================
+    // =====================================================
+    // GESTION ÉLEVEURS (admin)
+    // =====================================================
+    var eleveursAdminList  = [];
+    var editingEleveurId   = null;
+
+    async function loadEleveurs() {
+        if (!supabase || !currentUser) return;
+        $('eleveursTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);">Chargement…</td></tr>';
+        try {
+            var res = await supabase.rpc('admin_list_eleveurs_full', { p_user_id: currentUser.id });
+            if (res.error) throw res.error;
+            eleveursAdminList = res.data || [];
+            renderEleveurs(eleveursAdminList);
+        } catch(err) {
+            $('eleveursTableBody').innerHTML = '<tr><td colspan="6" style="color:var(--red);padding:1rem;">❌ ' + esc(err.message) + '</td></tr>';
+        }
+    }
+
+    function renderEleveurs(rows) {
+        $('eleveursCount').textContent = rows.length + ' éleveur(s)';
+        if (rows.length === 0) {
+            $('eleveursTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:1.5rem;">Aucun éleveur en base.</td></tr>';
+            return;
+        }
+        var providerLabels = {
+            'none':    '-',
+            'tuffigo': '<span style="color:var(--blue);font-size:0.78rem;font-weight:600;">🔌 Tuffigo</span>',
+            'sodalec': '<span style="color:var(--orange);font-size:0.78rem;font-weight:600;">🤖 Sodalec</span>',
+            'both':    '<span style="color:var(--purple,#7c3aed);font-size:0.78rem;font-weight:600;">🔌🤖 Les deux</span>'
+        };
+        var html = '';
+        rows.forEach(function(e) {
+            var nom      = esc((e.eleveur_nom || '') + ' ' + (e.eleveur_prenom || '')).trim();
+            var code     = esc(e.code_eleveur || '-');
+            var provider = providerLabels[e.provider || 'none'] || '-';
+            var isSodalec = (e.provider === 'sodalec' || e.provider === 'both');
+            var eId      = esc(e.eleveur_id);
+            var eNom     = esc((e.eleveur_nom || '') + ' ' + (e.eleveur_prenom || '')).trim();
+            var eProv    = esc(e.provider || 'none');
+
+            html += '<tr>';
+            html += '<td><strong>' + nom + '</strong></td>';
+            html += '<td>' + code + '</td>';
+            html += '<td>' + provider + '</td>';
+            html += '<td style="text-align:center;">' + (e.nb_sites || 0) + '</td>';
+            html += '<td style="text-align:center;">' + (e.nb_batiments || 0) + '</td>';
+            html += '<td><div class="action-btns">';
+            if (isSodalec) {
+                html += '<button class="action-btn" title="Sites &amp; Bâtiments" onclick="openBatimentsAdmin(\'' + eId + '\',\'' + eNom + '\',\'' + eProv + '\')">🏠</button>';
+            }
+            html += '<button class="action-btn" title="Modifier" onclick="openEleveurModal(\'' + eId + '\')">✏️</button>';
+            html += '</div></td>';
+            html += '</tr>';
+        });
+        $('eleveursTableBody').innerHTML = html;
+    }
+
+    function openEleveurModal(eleveurId) {
+        editingEleveurId = eleveurId || null;
+        hideAlert('eleveurModalAlert');
+        if (eleveurId) {
+            var e = eleveursAdminList.find(function(x) { return x.eleveur_id === eleveurId; });
+            $('eleveurModalTitle').textContent = 'Modifier éleveur';
+            $('eleveurNom').value      = e ? (e.eleveur_nom    || '') : '';
+            $('eleveurPrenom').value   = e ? (e.eleveur_prenom || '') : '';
+            $('eleveurCode').value     = e ? (e.code_eleveur   || '') : '';
+            $('eleveurProvider').value = e ? (e.provider       || 'sodalec') : 'sodalec';
+        } else {
+            $('eleveurModalTitle').textContent = 'Nouvel éleveur';
+            $('eleveurNom').value      = '';
+            $('eleveurPrenom').value   = '';
+            $('eleveurCode').value     = '';
+            $('eleveurProvider').value = 'sodalec';
+        }
+        $('modalEleveurAdmin').classList.add('show');
+    }
+
+    function closeEleveurModal() {
+        $('modalEleveurAdmin').classList.remove('show');
+        editingEleveurId = null;
+    }
+
+    async function saveEleveur() {
+        var nom      = ($('eleveurNom').value      || '').trim().toUpperCase();
+        var prenom   = ($('eleveurPrenom').value   || '').trim();
+        var code     = ($('eleveurCode').value     || '').trim();
+        var provider = ($('eleveurProvider').value || 'sodalec');
+
+        if (!nom) {
+            showAlert('eleveurModalAlert', 'error', '❌ Le nom est requis');
+            return;
+        }
+        if (!currentUser) return;
+
+        showLoading('Enregistrement…');
+        try {
+            var res;
+            if (editingEleveurId) {
+                res = await supabase.rpc('admin_update_eleveur', {
+                    p_user_id:      currentUser.id,
+                    p_eleveur_id:   editingEleveurId,
+                    p_nom:          nom,
+                    p_prenom:       prenom || null,
+                    p_code_eleveur: code   || null,
+                    p_provider:     provider
+                });
+            } else {
+                res = await supabase.rpc('admin_create_eleveur', {
+                    p_user_id:      currentUser.id,
+                    p_nom:          nom,
+                    p_prenom:       prenom || null,
+                    p_code_eleveur: code   || null,
+                    p_provider:     provider
+                });
+            }
+            if (res.error) throw res.error;
+            closeEleveurModal();
+            showAlert('eleveursAlert', 'success', editingEleveurId ? '✓ Éleveur mis à jour' : '✓ Éleveur créé');
+            await loadEleveurs();
+            // Rafraîchir aussi la liste utilisée dans le modal utilisateur
+            supabase.from('eleveurs').select('id, nom, prenom, code_eleveur, provider').eq('is_active', true).order('nom')
+                .then(function(r) { if (r.data) allEleveursList = r.data; });
+        } catch(err) {
+            showAlert('eleveurModalAlert', 'error', '❌ ' + err.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // =====================================================
+    // GESTION BÂTIMENTS ÉLEVEUR (admin) — modal
+    // =====================================================
     var batimentsAdminEleveurId = null;
 
-    function openBatimentsAdmin(eleveurId, eleveurNom) {
+    function openBatimentsAdmin(eleveurId, eleveurNom, providerOverride) {
         batimentsAdminEleveurId = eleveurId;
         $('batimentsAdminTitle').textContent = 'Bâtiments — ' + eleveurNom;
         hideAlert('batimentsAdminAlert');
         $('newSiteNom').value = '';
         $('newSiteVille').value = '';
         $('batimentsAdminProviderStatus').style.display = 'none';
-        // Pré-remplir le provider depuis la liste déjà chargée
-        var elev = allEleveursList.find(function(e) { return e.id === eleveurId; });
-        $('batimentsAdminProvider').value = elev ? (elev.provider || 'none') : 'none';
+        // Provider : priorité au paramètre direct, sinon cherche dans allEleveursList
+        var provider = providerOverride;
+        if (!provider) {
+            var elev = allEleveursList.find(function(e) { return e.id === eleveurId; });
+            provider = elev ? (elev.provider || 'none') : 'none';
+        }
+        $('batimentsAdminProvider').value = provider;
         $('modalBatimentsAdmin').classList.add('show');
         loadBatimentsAdmin(eleveurId);
     }
@@ -6880,7 +7082,6 @@
         $('btnSaveSodalecConfig').addEventListener('click', saveSodalecConfig);
         $('btnTestSodalecConfig').addEventListener('click', testSodalecConnection);
         $('btnShowSodalecKey').addEventListener('click', toggleSodalecKeyVisibility);
-        $('btnRefreshSodalecBatiments').addEventListener('click', loadSodalecBatiments);
         
         // Users
         $('btnNewUser').addEventListener('click', function() { openUserModal(null); });
