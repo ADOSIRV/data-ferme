@@ -4312,7 +4312,8 @@
         }
 
         promise
-            .then(function() {
+            .then(function(usersRes) {
+                if (usersRes && usersRes.error) throw usersRes.error;
                 // Mettre à jour le provider de l'éleveur si lié
                 if (eleveurId && currentUser) {
                     return supabase.rpc('admin_update_eleveur_provider', {
@@ -4322,13 +4323,15 @@
                     });
                 }
             })
-            .then(function() {
+            .then(function(rpcRes) {
+                if (rpcRes && rpcRes.error) throw rpcRes.error;
                 showAlert('usersAlert', 'success', '✓ Utilisateur enregistré');
                 closeUserModal();
                 loadUsers();
             })
             .catch(function(err) {
-                showAlert('userModalAlert', 'error', '❌ Erreur: ' + err.message);
+                var msg = (err && err.message) ? err.message : JSON.stringify(err);
+                showAlert('userModalAlert', 'error', '❌ Erreur: ' + msg);
             })
             .finally(function() { hideLoading(); });
     }
