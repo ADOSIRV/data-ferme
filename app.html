@@ -4260,7 +4260,7 @@
         editingUserId = null;
     }
     
-    function saveUser() {
+    async function saveUser() {
         var email = $('userEmail').value.trim();
         var password = $('userPassword').value;
         var nom = $('userNom').value.trim();
@@ -4269,7 +4269,6 @@
         var eleveurId = $('userEleveurId').value || null;
         var expiration = $('userExpiration').value || null;
         var isActive = $('userIsActive').checked;
-        
         var provider = $('userProvider').value || 'none';
 
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -4288,52 +4287,48 @@
 
         showLoading('Enregistrement...');
 
-        var data = {
-            email: email,
-            nom: nom,
-            prenom: prenom || null,
-            role: role,
-            eleveur_id: eleveurId,
-            expiration_date: expiration,
-            is_active: isActive,
-            updated_at: new Date().toISOString()
-        };
+        try {
+            var data = {
+                email: email,
+                nom: nom,
+                prenom: prenom || null,
+                role: role,
+                eleveur_id: eleveurId,
+                expiration_date: expiration,
+                is_active: isActive,
+                updated_at: new Date().toISOString()
+            };
+            if (password) data.password_hash = password;
 
-        if (password) {
-            data.password_hash = password;
+            // 1. Enregistrer l'utilisateur
+            var userRes;
+            if (editingUserId) {
+                userRes = await supabase.from('users').update(data).eq('id', editingUserId);
+            } else {
+                data.created_at = new Date().toISOString();
+                userRes = await supabase.from('users').insert(data);
+            }
+            if (userRes.error) throw userRes.error;
+
+            // 2. Mettre à jour le provider de l'éleveur si lié
+            if (eleveurId && currentUser) {
+                var rpcRes = await supabase.rpc('admin_update_eleveur_provider', {
+                    p_user_id:    currentUser.id,
+                    p_eleveur_id: eleveurId,
+                    p_provider:   provider
+                });
+                if (rpcRes.error) throw rpcRes.error;
+            }
+
+            showAlert('usersAlert', 'success', '✓ Utilisateur enregistré');
+            closeUserModal();
+            loadUsers();
+        } catch (err) {
+            var msg = (err && err.message) ? err.message : JSON.stringify(err);
+            showAlert('userModalAlert', 'error', '❌ ' + msg);
+        } finally {
+            hideLoading();
         }
-
-        var promise;
-        if (editingUserId) {
-            promise = supabase.from('users').update(data).eq('id', editingUserId);
-        } else {
-            data.created_at = new Date().toISOString();
-            promise = supabase.from('users').insert(data);
-        }
-
-        promise
-            .then(function(usersRes) {
-                if (usersRes && usersRes.error) throw usersRes.error;
-                // Mettre à jour le provider de l'éleveur si lié
-                if (eleveurId && currentUser) {
-                    return supabase.rpc('admin_update_eleveur_provider', {
-                        p_user_id:    currentUser.id,
-                        p_eleveur_id: eleveurId,
-                        p_provider:   provider
-                    });
-                }
-            })
-            .then(function(rpcRes) {
-                if (rpcRes && rpcRes.error) throw rpcRes.error;
-                showAlert('usersAlert', 'success', '✓ Utilisateur enregistré');
-                closeUserModal();
-                loadUsers();
-            })
-            .catch(function(err) {
-                var msg = (err && err.message) ? err.message : JSON.stringify(err);
-                showAlert('userModalAlert', 'error', '❌ Erreur: ' + msg);
-            })
-            .finally(function() { hideLoading(); });
     }
     
     function editUser(userId) {
