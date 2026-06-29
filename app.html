@@ -1210,7 +1210,7 @@
 </div>
 
 <!-- MODAL GESTION BATIMENTS ELEVEUR (admin) -->
-<div class="modal-overlay" id="modalBatimentsAdmin">
+<div class="modal-overlay" id="modalBatimentsAdmin" onclick="if(event.target===this)closeBatimentsAdmin()">
     <div class="modal-content" style="max-width:860px; max-height:90vh; overflow-y:auto;">
         <div class="modal-header">
             <span class="modal-title" id="batimentsAdminTitle">Bâtiments</span>
@@ -7043,10 +7043,18 @@
     // =====================================================
     // INIT
     // =====================================================
+    // Fermer les modaux avec la touche Échap
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        if ($('modalBatimentsAdmin').classList.contains('show')) { closeBatimentsAdmin(); return; }
+        if ($('modalEleveurAdmin').classList.contains('show'))   { closeEleveurModal();   return; }
+        if ($('userModal').classList.contains('show'))           { closeUserModal();       return; }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize theme first
         initTheme();
-        
+
         loadConfig();
         
         // Theme toggles
