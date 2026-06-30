@@ -2589,6 +2589,22 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Devices Sodalec non affectés -->
+            <div class="card" style="margin-top:1rem;">
+                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+                    <div style="font-weight:600;">📡 Devices Sodalec non affectés</div>
+                    <span id="unlinkedDevicesCount" style="font-size:0.82rem; color:var(--text-dim);">—</span>
+                </div>
+                <div style="font-size:0.82rem; color:var(--text-dim); margin-bottom:0.75rem;">
+                    Ces devices ont été détectés par le workflow mais ne sont pas encore liés à un bâtiment.
+                    Copiez l'ID et collez-le dans le champ <em>Device ID Sodalec</em> du bâtiment concerné (bouton 🏠 sur la ligne de l'éleveur).
+                </div>
+                <div class="alert" id="unlinkedDevicesAlert"></div>
+                <div id="unlinkedDevicesBody">
+                    <div style="text-align:center; color:var(--text-dim); padding:1rem;">Chargement…</div>
+                </div>
+            </div>
         </div>
 
         <!-- PANEL: Users Management -->
@@ -3324,7 +3340,7 @@
         // Load panel data
         if (panelName === 'apiConfig')  loadApiConfig();
         if (panelName === 'sodalec')    loadSodalecConfig();
-        if (panelName === 'eleveurs')   loadEleveurs();
+        if (panelName === 'eleveurs')   { loadEleveurs(); loadUnlinkedDevices(); }
         if (panelName === 'users')      loadUsers();
         if (panelName === 'aliments')   loadAliments();
         if (panelName === 'typesLot')   loadAdminTypesLot();
@@ -4547,6 +4563,64 @@
         } finally {
             hideLoading();
         }
+    }
+
+    // =====================================================
+    // DEVICES SODALEC NON AFFECTÉS
+    // =====================================================
+    async function loadUnlinkedDevices() {
+        if (!supabase || !currentUser) return;
+        var body = $('unlinkedDevicesBody');
+        if (!body) return;
+        body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:1rem;">Chargement…</div>';
+        try {
+            var res = await supabase.rpc('admin_list_unlinked_sodalec_devices', { p_user_id: currentUser.id });
+            if (res.error) throw res.error;
+            renderUnlinkedDevices(res.data || []);
+        } catch(err) {
+            body.innerHTML = '<div style="color:var(--red);padding:0.5rem;">❌ ' + esc(err.message) + '</div>';
+        }
+    }
+
+    function renderUnlinkedDevices(rows) {
+        var countEl = $('unlinkedDevicesCount');
+        if (countEl) countEl.textContent = rows.length + ' device(s)';
+        var body = $('unlinkedDevicesBody');
+        if (!body) return;
+        if (rows.length === 0) {
+            body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:1rem;">Aucun device non affecté — tous les devices sont liés à un bâtiment.</div>';
+            return;
+        }
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
+        html += '<thead><tr style="color:var(--text-dim);">';
+        html += '<th style="text-align:left;padding:0.3rem 0.5rem;">Nom device</th>';
+        html += '<th style="text-align:left;padding:0.3rem 0.5rem;">Device ID</th>';
+        html += '<th style="text-align:left;padding:0.3rem 0.5rem;">Détecté le</th>';
+        html += '<th style="padding:0.3rem 0.5rem;"></th>';
+        html += '</tr></thead><tbody>';
+        rows.forEach(function(d) {
+            var deviceId = esc(d.device_id || '');
+            var nom      = esc(d.nom || '');
+            var date     = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '—';
+            html += '<tr>';
+            html += '<td style="padding:0.4rem 0.5rem;">' + nom + '</td>';
+            html += '<td style="padding:0.4rem 0.5rem;font-family:monospace;font-size:0.78rem;color:var(--text-dim);">' + deviceId + '</td>';
+            html += '<td style="padding:0.4rem 0.5rem;color:var(--text-dim);">' + date + '</td>';
+            html += '<td style="padding:0.4rem 0.5rem;">';
+            html += '<button class="btn btn-secondary btn-sm" onclick="copyDeviceId(\'' + deviceId + '\')">📋 Copier l\'ID</button>';
+            html += '</td></tr>';
+        });
+        html += '</tbody></table>';
+        body.innerHTML = html;
+    }
+
+    function copyDeviceId(deviceId) {
+        navigator.clipboard.writeText(deviceId).then(function() {
+            showAlert('unlinkedDevicesAlert', 'success', '✓ Device ID copié dans le presse-papiers');
+            setTimeout(function() { hideAlert('unlinkedDevicesAlert'); }, 2500);
+        }).catch(function() {
+            showAlert('unlinkedDevicesAlert', 'error', '❌ Impossible de copier — sélectionnez manuellement : ' + deviceId);
+        });
     }
 
     // =====================================================
@@ -11688,10 +11762,12 @@
     window.loadDeclarations            = loadDeclarations;
 
     // Admin Éleveurs
-    window.loadEleveurs         = loadEleveurs;
-    window.openEleveurModal     = openEleveurModal;
-    window.closeEleveurModal    = closeEleveurModal;
-    window.saveEleveur          = saveEleveur;
+    window.loadEleveurs            = loadEleveurs;
+    window.openEleveurModal        = openEleveurModal;
+    window.closeEleveurModal       = closeEleveurModal;
+    window.saveEleveur             = saveEleveur;
+    window.loadUnlinkedDevices     = loadUnlinkedDevices;
+    window.copyDeviceId            = copyDeviceId;
 
     // Admin Bâtiments / Sites
     window.openBatimentsAdmin   = openBatimentsAdmin;
