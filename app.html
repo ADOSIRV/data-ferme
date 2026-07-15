@@ -6181,6 +6181,7 @@
 
     /** Appelle le workflow N8N → renvoie { croissance, consommation, ponte } */
     function appelN8NRapportLot(summary) {
+        var fallback = { croissance: 'Analyse non disponible.', consommation: 'Analyse non disponible.', ponte: null };
         var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/generate-rapport-lot';
         return fetch(n8nUrl, {
             method: 'POST',
@@ -6188,12 +6189,22 @@
             body: JSON.stringify(summary)
         })
         .then(function(r) {
-            if (!r.ok) throw new Error('N8N HTTP ' + r.status);
-            return r.json();
+            if (!r.ok) { console.warn('[IA] HTTP ' + r.status); return fallback; }
+            return r.text().then(function(text) {
+                if (!text || !text.trim()) return fallback;
+                try {
+                    var data = JSON.parse(text);
+                    if (!data.success) { console.warn('[IA] ' + (data.error || 'erreur inconnue')); return fallback; }
+                    return data.analyses || fallback;
+                } catch(e) {
+                    console.warn('[IA] Réponse non-JSON :', text.substring(0, 100));
+                    return fallback;
+                }
+            });
         })
-        .then(function(data) {
-            if (!data.success) throw new Error(data.error || 'Erreur N8N inconnue');
-            return data.analyses;
+        .catch(function(e) {
+            console.warn('[IA] Webhook injoignable :', e.message);
+            return fallback;
         });
     }
 
