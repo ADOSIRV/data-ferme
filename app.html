@@ -1431,6 +1431,23 @@
             </div>
         </div>
 
+        <!-- Changement d'aliment (journalier uniquement) -->
+        <div class="manual-section" id="manualSectionAlimentChange">
+            <div class="manual-section-title" style="color:#ea580c;">Changement d'aliment</div>
+            <div class="manual-fields-row" style="align-items:center;flex-wrap:wrap;gap:1rem;">
+                <div class="manual-field" style="flex:0 0 auto;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.85rem;font-weight:500;white-space:nowrap;">
+                        <input type="checkbox" id="manualAlimentChange" onchange="toggleAlimentNoteField()">
+                        Aliment changé ce jour
+                    </label>
+                </div>
+                <div class="manual-field" id="manualAlimentNoteWrapper" style="display:none;flex:1;min-width:200px;">
+                    <label>Note (aliment, raison…)</label>
+                    <input type="text" id="manualAlimentNote" class="form-input" placeholder="Ex: Passage en phase 2…" maxlength="200">
+                </div>
+            </div>
+        </div>
+
         <!-- Eau -->
         <div class="manual-section">
             <div class="manual-section-title" style="color:#0891b2;">Eau</div>
@@ -3110,7 +3127,7 @@
     var lastActiveGraph = 'sante'; // dernier graphique interagi
     var editingUserId = null;
     
-    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [], manual: [] };
+    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [], manual: [], changements_aliment: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
     // selectedIndicators et currentPeriod remplacés par graphState ci-dessus
     var currentLotInfo = null;
@@ -5004,7 +5021,9 @@
             // [14] Déclarations (en parallèle)
             currentEleveur
                 ? supabase.rpc('get_declarations_sortie', { p_user_id: currentUser.id, p_eleveur_id: currentEleveur.id })
-                : Promise.resolve({ data: null })
+                : Promise.resolve({ data: null }),
+            // [15] Changements d'aliment
+            supabase.from('changements_aliment').select('*').eq('lot_id', id).order('jour_age')
         ]).then(function(r) {
             // Sécurité : l'utilisateur a peut-être changé de lot pendant le chargement
             if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
@@ -5020,7 +5039,8 @@
             lotData.eau_conso   = eauData;
             lotData.homogeneite = lotData.poids;
             lotData.gmq         = lotData.poids;
-            lotData.manual      = (r[6] && r[6].data) ? r[6].data : [];
+            lotData.manual              = (r[6]  && r[6].data)  ? r[6].data  : [];
+            lotData.changements_aliment = (r[15] && r[15].data) ? r[15].data : [];
             rebuildOeufsIndicators();
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
 
@@ -5450,11 +5470,44 @@
         row.querySelector('.btn-edit-row').style.display   = 'none';
         row.querySelector('.btn-save-row').style.display   = 'inline-block';
         row.querySelector('.btn-cancel-row').style.display = 'inline-block';
+
+        // Injecter la ligne "Aliment changé" en dessous de la ligne en édition
+        var existingChange = (lotData.changements_aliment || []).find(function(c) { return c.jour_age === j; });
+        var isChecked = !!existingChange;
+        var existingNote = existingChange ? (existingChange.note || '') : '';
+        var changeRow = document.createElement('tr');
+        changeRow.setAttribute('data-aliment-change-row', j);
+        changeRow.style.cssText = 'background:rgba(234,88,12,0.06);';
+        changeRow.innerHTML = '<td colspan="30" style="padding:0.45rem 1rem;border-top:none;">'
+            + '<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">'
+            + '<label style="display:flex;align-items:center;gap:0.45rem;cursor:pointer;font-size:0.83rem;font-weight:600;color:#ea580c;white-space:nowrap;">'
+            + '<input type="checkbox" id="inlineAlimentChange_' + j + '"' + (isChecked ? ' checked' : '') + ' onchange="toggleInlineAlimentNote(' + j + ')">'
+            + '🌾 Aliment changé ce jour'
+            + '</label>'
+            + '<input type="text" id="inlineAlimentNote_' + j + '" class="form-input"'
+            + ' placeholder="Note (aliment, raison…)" maxlength="200"'
+            + ' style="flex:1;min-width:180px;font-size:0.83rem;padding:0.3rem 0.6rem;' + (isChecked ? '' : 'display:none;') + '"'
+            + ' value="' + existingNote.replace(/"/g, '&quot;') + '">'
+            + '</div>'
+            + '</td>';
+        row.parentNode.insertBefore(changeRow, row.nextSibling);
     }
 
     function cancelRowEdit(jour) {
         // Re-rendre le tableau complet (simple)
         renderTableau();
+    }
+
+    function toggleInlineAlimentNote(jour) {
+        var cb   = $('inlineAlimentChange_' + jour);
+        var note = $('inlineAlimentNote_'   + jour);
+        if (note) note.style.display = (cb && cb.checked) ? '' : 'none';
+    }
+
+    function toggleAlimentNoteField() {
+        var cb   = $('manualAlimentChange');
+        var wrap = $('manualAlimentNoteWrapper');
+        if (wrap) wrap.style.display = (cb && cb.checked) ? '' : 'none';
     }
 
     function saveRowEdit(jour) {
@@ -5464,6 +5517,16 @@
 
         var rows = buildTableauRows();
         var rowData = rows.find(function(r) { return r.jour_age === j; }) || {};
+
+        // Lire les valeurs de la ligne "Aliment changé" avant tout traitement async
+        var alimentChangeRow   = document.querySelector('tr[data-aliment-change-row="' + j + '"]');
+        var alimentChangeCb    = alimentChangeRow ? $('inlineAlimentChange_' + j) : null;
+        var alimentNoteInput   = alimentChangeRow ? $('inlineAlimentNote_'   + j) : null;
+        var _inlineAlimentChecked = !!(alimentChangeCb && alimentChangeCb.checked);
+        var _inlineAlimentNote    = (_inlineAlimentChecked && alimentNoteInput) ? alimentNoteInput.value.trim() : '';
+        var _existingChange    = (lotData.changements_aliment || []).find(function(c) { return c.jour_age === j; });
+        var _alimentChanged    = _inlineAlimentChecked !== !!_existingChange
+            || (_inlineAlimentChecked && _inlineAlimentNote !== (_existingChange ? (_existingChange.note || '') : ''));
 
         var inputs = row.querySelectorAll('.input-cell');
         var promises = [];
@@ -5537,6 +5600,23 @@
             }
         }
 
+        // Ajouter la sauvegarde du changement d'aliment aux promises
+        if (_alimentChanged) {
+            hasChange = true;
+            if (_inlineAlimentChecked) {
+                promises.push(supabase.from('changements_aliment').upsert({
+                    lot_id:      currentLotInfo.id,
+                    jour_age:    j,
+                    date_mesure: rowData.date_mesure || null,
+                    note:        _inlineAlimentNote || null,
+                    created_by:  currentUser ? currentUser.id : null
+                }, { onConflict: 'lot_id,jour_age' }));
+            } else {
+                promises.push(supabase.from('changements_aliment')
+                    .delete().eq('lot_id', currentLotInfo.id).eq('jour_age', j));
+            }
+        }
+
         if (!hasChange) { cancelRowEdit(jour); return; }
 
         // Bouton feedback
@@ -5545,30 +5625,34 @@
 
         var _capturedLotId = currentLotInfo.id;
         Promise.all(promises).then(function() {
-            // Recharger corrections + éventuellement donnees_oeufs
+            // Recharger corrections + éventuellement donnees_oeufs + changements_aliment (index fixe)
             var reloadAll = [
                 supabase.from('corrections_journalieres')
-                    .select('*').eq('lot_id', _capturedLotId).order('created_at', { ascending: false })
+                    .select('*').eq('lot_id', _capturedLotId).order('created_at', { ascending: false }),  // [0]
+                eggChanged
+                    ? supabase.from('donnees_oeufs').select('*').eq('lot_id', _capturedLotId).order('jour_age')
+                    : Promise.resolve(null),                                                                // [1]
+                supabase.from('changements_aliment').select('*').eq('lot_id', _capturedLotId).order('jour_age') // [2]
             ];
-            if (eggChanged) {
-                reloadAll.push(
-                    supabase.from('donnees_oeufs')
-                        .select('*').eq('lot_id', _capturedLotId).order('jour_age')
-                );
-            }
             return Promise.all(reloadAll);
         }).then(function(results) {
             if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
             buildCorrectionsMap((results[0] && results[0].data) ? results[0].data : []);
-            if (eggChanged && results[1]) {
-                lotData.oeufs = (results[1].data) ? results[1].data : [];
+            if (eggChanged && results[1] && results[1].data) {
+                lotData.oeufs = results[1].data;
                 rebuildOeufsIndicators();
             }
+            if (results[2] && results[2].data) {
+                lotData.changements_aliment = results[2].data;
+            }
             renderTableau();
-            // Rafraîchir le graphique ponte si des indicateurs sont sélectionnés
             if (eggChanged && graphState.ponte.selected.length > 0) {
                 updateChart('ponte');
                 updateLegend('ponte');
+            }
+            if (_alimentChanged && graphState.conso && graphState.conso.selected.indexOf('aliment') >= 0) {
+                updateChart('conso');
+                updateLegend('conso');
             }
         }).catch(function(err) {
             console.error('Erreur sauvegarde correction:', err);
@@ -5888,21 +5972,31 @@
         }
         
         var v1 = d1.map(function(d) { return parseFloat(d[ind1.dataField]) || 0; });
-        datasets.push({ 
-            label: ind1.label, 
-            data: v1, 
-            borderColor: ind1.color, 
-            backgroundColor: ind1.color, 
-            borderWidth: 2, 
-            tension: 0.35, 
-            fill: false, 
-            pointRadius: 2,
-            pointHoverRadius: 5,
-            pointBackgroundColor: ind1.color,
-            pointBorderColor: ind1.color,
-            pointBorderWidth: 0,
-            yAxisID: 'y1', 
-            order: 1 
+
+        // Marqueurs de changement d'aliment (pastilles oranges)
+        var _alimentChangesMap = {};
+        if (t1 === 'aliment') {
+            (lotData.changements_aliment || []).forEach(function(c) {
+                _alimentChangesMap[c.jour_age] = c.note || '';
+            });
+        }
+        var _hasAlimentMarkers = t1 === 'aliment' && Object.keys(_alimentChangesMap).length > 0;
+
+        datasets.push({
+            label: ind1.label,
+            data: v1,
+            borderColor: ind1.color,
+            backgroundColor: ind1.color,
+            borderWidth: 2,
+            tension: 0.35,
+            fill: false,
+            pointRadius:          _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? 9  : 2; }) : 2,
+            pointHoverRadius:     _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? 13 : 5; }) : 5,
+            pointBackgroundColor: _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? '#f59e0b' : ind1.color; }) : ind1.color,
+            pointBorderColor:     _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? '#ffffff'  : ind1.color; }) : ind1.color,
+            pointBorderWidth:     _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? 2.5 : 0; }) : 0,
+            yAxisID: 'y1',
+            order: 1
         });
         
         var scales = {
@@ -5997,7 +6091,7 @@
                     var ind = isY1 ? ind1 : (t2 ? INDICATORS[t2] : null);
                     var unit = ind ? ind.unit : '';
                     var value = context.parsed.y;
-                    
+
                     // Tolérance
                     var tolMin, tolMax;
                     if (isY1) {
@@ -6007,12 +6101,12 @@
                         tolMin = toleranceData.y2.min[index];
                         tolMax = toleranceData.y2.max[index];
                     }
-                    
+
                     var lines = [];
                     if (tolMin !== null && tolMax !== null) {
                         lines.push('   ↳ Min: ' + tolMin.toLocaleString('fr-FR') + ' ' + unit);
                         lines.push('   ↳ Max: ' + tolMax.toLocaleString('fr-FR') + ' ' + unit);
-                        
+
                         // Indicateur de position
                         if (value < tolMin) {
                             lines.push('   ⚠️ Sous le seuil minimum');
@@ -6022,7 +6116,13 @@
                             lines.push('   ✅ Dans la zone de tolérance');
                         }
                     }
-                    
+
+                    // Changement d'aliment
+                    if (isY1 && t1 === 'aliment' && _alimentChangesMap.hasOwnProperty(jours[index])) {
+                        var noteChg = _alimentChangesMap[jours[index]];
+                        lines.push('   🌾 Changement d\'aliment' + (noteChg ? ' : ' + noteChg : ''));
+                    }
+
                     return lines;
                 }
             }
@@ -9412,9 +9512,11 @@
         $('manualPeriodeHint').style.display  = 'none';
         ['manualNombreMorts','manualPoidsMoyen','manualGmq','manualHomogeneite',
          'manualAlimentGlobal','manualEauLitres',
-         'manualOeufsA','manualOeufsB'].forEach(function(id) {
+         'manualOeufsA','manualOeufsB','manualAlimentNote'].forEach(function(id) {
             if ($(id)) $(id).value = '';
         });
+        if ($('manualAlimentChange'))     $('manualAlimentChange').checked = false;
+        if ($('manualAlimentNoteWrapper')) $('manualAlimentNoteWrapper').style.display = 'none';
         // Réinitialiser les champs calculés
         ['manualEffectifDisplay','manualAlimentAnimalDisplay',
          'manualEauAnimalDisplay','manualEauRatioDisplay'].forEach(function(id) {
@@ -9456,6 +9558,7 @@
         }
         if ($('manualDateHint'))  $('manualDateHint').style.display  = mode === 'journalier' ? '' : 'none';
         if ($('manualHebdoHint')) $('manualHebdoHint').style.display = 'none'; // sera mis à jour par onManualDateChange
+        if ($('manualSectionAlimentChange')) $('manualSectionAlimentChange').style.display = mode === 'journalier' ? '' : 'none';
         // Réinitialiser l'alerte
         var al = $('manualEntryAlert');
         al.style.display = 'none'; al.className = 'alert'; al.textContent = '';
@@ -9940,12 +10043,42 @@
             });
         }
 
+        // Lire les valeurs "aliment changé" avant la chaîne async
+        var _alimentChecked = manualMode === 'journalier' && $('manualAlimentChange') && $('manualAlimentChange').checked;
+        var _alimentNote    = (_alimentChecked && $('manualAlimentNote')) ? $('manualAlimentNote').value.trim() : '';
+        var _alimentDay     = (manualMode === 'journalier' && days.length >= 1) ? days[0] : null;
+
         saveNext(0).then(function(r) {
-            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
+            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return Promise.resolve(null);
             lotData.manual = (r && r.data) ? r.data : [];
             rebuildOeufsIndicators();
+            // Sauvegarder le changement d'aliment (mode journalier uniquement)
+            if (_alimentDay) {
+                if (_alimentChecked) {
+                    return supabase.from('changements_aliment').upsert({
+                        lot_id:      _capturedLotId,
+                        jour_age:    _alimentDay.jourAge,
+                        date_mesure: _alimentDay.dateStr,
+                        note:        _alimentNote || null,
+                        created_by:  currentUser ? currentUser.id : null
+                    }, { onConflict: 'lot_id,jour_age' });
+                } else {
+                    return supabase.from('changements_aliment')
+                        .delete().eq('lot_id', _capturedLotId).eq('jour_age', _alimentDay.jourAge);
+                }
+            }
+            return Promise.resolve(null);
+        }).then(function() {
+            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return Promise.resolve(null);
+            return supabase.from('changements_aliment').select('*').eq('lot_id', _capturedLotId).order('jour_age');
+        }).then(function(caResult) {
+            if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
+            if (caResult && caResult.data) lotData.changements_aliment = caResult.data;
             closeManualEntryModal();
             renderTableau();
+            if (_alimentChecked && graphState.conso && graphState.conso.selected.indexOf('aliment') >= 0) {
+                updateChart('conso'); updateLegend('conso');
+            }
             if (isPondeuse && graphState.ponte.selected.length > 0) {
                 updateChart('ponte');
                 updateLegend('ponte');
@@ -11662,6 +11795,8 @@
     window.onManualDatePeriodeChange      = onManualDatePeriodeChange;
     window.recalculateManualDerivedFields = recalculateManualDerivedFields;
     window.saveManualEntry                = saveManualEntry;
+    window.toggleAlimentNoteField         = toggleAlimentNoteField;
+    window.toggleInlineAlimentNote        = toggleInlineAlimentNote;
 
     // Admin Souches & Standards
     window.openSoucheModal      = openSoucheModal;
