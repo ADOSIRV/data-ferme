@@ -5490,6 +5490,9 @@
             + ' value="' + existingNote.replace(/"/g, '&quot;') + '">'
             + '</div>'
             + '</td>';
+        // Supprimer l'éventuelle ligne déjà présente avant d'insérer
+        var existingChangeRow = row.parentNode.querySelector('tr[data-aliment-change-row="' + j + '"]');
+        if (existingChangeRow) existingChangeRow.parentNode.removeChild(existingChangeRow);
         row.parentNode.insertBefore(changeRow, row.nextSibling);
     }
 
