@@ -364,6 +364,7 @@
         .row-manual .col-id { background: rgba(234,179,8,0.10) !important; }
         .badge-manual { display: inline-block; font-size: 0.65rem; background: #fef9c3; color: #854d0e; border: 1px solid #fde047; border-radius: 4px; padding: 0 4px; margin-left: 3px; vertical-align: middle; font-weight: 700; white-space: nowrap; }
         .badge-tuffigo-alert { display: inline-block; font-size: 0.65rem; background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; border-radius: 4px; padding: 0 4px; margin-left: 2px; vertical-align: middle; font-weight: 700; cursor: help; white-space: nowrap; }
+        .badge-aliment-change { display: inline-block; font-size: 0.65rem; background: #fff7ed; color: #c2410c; border: 1px solid #ea580c; border-radius: 4px; padding: 0 4px; margin-left: 2px; vertical-align: middle; cursor: help; white-space: nowrap; }
         /* Modal saisie manuelle */
         .manual-section { margin-bottom: 1.1rem; padding: 0.8rem; background: var(--bg-input); border-radius: 10px; border: 1px solid var(--border); }
         .manual-section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
@@ -5361,6 +5362,11 @@
                 if (row.has_tuffigo_data) {
                     jourCell += '<span class="badge-tuffigo-alert" title="Des données Tuffigo existent également pour cette journée — la saisie manuelle est prioritaire">⚠️</span>';
                 }
+            }
+            var _alimentChg = (lotData.changements_aliment || []).find(function(c) { return c.jour_age === j; });
+            if (_alimentChg) {
+                var _chgTitle = 'Changement d\'aliment' + (_alimentChg.note ? ' : ' + _alimentChg.note : '');
+                jourCell += '<span class="badge-aliment-change" title="' + esc(_chgTitle) + '">🌾</span>';
             }
             html += '<td class="col-id">' + jourCell + '</td>';
             var dateFmt = row.date_mesure ? new Date(row.date_mesure).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
