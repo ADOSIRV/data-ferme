@@ -5930,14 +5930,15 @@
         var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
         var canvas = $('chart' + suffix);
         if (!canvas) return;
-        // En mode rapport PDF : forcer 1800×650 pour haute résolution et labels axes Y visibles
-        // (doit être fait AVANT getContext et la création du chart pour être atomique)
+        // Détruire AVANT de redimensionner : le ResizeObserver du chart responsive
+        // se déclenche pendant destroy() et remettrait le canvas à sa taille CSS,
+        // écrasant notre canvas.width=1800 si on le définissait avant.
+        if (g.chart) { g.chart.destroy(); g.chart = null; }
         if (_rapportMode) {
             canvas.width  = 1800;
             canvas.height = 650;
         }
         var ctx = canvas.getContext('2d');
-        if (g.chart) { g.chart.destroy(); g.chart = null; }
 
         var t1 = g.selected[0], t2 = g.selected[1];
         if (!t1) {
