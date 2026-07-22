@@ -6514,21 +6514,21 @@
             {
                 sectionLabel: '2. Consommation',
                 rgb: [16, 185, 129],
-                title: 'Consommation eau totale',
+                title: 'Consommation aliment & ratio eau/aliment',
                 imgData: charts.c3,
                 legend: [
-                    { color: '#0369a1', label: 'Eau totale (L)' },
+                    { color: '#ea580c', label: 'Aliment (g/j/animal)' },
                     { color: '#0284c7', label: 'Ratio eau/aliment' }
                 ]
             },
             {
                 sectionLabel: '2. Consommation',
                 rgb: [16, 185, 129],
-                title: 'Consommation aliment & eau/animal',
+                title: 'Consommation eau totale & eau/poule',
                 imgData: charts.c4,
                 legend: [
-                    { color: '#ea580c', label: 'Aliment (g/j/animal)' },
-                    { color: '#0891b2', label: 'Eau/animal (L)' }
+                    { color: '#0369a1', label: 'Eau totale (L)' },
+                    { color: '#0891b2', label: 'Eau/poule (L)' }
                 ]
             }
         ];
@@ -6793,10 +6793,10 @@
                 return captureChartForReport('sante', 'homogeneite', 'gmq', 'all');
             })
             .then(function(img) { charts.c2 = img;
-                return captureChartForReport('conso', 'eau_conso',  'eau_ratio', 'all');
+                return captureChartForReport('conso', 'aliment', 'eau_ratio', 'all');
             })
             .then(function(img) { charts.c3 = img;
-                return captureChartForReport('conso', 'eau_animal', 'aliment', 'all');
+                return captureChartForReport('conso', 'eau_conso', 'eau_animal', 'all');
             })
             .then(function(img) { charts.c4 = img;
                 var hasOeufs = !!(lotData.oeufs_a && lotData.oeufs_a.length > 0 || lotData.taux_ponte_pct && lotData.taux_ponte_pct.length > 0);
