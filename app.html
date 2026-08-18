@@ -135,6 +135,45 @@
         .coop-logo-upload-box:hover { border-color: var(--blue); }
         .coop-logo-upload-box img { width: 100%; height: 100%; object-fit: contain; }
 
+        /* ── Analyse Financière ── */
+        .fin-section { margin-bottom: 1.5rem; }
+        .fin-section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 1.2rem 0 0.6rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+        .fin-params-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem; }
+        .fin-param-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.9rem; }
+        .fin-param-label { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.3rem; }
+        .fin-param-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.85rem; color: var(--text); }
+        .fin-param-input:focus { outline: none; border-color: var(--blue); }
+        .fin-save-btn { margin-top: 0.6rem; padding: 0.4rem 1.1rem; background: var(--blue); color: #fff; border: none; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+        .fin-save-btn:hover { background: #1e40af; }
+        .fin-upload-area { border: 2px dashed var(--border); border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 0.75rem; }
+        .fin-upload-area:hover, .fin-upload-area.dragover { border-color: var(--blue); background: rgba(59,130,246,0.04); }
+        .fin-upload-area .upload-icon { font-size: 2rem; margin-bottom: 0.4rem; }
+        .fin-upload-area .upload-hint { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem; }
+        .fin-ocr-form { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; display: none; }
+        .fin-ocr-form.show { display: block; }
+        .fin-ocr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        @media (max-width: 600px) { .fin-ocr-grid { grid-template-columns: 1fr; } }
+        .fin-ocr-field label { font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 0.2rem; }
+        .fin-ocr-field input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.82rem; color: var(--text); }
+        .fin-ocr-field input:focus { outline: none; border-color: var(--blue); }
+        .fin-ocr-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        .fin-factures-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 0.5rem; }
+        .fin-factures-table th { background: var(--bg-secondary); color: var(--text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.4rem 0.6rem; text-align: left; }
+        .fin-factures-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .fin-factures-table tr:last-child td { border-bottom: none; }
+        .fin-factures-table a { color: var(--blue); text-decoration: none; font-size: 0.75rem; }
+        .fin-factures-table .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; padding: 0 0.2rem; }
+        .fin-result-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+        .fin-kpi-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .fin-kpi { flex: 1 1 140px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.9rem; }
+        .fin-kpi-label { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+        .fin-kpi-value { font-size: 1.15rem; font-weight: 700; color: var(--text); margin-top: 0.15rem; }
+        .fin-kpi-value.positif { color: #16a34a; }
+        .fin-kpi-value.negatif { color: #dc2626; }
+        .fin-chart-container { position: relative; height: 300px; }
+        .fin-ocr-loading { display: none; font-size: 0.8rem; color: var(--blue); padding: 0.3rem 0; }
+        .fin-ocr-loading.show { display: block; }
+
         /* ── Déclarations sortie sur le parcours ── */
         .decl-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 1.2rem 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
         .decl-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -2113,6 +2152,7 @@
                 <button class="exploit-tab active" data-tab="graphiques">📊 Graphiques</button>
                 <button class="exploit-tab" data-tab="tableau">📋 Données exploitation</button>
                 <button class="exploit-tab" data-tab="declaration" id="tabDeclaration" style="display:none;">🌿 Déclarations</button>
+                <button class="exploit-tab" data-tab="financier" id="tabFinancier" style="display:none;">💶 Analyse Financière</button>
             </div>
 
             <!-- ── Panel : Graphiques ── -->
@@ -2378,6 +2418,102 @@
                 </div>
 
             </div><!-- /exploitDeclaration -->
+
+            <!-- ── Panel : Analyse Financière ── -->
+            <div class="exploit-panel" id="exploitFinancier">
+
+                <div id="finNoLotMsg" class="decl-empty" style="display:none;">
+                    Sélectionnez un lot pour accéder à l'analyse financière.
+                </div>
+
+                <div id="finContent" style="display:none;">
+
+                    <!-- ── 1. Paramètres économiques ── -->
+                    <div class="fin-section">
+                        <div class="fin-section-title">📋 Paramètres économiques du lot</div>
+                        <div class="fin-params-grid" id="finParamsGrid">
+                            <!-- champs injectés par JS selon le type de lot -->
+                        </div>
+                        <div id="finParamsAlert" style="display:none;margin-top:0.4rem;font-size:0.8rem;"></div>
+                        <button class="fin-save-btn" onclick="saveParametresFinanciers()">💾 Enregistrer les paramètres</button>
+                    </div>
+
+                    <!-- ── 2. Factures aliment ── -->
+                    <div class="fin-section">
+                        <div class="fin-section-title">🧾 Factures aliment</div>
+
+                        <div class="fin-upload-area" id="finUploadArea"
+                             onclick="document.getElementById('finFileInput').click()"
+                             ondragover="event.preventDefault();this.classList.add('dragover')"
+                             ondragleave="this.classList.remove('dragover')"
+                             ondrop="handleFactureDrop(event)">
+                            <div class="upload-icon">📄</div>
+                            <div style="font-size:0.85rem;color:var(--text-dim);">Cliquez ou déposez une facture ici</div>
+                            <div class="upload-hint">JPG, PNG, PDF — max 10 Mo — L'IA extrait automatiquement les données</div>
+                        </div>
+                        <input type="file" id="finFileInput" accept="image/*,application/pdf" style="display:none;" onchange="handleFactureFileSelect(this)">
+
+                        <!-- Formulaire pré-rempli après OCR -->
+                        <div class="fin-ocr-form" id="finOcrForm">
+                            <div style="font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.6rem;">
+                                📝 Données extraites — vérifiez et corrigez si besoin
+                            </div>
+                            <div class="fin-ocr-loading" id="finOcrLoading">⏳ Analyse de la facture en cours…</div>
+                            <div class="fin-ocr-grid">
+                                <div class="fin-ocr-field">
+                                    <label>Date de facture</label>
+                                    <input type="date" id="finOcrDate">
+                                </div>
+                                <div class="fin-ocr-field">
+                                    <label>N° de facture</label>
+                                    <input type="text" id="finOcrNumero" placeholder="ex : FA-2024-001">
+                                </div>
+                                <div class="fin-ocr-field">
+                                    <label>Type d'aliment</label>
+                                    <input type="text" id="finOcrTypeAliment" placeholder="ex : Démarrage, Croissance…">
+                                </div>
+                                <div class="fin-ocr-field">
+                                    <label>Montant HT (€)</label>
+                                    <input type="number" id="finOcrHT" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                                <div class="fin-ocr-field">
+                                    <label>Montant TTC (€)</label>
+                                    <input type="number" id="finOcrTTC" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                                <div class="fin-ocr-field">
+                                    <label>Fichier</label>
+                                    <input type="text" id="finOcrFichierNom" readonly style="background:var(--bg-secondary);color:var(--text-dim);">
+                                </div>
+                            </div>
+                            <div class="fin-ocr-actions">
+                                <button class="fin-save-btn" onclick="enregistrerFacture()">💾 Enregistrer la facture</button>
+                                <button onclick="annulerFacture()" style="padding:0.4rem 0.9rem;background:none;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;cursor:pointer;color:var(--text-dim);">✖ Annuler</button>
+                            </div>
+                        </div>
+
+                        <!-- Tableau des factures enregistrées -->
+                        <div id="finFacturesList">
+                            <!-- injecté par JS -->
+                        </div>
+                    </div>
+
+                    <!-- ── 3. Résultat économique ── -->
+                    <div class="fin-section">
+                        <div class="fin-section-title">📊 Résultat économique du lot</div>
+                        <div class="fin-kpi-row" id="finKpiRow">
+                            <!-- KPIs injectés par JS -->
+                        </div>
+                        <div class="fin-result-box">
+                            <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.5rem;">Évolution cumulée du résultat (€)</div>
+                            <div class="fin-chart-container">
+                                <canvas id="chartFinancier"></canvas>
+                            </div>
+                        </div>
+                        <div id="finCalcDetail" style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3rem;"></div>
+                    </div>
+
+                </div><!-- /finContent -->
+            </div><!-- /exploitFinancier -->
 
             <!-- Empty -->
             <div class="chart-card show" id="emptyState">
@@ -5158,6 +5294,12 @@
     // ══════════════════════════════════════════════════════════
 
     var currentExploitTab = 'graphiques';
+    // ── Données financières du lot courant ──────────────────────────────────
+    var currentParametresFinanciers = null;
+    var currentFacturesAliment      = [];
+    var _finFileUrl                 = null;  // URL Storage après upload
+    var _finFileName                = null;  // nom du fichier uploadé
+    var _chartFinancier             = null;  // instance Chart.js graphique financier
     // Toutes les corrections du lot (actif=true et actif=false) pour le journal
     var allCorrections = [];
     // Map des corrections ACTIVES : clé = "jour_age|champ" → objet correction
@@ -5704,6 +5846,7 @@
         $('exploitGraphiques').classList.remove('show');
         $('exploitTableau').classList.remove('show');
         if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+        if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
 
         if (tab === 'graphiques') {
             $('exploitGraphiques').classList.add('show');
@@ -5711,6 +5854,11 @@
             if ($('exploitDeclaration')) {
                 $('exploitDeclaration').classList.add('show');
                 if (!silent) initDeclarationTab();
+            }
+        } else if (tab === 'financier') {
+            if ($('exploitFinancier')) {
+                $('exploitFinancier').classList.add('show');
+                if (!silent) initAnalyseFinanciere();
             }
         } else {
             // tableau
@@ -5819,19 +5967,32 @@
         if (tabDecl) {
             tabDecl.style.display = (currentUser && currentUser.role === 'eleveur') ? '' : 'none';
         }
+        // Onglet Analyse Financière — éleveur et admin
+        var tabFin = $('tabFinancier');
+        if (tabFin) {
+            tabFin.style.display = (currentUser && ['eleveur','admin'].indexOf(currentUser.role) !== -1) ? '' : 'none';
+        }
         // Afficher le bon panel selon l'onglet actif
         if (currentExploitTab === 'declaration') {
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             $('exploitTableau').classList.remove('show');
+            if ($('exploitFinancier')) $('exploitFinancier').classList.remove('show');
+        } else if (currentExploitTab === 'financier') {
+            if ($('exploitFinancier')) $('exploitFinancier').classList.add('show');
+            $('exploitGraphiques').classList.remove('show');
+            $('exploitTableau').classList.remove('show');
+            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         } else if (currentExploitTab === 'tableau') {
             $('exploitTableau').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier')) $('exploitFinancier').classList.remove('show');
         } else {
             $('exploitGraphiques').classList.add('show');
             $('exploitTableau').classList.remove('show');
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier')) $('exploitFinancier').classList.remove('show');
             $('graphsContainer').classList.add('show');
             $('statsRow').classList.add('show');
             $('exportSection').classList.add('show');
@@ -5850,6 +6011,7 @@
         $('exploitGraphiques').classList.remove('show');
         $('exploitTableau').classList.remove('show');
         if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+        if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
         $('graphsContainer').classList.remove('show');
         $('statsRow').classList.remove('show');
         $('exportSection').classList.remove('show');
@@ -5859,10 +6021,14 @@
         document.querySelectorAll('.exploit-tab').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-tab') === 'graphiques');
         });
-        // Vider les corrections et déclarations
+        // Vider les corrections, déclarations et données financières
         allCorrections = [];
         activeCorrections = {};
         currentDeclarations = [];
+        currentParametresFinanciers = null;
+        currentFacturesAliment = [];
+        _finFileUrl = null; _finFileName = null;
+        if (_chartFinancier) { try { _chartFinancier.destroy(); } catch(e){} _chartFinancier = null; }
     }
     
     // =====================================================
@@ -11111,6 +11277,504 @@
         });
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // ANALYSE FINANCIÈRE
+    // ══════════════════════════════════════════════════════════════════════════
+
+    var N8N_OCR_URL = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/ocr-facture';
+
+    function isPondeuse() {
+        var nom = (currentLotInfo && currentLotInfo.type_lot_nom)
+            ? currentLotInfo.type_lot_nom.trim().toLowerCase() : '';
+        return nom === 'pondeuse';
+    }
+
+    // ── Initialisation de l'onglet ────────────────────────────────
+    function initAnalyseFinanciere() {
+        if (!currentLotInfo) {
+            if ($('finNoLotMsg'))  $('finNoLotMsg').style.display  = '';
+            if ($('finContent'))   $('finContent').style.display   = 'none';
+            return;
+        }
+        if ($('finNoLotMsg'))  $('finNoLotMsg').style.display  = 'none';
+        if ($('finContent'))   $('finContent').style.display   = '';
+
+        renderFinParamsGrid();
+
+        var lotId = currentLotInfo.id;
+        Promise.all([
+            supabase.from('parametres_financiers_lot').select('*').eq('lot_id', lotId).maybeSingle(),
+            supabase.from('factures_aliment').select('*').eq('lot_id', lotId).order('date_facture', { ascending: true })
+        ]).then(function(results) {
+            currentParametresFinanciers = (results[0].data) ? results[0].data : null;
+            currentFacturesAliment      = (results[1].data) ? results[1].data : [];
+            fillFinParams();
+            renderFacturesList();
+            renderResultatEconomique();
+        }).catch(function(err) {
+            console.error('initAnalyseFinanciere error:', err);
+        });
+    }
+
+    // ── Grille des paramètres selon le type de lot ────────────────
+    function renderFinParamsGrid() {
+        var grid = $('finParamsGrid');
+        if (!grid) return;
+        var pondeuse = isPondeuse();
+        var html = '';
+
+        html += '<div class="fin-param-card">'
+            + '<div class="fin-param-label">Prix unitaire achat animal (€/animal)</div>'
+            + '<input type="number" class="fin-param-input" id="finPrixAchat" step="0.0001" min="0" placeholder="ex : 4.50">'
+            + '</div>';
+
+        html += '<div class="fin-param-card">'
+            + '<div class="fin-param-label">Coût eau au m³ (€/m³)</div>'
+            + '<input type="number" class="fin-param-input" id="finCoutEau" step="0.0001" min="0" placeholder="ex : 2.50">'
+            + '</div>';
+
+        if (pondeuse) {
+            html += '<div class="fin-param-card">'
+                + '<div class="fin-param-label">Prix de vente — 100 œufs Classe A (€)</div>'
+                + '<input type="number" class="fin-param-input" id="finPrixOeufA" step="0.0001" min="0" placeholder="ex : 9.50">'
+                + '</div>';
+            html += '<div class="fin-param-card">'
+                + '<div class="fin-param-label">Prix de vente — 100 œufs Classe B (€)</div>'
+                + '<input type="number" class="fin-param-input" id="finPrixOeufB" step="0.0001" min="0" placeholder="ex : 7.00">'
+                + '</div>';
+        } else {
+            html += '<div class="fin-param-card">'
+                + '<div class="fin-param-label">Prix de vente par animal vendu (€/animal)</div>'
+                + '<input type="number" class="fin-param-input" id="finPrixVenteAnimal" step="0.0001" min="0" placeholder="ex : 4.20">'
+                + '</div>';
+            html += '<div class="fin-param-card">'
+                + '<div class="fin-param-label">Nombre d\'animaux vendus</div>'
+                + '<input type="number" class="fin-param-input" id="finNbAnimaux" step="1" min="0" placeholder="ex : 14850">'
+                + '</div>';
+        }
+        grid.innerHTML = html;
+    }
+
+    function fillFinParams() {
+        var p = currentParametresFinanciers;
+        if (!p) return;
+        function setVal(id, v) { var el = $(id); if (el && v !== null && v !== undefined) el.value = v; }
+        setVal('finPrixAchat', p.prix_achat_animal);
+        setVal('finCoutEau',   p.cout_eau_m3);
+        if (isPondeuse()) {
+            setVal('finPrixOeufA', p.prix_oeuf_classe_a);
+            setVal('finPrixOeufB', p.prix_oeuf_classe_b);
+        } else {
+            setVal('finPrixVenteAnimal', p.prix_vente_animal);
+            setVal('finNbAnimaux',       p.nb_animaux_vendus);
+        }
+    }
+
+    function getNumVal(id) {
+        var el = $(id);
+        if (!el || el.value === '') return null;
+        var v = parseFloat(el.value.replace(',', '.'));
+        return isNaN(v) ? null : v;
+    }
+    function getIntVal(id) {
+        var el = $(id);
+        if (!el || el.value === '') return null;
+        var v = parseInt(el.value, 10);
+        return isNaN(v) ? null : v;
+    }
+
+    function saveParametresFinanciers() {
+        if (!currentLotInfo || !currentUser) return;
+        var pondeuse = isPondeuse();
+        var params = {
+            p_user_id:           currentUser.id,
+            p_lot_id:            currentLotInfo.id,
+            p_prix_achat_animal: getNumVal('finPrixAchat'),
+            p_cout_eau_m3:       getNumVal('finCoutEau'),
+            p_prix_oeuf_a:       pondeuse ? getNumVal('finPrixOeufA')       : null,
+            p_prix_oeuf_b:       pondeuse ? getNumVal('finPrixOeufB')       : null,
+            p_prix_vente_animal: pondeuse ? null : getNumVal('finPrixVenteAnimal'),
+            p_nb_animaux_vendus: pondeuse ? null : getIntVal('finNbAnimaux')
+        };
+        supabase.rpc('save_parametres_financiers', params).then(function(res) {
+            if (res.error) throw res.error;
+            var alertEl = $('finParamsAlert');
+            if (alertEl) {
+                alertEl.textContent = '✅ Paramètres enregistrés';
+                alertEl.style.display = '';
+                alertEl.style.color = '#16a34a';
+                setTimeout(function() { alertEl.style.display = 'none'; }, 2500);
+            }
+            // Recharger depuis la BD pour avoir l'objet à jour
+            return supabase.from('parametres_financiers_lot').select('*').eq('lot_id', currentLotInfo.id).maybeSingle();
+        }).then(function(res) {
+            if (res && res.data) {
+                currentParametresFinanciers = res.data;
+                renderResultatEconomique();
+            }
+        }).catch(function(err) {
+            var alertEl = $('finParamsAlert');
+            if (alertEl) {
+                alertEl.textContent = '❌ Erreur : ' + esc(err.message || String(err));
+                alertEl.style.display = '';
+                alertEl.style.color = '#dc2626';
+            }
+        });
+    }
+
+    // ── Upload et OCR ─────────────────────────────────────────────
+    function handleFactureDrop(ev) {
+        ev.preventDefault();
+        if ($('finUploadArea')) $('finUploadArea').classList.remove('dragover');
+        var files = ev.dataTransfer.files;
+        if (files && files[0]) processFactureFile(files[0]);
+    }
+
+    function handleFactureFileSelect(input) {
+        if (input.files && input.files[0]) processFactureFile(input.files[0]);
+        input.value = '';
+    }
+
+    function processFactureFile(file) {
+        if (file.size > 10 * 1024 * 1024) { alert('Fichier trop volumineux (max 10 Mo).'); return; }
+        var allowed = ['image/jpeg','image/png','image/heic','image/heif','application/pdf'];
+        if (allowed.indexOf(file.type) === -1) { alert('Format non supporté. Utilisez JPG, PNG ou PDF.'); return; }
+
+        // Afficher le formulaire OCR vide + indicateur de chargement
+        _finFileName = file.name;
+        _finFileUrl  = null;
+        var form = $('finOcrForm');
+        if (form) form.classList.add('show');
+        var loading = $('finOcrLoading');
+        if (loading) loading.classList.add('show');
+        ['finOcrDate','finOcrNumero','finOcrTypeAliment','finOcrHT','finOcrTTC'].forEach(function(id) {
+            var el = $(id); if (el) el.value = '';
+        });
+        if ($('finOcrFichierNom')) $('finOcrFichierNom').value = file.name;
+
+        // 1. Upload vers Supabase Storage
+        var ext = file.name.split('.').pop() || 'bin';
+        var storagePath = (currentLotInfo ? currentLotInfo.id : 'lot') + '/' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.' + ext;
+        supabase.storage.from('factures-aliment')
+            .upload(storagePath, file, { contentType: file.type, upsert: false })
+            .then(function(res) {
+                if (res.error) throw res.error;
+                var pub = supabase.storage.from('factures-aliment').getPublicUrl(storagePath);
+                _finFileUrl = pub.data && pub.data.publicUrl ? pub.data.publicUrl : null;
+                // 2. Appel OCR n8n
+                return appelN8NOcr(_finFileUrl, file.name);
+            })
+            .then(function(extracted) {
+                if (loading) loading.classList.remove('show');
+                if (!extracted) return;
+                if (extracted.date_facture && $('finOcrDate'))       $('finOcrDate').value        = extracted.date_facture;
+                if (extracted.numero_facture && $('finOcrNumero'))   $('finOcrNumero').value      = extracted.numero_facture;
+                if (extracted.type_aliment && $('finOcrTypeAliment'))$('finOcrTypeAliment').value = extracted.type_aliment;
+                if (extracted.montant_ht   !== undefined && $('finOcrHT'))  $('finOcrHT').value  = extracted.montant_ht;
+                if (extracted.montant_ttc  !== undefined && $('finOcrTTC')) $('finOcrTTC').value  = extracted.montant_ttc;
+            })
+            .catch(function(err) {
+                if (loading) loading.classList.remove('show');
+                console.error('OCR error:', err);
+                alert('Le fichier a été uploadé mais l\'extraction automatique a échoué. Veuillez saisir les données manuellement.');
+            });
+    }
+
+    function appelN8NOcr(fileUrl, fileName) {
+        return fetch(N8N_OCR_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_url: fileUrl, file_name: fileName })
+        })
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+            try { return JSON.parse(text); }
+            catch(e) { return null; }
+        })
+        .catch(function() { return null; });
+    }
+
+    function enregistrerFacture() {
+        if (!currentLotInfo || !currentUser) return;
+        var dateVal = $('finOcrDate')        ? $('finOcrDate').value        : '';
+        var num     = $('finOcrNumero')      ? $('finOcrNumero').value.trim(): '';
+        var type    = $('finOcrTypeAliment') ? $('finOcrTypeAliment').value.trim() : '';
+        var ht      = $('finOcrHT')          ? parseFloat($('finOcrHT').value)  : NaN;
+        var ttc     = $('finOcrTTC')         ? parseFloat($('finOcrTTC').value) : NaN;
+
+        supabase.rpc('save_facture_aliment', {
+            p_user_id:        currentUser.id,
+            p_lot_id:         currentLotInfo.id,
+            p_date_facture:   dateVal || null,
+            p_numero_facture: num    || null,
+            p_type_aliment:   type   || null,
+            p_montant_ht:     isNaN(ht)  ? null : ht,
+            p_montant_ttc:    isNaN(ttc) ? null : ttc,
+            p_fichier_url:    _finFileUrl  || null,
+            p_fichier_nom:    _finFileName || null
+        }).then(function(res) {
+            if (res.error) throw res.error;
+            annulerFacture();
+            // Recharger la liste
+            return supabase.from('factures_aliment').select('*').eq('lot_id', currentLotInfo.id).order('date_facture', { ascending: true });
+        }).then(function(res) {
+            currentFacturesAliment = res.data || [];
+            renderFacturesList();
+            renderResultatEconomique();
+        }).catch(function(err) {
+            alert('Erreur enregistrement facture : ' + (err.message || String(err)));
+        });
+    }
+
+    function annulerFacture() {
+        var form = $('finOcrForm');
+        if (form) form.classList.remove('show');
+        _finFileUrl = null; _finFileName = null;
+    }
+
+    function supprimerFacture(id) {
+        if (!confirm('Supprimer cette facture ?')) return;
+        supabase.rpc('delete_facture_aliment', { p_user_id: currentUser.id, p_facture_id: id })
+            .then(function(res) {
+                if (res.error) throw res.error;
+                return supabase.from('factures_aliment').select('*').eq('lot_id', currentLotInfo.id).order('date_facture', { ascending: true });
+            }).then(function(res) {
+                currentFacturesAliment = res.data || [];
+                renderFacturesList();
+                renderResultatEconomique();
+            }).catch(function(err) {
+                alert('Erreur suppression : ' + (err.message || String(err)));
+            });
+    }
+
+    function renderFacturesList() {
+        var container = $('finFacturesList');
+        if (!container) return;
+        var factures = currentFacturesAliment;
+        if (!factures || factures.length === 0) {
+            container.innerHTML = '<div style="font-size:0.78rem;color:var(--text-dim);padding:0.5rem 0;">Aucune facture enregistrée pour ce lot.</div>';
+            return;
+        }
+        var html = '<table class="fin-factures-table"><thead><tr>'
+            + '<th>Date</th><th>N° Facture</th><th>Type aliment</th>'
+            + '<th style="text-align:right;">HT (€)</th><th style="text-align:right;">TTC (€)</th>'
+            + '<th>Fichier</th><th></th>'
+            + '</tr></thead><tbody>';
+
+        var totalTTC = 0;
+        factures.forEach(function(f) {
+            totalTTC += (f.montant_ttc || 0);
+            html += '<tr>'
+                + '<td>' + (f.date_facture ? new Date(f.date_facture + 'T12:00:00').toLocaleDateString('fr-FR') : '—') + '</td>'
+                + '<td>' + esc(f.numero_facture || '—') + '</td>'
+                + '<td>' + esc(f.type_aliment   || '—') + '</td>'
+                + '<td style="text-align:right;">' + (f.montant_ht  != null ? parseFloat(f.montant_ht).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—') + '</td>'
+                + '<td style="text-align:right;font-weight:600;">' + (f.montant_ttc != null ? parseFloat(f.montant_ttc).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—') + '</td>'
+                + '<td>' + (f.fichier_url ? '<a href="' + esc(f.fichier_url) + '" target="_blank">' + esc(f.fichier_nom || 'Voir') + '</a>' : '—') + '</td>'
+                + '<td><button class="del-btn" onclick="supprimerFacture(\'' + f.id + '\')" title="Supprimer">🗑️</button></td>'
+                + '</tr>';
+        });
+        html += '</tbody><tfoot><tr>'
+            + '<td colspan="4" style="text-align:right;font-weight:700;font-size:0.8rem;padding-top:0.4rem;">Total TTC aliment :</td>'
+            + '<td style="text-align:right;font-weight:700;color:var(--blue);">'
+            + totalTTC.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €</td>'
+            + '<td colspan="2"></td></tr></tfoot></table>';
+
+        container.innerHTML = html;
+    }
+
+    // ── Calcul et graphique économique ────────────────────────────
+    function calcResultatJour(jourAge, dateStr, rows, params, factures) {
+        // rows : résultat de buildTableauRows() trié par jour_age croissant
+        // Recettes cumulées Pondeuse : œufs collectés jusqu'au jour J
+        var recettes = 0;
+        if (isPondeuse() && params.prix_oeuf_classe_a != null) {
+            var cumA = 0, cumB = 0;
+            rows.forEach(function(r) {
+                if (r.jour_age <= jourAge) {
+                    cumA += (r.oeufs_classe_a || 0);
+                    cumB += (r.oeufs_classe_b || 0);
+                }
+            });
+            recettes = (cumA * (params.prix_oeuf_classe_a || 0) + cumB * (params.prix_oeuf_classe_b || 0)) / 100;
+        } else if (!isPondeuse() && params.prix_vente_animal != null && params.nb_animaux_vendus != null) {
+            // Poulet de chair : recette comptée dès le 1er jour (lot vendu globalement)
+            recettes = params.prix_vente_animal * params.nb_animaux_vendus;
+        }
+
+        // Coût fixe : achat animaux
+        var coutAchat = (params.prix_achat_animal || 0) * ((currentLotInfo && currentLotInfo.effectif_depart) || 0);
+
+        // Coût aliment : factures dont la date est <= dateStr
+        var coutAliment = 0;
+        factures.forEach(function(f) {
+            if (!f.date_facture || !dateStr) { coutAliment += (f.montant_ttc || 0); return; }
+            if (f.date_facture <= dateStr) coutAliment += (f.montant_ttc || 0);
+        });
+
+        // Coût eau cumulé
+        var coutEau = 0;
+        if (params.cout_eau_m3 != null) {
+            var cumLitres = 0;
+            rows.forEach(function(r) {
+                if (r.jour_age <= jourAge) cumLitres += (r.eau_litres || 0);
+            });
+            coutEau = (cumLitres / 1000) * params.cout_eau_m3;
+        }
+
+        return recettes - (coutAchat + coutAliment + coutEau);
+    }
+
+    function renderResultatEconomique() {
+        var kpiRow   = $('finKpiRow');
+        var detailEl = $('finCalcDetail');
+        if (!kpiRow) return;
+
+        var params = currentParametresFinanciers;
+        if (!params || !currentLotInfo) {
+            kpiRow.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);">Renseignez les paramètres économiques pour calculer le résultat.</div>';
+            if (detailEl) detailEl.textContent = '';
+            renderGraphiqueEconomique([], []);
+            return;
+        }
+
+        var rows    = buildTableauRows();
+        var factures = currentFacturesAliment;
+
+        // Construire la série temporelle
+        var jours = rows.filter(function(r) { return r.date_mesure; });
+        if (jours.length === 0) {
+            kpiRow.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);">Aucune donnée journalière pour calculer le résultat.</div>';
+            renderGraphiqueEconomique([], []);
+            return;
+        }
+
+        var labels = [], values = [];
+        jours.forEach(function(r) {
+            var res = calcResultatJour(r.jour_age, r.date_mesure, rows, params, factures);
+            labels.push('J' + r.jour_age);
+            values.push(parseFloat(res.toFixed(2)));
+        });
+
+        var dernierVal = values[values.length - 1];
+        var totalTTC   = factures.reduce(function(s, f) { return s + (f.montant_ttc || 0); }, 0);
+        var effectif   = (currentLotInfo && currentLotInfo.effectif_depart) || 0;
+        var coutAchatTotal = (params.prix_achat_animal || 0) * effectif;
+
+        // KPIs
+        var fmt = function(v) { return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; };
+        kpiRow.innerHTML =
+            kpi('Résultat à ce jour', fmt(dernierVal), dernierVal >= 0 ? 'positif' : 'negatif') +
+            kpi('Recettes cumulées', fmt(isPondeuse() ? calcRecettesTotales(rows, params) : (params.prix_vente_animal||0)*(params.nb_animaux_vendus||0)), '') +
+            kpi('Total aliment (TTC)', fmt(totalTTC), '') +
+            kpi('Achat animaux', fmt(coutAchatTotal), '');
+
+        // Détail du calcul
+        if (detailEl) {
+            var pondeuse = isPondeuse();
+            var txt = '';
+            if (pondeuse) {
+                var cumA = rows.reduce(function(s,r){ return s+(r.oeufs_classe_a||0); }, 0);
+                var cumB = rows.reduce(function(s,r){ return s+(r.oeufs_classe_b||0); }, 0);
+                txt = 'Recette = (' + cumA + ' œufs A × ' + (params.prix_oeuf_classe_a||0) + ' €/100'
+                    + ' + ' + cumB + ' œufs B × ' + (params.prix_oeuf_classe_b||0) + ' €/100) — '
+                    + '(achat ' + effectif + ' × ' + (params.prix_achat_animal||0) + ' € + aliment TTC ' + fmt(totalTTC)
+                    + ' + eau ' + fmt(calcCoutEauTotal(rows, params)) + ')';
+            } else {
+                txt = 'Recette = ' + (params.nb_animaux_vendus||0) + ' animaux × ' + (params.prix_vente_animal||0) + ' € — '
+                    + '(achat ' + effectif + ' × ' + (params.prix_achat_animal||0) + ' € + aliment TTC ' + fmt(totalTTC)
+                    + ' + eau ' + fmt(calcCoutEauTotal(rows, params)) + ')';
+            }
+            detailEl.textContent = txt;
+        }
+
+        renderGraphiqueEconomique(labels, values);
+    }
+
+    function kpi(label, value, cls) {
+        return '<div class="fin-kpi">'
+            + '<div class="fin-kpi-label">' + esc(label) + '</div>'
+            + '<div class="fin-kpi-value' + (cls ? ' ' + cls : '') + '">' + esc(value) + '</div>'
+            + '</div>';
+    }
+
+    function calcRecettesTotales(rows, params) {
+        var cumA = rows.reduce(function(s,r){ return s+(r.oeufs_classe_a||0); }, 0);
+        var cumB = rows.reduce(function(s,r){ return s+(r.oeufs_classe_b||0); }, 0);
+        return (cumA * (params.prix_oeuf_classe_a||0) + cumB * (params.prix_oeuf_classe_b||0)) / 100;
+    }
+
+    function calcCoutEauTotal(rows, params) {
+        if (!params.cout_eau_m3) return 0;
+        var cumLitres = rows.reduce(function(s,r){ return s+(r.eau_litres||0); }, 0);
+        return (cumLitres / 1000) * params.cout_eau_m3;
+    }
+
+    function renderGraphiqueEconomique(labels, values) {
+        var canvas = $('chartFinancier');
+        if (!canvas) return;
+        if (_chartFinancier) { try { _chartFinancier.destroy(); } catch(e){} _chartFinancier = null; }
+        if (!labels || labels.length === 0) return;
+
+        var positifColor = 'rgba(22,163,74,0.25)';
+        var negatifColor = 'rgba(220,38,38,0.20)';
+        var lineColor    = values[values.length-1] >= 0 ? '#16a34a' : '#dc2626';
+
+        _chartFinancier = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Résultat cumulé (€)',
+                    data: values,
+                    borderColor: lineColor,
+                    backgroundColor: function(ctx) {
+                        var chart = ctx.chart;
+                        var grad  = chart.ctx.createLinearGradient(0, 0, 0, chart.height);
+                        grad.addColorStop(0, values[values.length-1] >= 0 ? positifColor : negatifColor);
+                        grad.addColorStop(1, 'rgba(0,0,0,0)');
+                        return grad;
+                    },
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 400 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var v = ctx.parsed.y;
+                                return (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+                    y: {
+                        ticks: {
+                            font: { size: 10 },
+                            callback: function(v) {
+                                return (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' €';
+                            }
+                        },
+                        afterBuildTicks: function(scale) {
+                            // Ligne de zéro bien visible
+                            scale.ticks = scale.ticks.filter(function(t){ return true; });
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     // ── Initialiser l'onglet Déclarations ────────────────────────
     function initDeclarationTab() {
         if (!currentLotInfo) {
@@ -11908,6 +12572,14 @@
         XLSX.writeFile(wb, filename);
     }
     window.exportTableauExcel = exportTableauExcel;
+
+    // Analyse Financière
+    window.saveParametresFinanciers  = saveParametresFinanciers;
+    window.handleFactureDrop         = handleFactureDrop;
+    window.handleFactureFileSelect   = handleFactureFileSelect;
+    window.enregistrerFacture        = enregistrerFacture;
+    window.annulerFacture            = annulerFacture;
+    window.supprimerFacture          = supprimerFacture;
 
     // Déclarations sortie sur le parcours
     window.selectCdc                   = selectCdc;
