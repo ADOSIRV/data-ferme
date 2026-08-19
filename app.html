@@ -174,6 +174,27 @@
         .fin-ocr-loading { display: none; font-size: 0.8rem; color: var(--blue); padding: 0.3rem 0; }
         .fin-ocr-loading.show { display: block; }
 
+        /* ── Documents lot ── */
+        .doc-section { margin-bottom: 1.5rem; }
+        .doc-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+        .doc-upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; color: var(--text-dim); }
+        .doc-upload-area:hover, .doc-upload-area.dragover { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+        .doc-upload-icon { font-size: 2rem; margin-bottom: 0.4rem; }
+        .doc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+        @media (max-width: 600px) { .doc-form-grid { grid-template-columns: 1fr; } }
+        .doc-form-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.06em; }
+        .doc-form-field select, .doc-form-field input, .doc-form-field textarea { width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 0.88rem; font-family: inherit; box-sizing: border-box; }
+        .doc-form-field select:focus, .doc-form-field input:focus, .doc-form-field textarea:focus { outline: none; border-color: var(--blue); }
+        .doc-form-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .doc-table th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); padding: 0.4rem 0.6rem; border-bottom: 2px solid var(--border); text-align: left; }
+        .doc-table td { padding: 0.6rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .doc-table tr:last-child td { border-bottom: none; }
+        .doc-type-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: var(--blue-light); color: var(--blue); white-space: nowrap; }
+        .doc-file-link { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--blue); text-decoration: none; font-size: 0.8rem; }
+        .doc-file-link:hover { text-decoration: underline; }
+        .doc-empty { text-align: center; padding: 2rem; color: var(--text-dim); font-size: 0.9rem; }
+        .doc-upload-progress { font-size: 0.82rem; color: var(--blue); margin-top: 0.5rem; }
         /* ── Déclarations sortie sur le parcours ── */
         .decl-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 1.2rem 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
         .decl-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -2057,6 +2078,9 @@
             <button class="admin-menu-btn" id="menuCooperatives" data-panel="cooperatives">
                 <span class="menu-icon">🤝</span> Coopératives
             </button>
+            <button class="admin-menu-btn" id="menuTypesDocuments" data-panel="typesDocuments">
+                <span class="menu-icon">📄</span> Types de documents
+            </button>
         </div>
     </div>
 
@@ -2160,6 +2184,7 @@
                 <button class="exploit-tab" data-tab="tableau">📋 Données exploitation</button>
                 <button class="exploit-tab" data-tab="declaration" id="tabDeclaration" style="display:none;">🌿 Déclarations</button>
                 <button class="exploit-tab" data-tab="financier" id="tabFinancier" style="display:none;">💶 Analyse Financière</button>
+                <button class="exploit-tab" data-tab="documents" id="tabDocuments" style="display:none;">📄 Documents</button>
             </div>
 
             <!-- ── Panel : Graphiques ── -->
@@ -2521,6 +2546,52 @@
 
                 </div><!-- /finContent -->
             </div><!-- /exploitFinancier -->
+
+            <!-- ──────────────────────────────────────────────────────────────
+                 ONGLET : Documents du lot
+                 ────────────────────────────────────────────────────────────── -->
+            <div class="exploit-panel" id="exploitDocuments">
+                <div class="card" style="margin-bottom:1rem;" id="docUploadSection">
+                    <div class="doc-section-title">📎 Ajouter un document</div>
+                    <div class="doc-upload-area" id="docUploadArea"
+                         onclick="document.getElementById('docFileInput').click()"
+                         ondragover="event.preventDefault();this.classList.add('dragover')"
+                         ondragleave="this.classList.remove('dragover')"
+                         ondrop="handleDocDrop(event)">
+                        <div class="doc-upload-icon">📎</div>
+                        <div style="font-weight:600; margin-bottom:0.2rem;">Glissez un fichier ici ou cliquez pour sélectionner</div>
+                        <div style="font-size:0.78rem;">PDF, JPEG, PNG — 10 Mo maximum</div>
+                    </div>
+                    <input type="file" id="docFileInput" style="display:none;"
+                           accept=".pdf,.jpg,.jpeg,.png,.heic,image/jpeg,image/png,image/heic,application/pdf"
+                           onchange="handleDocFileSelect(event)">
+                    <div class="doc-upload-progress" id="docUploadProgress" style="display:none;"></div>
+                    <div id="docForm" style="display:none; margin-top:1rem;">
+                        <div class="doc-form-grid">
+                            <div class="doc-form-field">
+                                <label>Type de document *</label>
+                                <select id="docTypeSelect"><option value="">— Sélectionner —</option></select>
+                            </div>
+                            <div class="doc-form-field">
+                                <label>Fichier sélectionné</label>
+                                <input type="text" id="docFileName" readonly style="cursor:default; opacity:0.7;">
+                            </div>
+                        </div>
+                        <div class="doc-form-field" style="margin-top:0.5rem;">
+                            <label>Commentaire</label>
+                            <textarea id="docCommentaire" rows="2" placeholder="Description, remarque…" style="resize:vertical; width:100%; padding:0.55rem 0.75rem; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:0.88rem; font-family:inherit; box-sizing:border-box;"></textarea>
+                        </div>
+                        <div class="doc-form-actions">
+                            <button class="btn btn-primary btn-sm" onclick="enregistrerDocument()">💾 Enregistrer le document</button>
+                            <button class="btn btn-sm" onclick="annulerDocument()">Annuler</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="doc-section-title">📋 Documents du lot</div>
+                    <div id="docListContainer"><div class="doc-empty">Chargement…</div></div>
+                </div>
+            </div><!-- /exploitDocuments -->
 
             <!-- Empty -->
             <div class="chart-card show" id="emptyState">
@@ -2990,6 +3061,56 @@
                 </div>
             </div>
         </div><!-- /panelCooperatives -->
+
+        <!-- PANEL: Types de documents (admin uniquement) -->
+        <div class="admin-panel" id="panelTypesDocuments">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">📄</span>
+                <div>
+                    <div class="admin-panel-title">Types de documents</div>
+                    <div class="admin-panel-subtitle">Gérer la liste des types de documents disponibles pour les lots — les éleveurs les sélectionnent lors de l'ajout de documents</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="alert" id="typesDocsAlert"></div>
+                <!-- Formulaire d'ajout / édition -->
+                <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1rem; margin-bottom:1rem;">
+                    <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-dim); margin-bottom:0.75rem;" id="typesDocsFormTitle">➕ Nouveau type de document</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:0.75rem; align-items:end;">
+                        <div>
+                            <label style="display:block;font-size:0.72rem;font-weight:600;color:var(--text-dim);margin-bottom:0.25rem;text-transform:uppercase;">Nom *</label>
+                            <input type="text" id="typesDocsNom" placeholder="Ex : Ordonnance vétérinaire" class="form-input" style="width:100%;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.72rem;font-weight:600;color:var(--text-dim);margin-bottom:0.25rem;text-transform:uppercase;">Description (optionnel)</label>
+                            <input type="text" id="typesDocsDesc" placeholder="Description courte…" class="form-input" style="width:100%;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                        </div>
+                        <div style="display:flex;gap:0.4rem;">
+                            <button class="btn btn-primary btn-sm" onclick="saveTypeDocument()" id="btnSaveTypeDoc">💾 Enregistrer</button>
+                            <button class="btn btn-sm" onclick="cancelTypeDocEdit()" id="btnCancelTypeDoc" style="display:none;">✕</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="typesDocsEditId">
+                </div>
+                <!-- Liste des types -->
+                <div style="overflow-x:auto;">
+                    <table class="souches-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Description</th>
+                                <th style="text-align:center;">Actif</th>
+                                <th style="text-align:center;">Utilisé par</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="typesDocsTbody">
+                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /panelTypesDocuments -->
 
         </div><!-- /sectionExploitation -->
 
@@ -3507,7 +3628,8 @@
         if (panelName === 'typesLot')   loadAdminTypesLot();
         if (panelName === 'bdAvicole')  initBdAvicolePanel();
         if (panelName === 'souches')       loadAdminSouches();
-        if (panelName === 'cooperatives')  loadAdminCooperatives();
+        if (panelName === 'cooperatives')   loadAdminCooperatives();
+        if (panelName === 'typesDocuments') loadTypesDocsAdmin();
     }
 
     // =====================================================
@@ -5304,9 +5426,13 @@
     // ── Données financières du lot courant ──────────────────────────────────
     var currentParametresFinanciers = null;
     var currentFacturesAliment      = [];
-    var _finFileUrl                 = null;  // URL Storage après upload
-    var _finFileName                = null;  // nom du fichier uploadé
-    var _chartFinancier             = null;  // instance Chart.js graphique financier
+    var _finFileUrl                 = null;
+    var _finFileName                = null;
+    var _chartFinancier             = null;
+    // ── Documents du lot courant ─────────────────────────────────────────────
+    var currentDocumentsLot  = [];
+    var _docPendingFile      = null;
+    var _docPendingFileUrl   = null;
     // Toutes les corrections du lot (actif=true et actif=false) pour le journal
     var allCorrections = [];
     // Map des corrections ACTIVES : clé = "jour_age|champ" → objet correction
@@ -5854,6 +5980,7 @@
         $('exploitTableau').classList.remove('show');
         if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
+        if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
 
         if (tab === 'graphiques') {
             $('exploitGraphiques').classList.add('show');
@@ -5866,6 +5993,11 @@
             if ($('exploitFinancier')) {
                 $('exploitFinancier').classList.add('show');
                 if (!silent) initAnalyseFinanciere();
+            }
+        } else if (tab === 'documents') {
+            if ($('exploitDocuments')) {
+                $('exploitDocuments').classList.add('show');
+                if (!silent) initDocumentsTab();
             }
         } else {
             // tableau
@@ -5979,27 +6111,46 @@
         if (tabFin) {
             tabFin.style.display = (currentUser && ['eleveur','admin'].indexOf(currentUser.role) !== -1) ? '' : 'none';
         }
+        // Onglet Documents — éleveur, admin, technicien
+        var tabDoc = $('tabDocuments');
+        if (tabDoc) {
+            tabDoc.style.display = (currentUser && ['eleveur','admin','technicien'].indexOf(currentUser.role) !== -1) ? '' : 'none';
+        }
+        // Masquer la zone upload pour les techniciens (lecture seule)
+        if ($('docUploadSection')) {
+            $('docUploadSection').style.display = (currentUser && currentUser.role === 'technicien') ? 'none' : '';
+        }
         // Afficher le bon panel selon l'onglet actif
         if (currentExploitTab === 'declaration') {
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             $('exploitTableau').classList.remove('show');
-            if ($('exploitFinancier')) $('exploitFinancier').classList.remove('show');
+            if ($('exploitFinancier'))  $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))  $('exploitDocuments').classList.remove('show');
         } else if (currentExploitTab === 'financier') {
             if ($('exploitFinancier')) $('exploitFinancier').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             $('exploitTableau').classList.remove('show');
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+            if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
+        } else if (currentExploitTab === 'documents') {
+            if ($('exploitDocuments')) $('exploitDocuments').classList.add('show');
+            $('exploitGraphiques').classList.remove('show');
+            $('exploitTableau').classList.remove('show');
+            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
         } else if (currentExploitTab === 'tableau') {
             $('exploitTableau').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
-            if ($('exploitFinancier')) $('exploitFinancier').classList.remove('show');
+            if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
         } else {
             $('exploitGraphiques').classList.add('show');
             $('exploitTableau').classList.remove('show');
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
-            if ($('exploitFinancier')) $('exploitFinancier').classList.remove('show');
+            if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
             $('graphsContainer').classList.add('show');
             $('statsRow').classList.add('show');
             $('exportSection').classList.add('show');
@@ -6019,6 +6170,7 @@
         $('exploitTableau').classList.remove('show');
         if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
+        if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
         $('graphsContainer').classList.remove('show');
         $('statsRow').classList.remove('show');
         $('exportSection').classList.remove('show');
@@ -6028,7 +6180,7 @@
         document.querySelectorAll('.exploit-tab').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-tab') === 'graphiques');
         });
-        // Vider les corrections, déclarations et données financières
+        // Vider les corrections, déclarations, données financières et documents
         allCorrections = [];
         activeCorrections = {};
         currentDeclarations = [];
@@ -6036,6 +6188,8 @@
         currentFacturesAliment = [];
         _finFileUrl = null; _finFileName = null;
         if (_chartFinancier) { try { _chartFinancier.destroy(); } catch(e){} _chartFinancier = null; }
+        currentDocumentsLot = [];
+        _docPendingFile = null; _docPendingFileUrl = null;
     }
     
     // =====================================================
@@ -11782,6 +11936,290 @@
         });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // ONGLET DOCUMENTS DU LOT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    var N8N_DOC_BUCKET = 'documents-lot';
+
+    function initDocumentsTab() {
+        if (!currentLotInfo) return;
+        annulerDocument();
+        loadTypesDocuments().then(function(types) {
+            fillDocTypeSelect(types);
+        });
+        loadDocumentsLot();
+    }
+
+    function loadTypesDocuments() {
+        return supabase.from('types_documents_lot')
+            .select('id,nom,ordre')
+            .eq('is_active', true)
+            .order('ordre', { ascending: true })
+            .then(function(r) { return r.data || []; });
+    }
+
+    function fillDocTypeSelect(types) {
+        var sel = $('docTypeSelect');
+        if (!sel) return;
+        var cur = sel.value;
+        sel.innerHTML = '<option value="">— Sélectionner —</option>';
+        types.forEach(function(t) {
+            var o = document.createElement('option');
+            o.value = t.id;
+            o.textContent = t.nom;
+            sel.appendChild(o);
+        });
+        if (cur) sel.value = cur;
+    }
+
+    function loadDocumentsLot() {
+        if (!currentLotInfo) return;
+        var cont = $('docListContainer');
+        if (cont) cont.innerHTML = '<div class="doc-empty">Chargement…</div>';
+        supabase.from('documents_lot')
+            .select('id,lot_id,commentaire,fichier_url,fichier_nom,fichier_taille,fichier_mime,created_at,type_document_id,types_documents_lot(nom)')
+            .eq('lot_id', currentLotInfo.id)
+            .order('created_at', { ascending: false })
+            .then(function(r) {
+                currentDocumentsLot = r.data || [];
+                renderDocumentsList();
+            });
+    }
+
+    function renderDocumentsList() {
+        var cont = $('docListContainer');
+        if (!cont) return;
+        if (!currentDocumentsLot.length) {
+            cont.innerHTML = '<div class="doc-empty">Aucun document attaché à ce lot.</div>';
+            return;
+        }
+        var canDelete = currentUser && ['eleveur','admin'].indexOf(currentUser.role) !== -1;
+        var rows = currentDocumentsLot.map(function(d) {
+            var typNom = (d.types_documents_lot && d.types_documents_lot.nom) ? d.types_documents_lot.nom : '—';
+            var dateStr = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
+            var taille = d.fichier_taille ? (d.fichier_taille < 1048576 ? Math.round(d.fichier_taille/1024) + ' Ko' : (d.fichier_taille/1048576).toFixed(1) + ' Mo') : '';
+            var ext = (d.fichier_nom || '').split('.').pop().toLowerCase();
+            var icon = (['jpg','jpeg','png','heic'].indexOf(ext) !== -1) ? '🖼️' : '📄';
+            var delBtn = canDelete ? '<button class="btn btn-sm" style="color:#ef4444;border-color:#ef4444;padding:0.2rem 0.5rem;" onclick="supprimerDocument(\''+d.id+'\')">🗑️</button>' : '';
+            return '<tr>'
+                + '<td><span class="doc-type-badge">'+typNom+'</span></td>'
+                + '<td style="color:var(--text-dim);font-size:0.83rem;">'+(d.commentaire||'—')+'</td>'
+                + '<td style="font-size:0.8rem;white-space:nowrap;">'+dateStr+'</td>'
+                + '<td>'+(d.fichier_url ? '<a class="doc-file-link" href="'+d.fichier_url+'" target="_blank" rel="noopener">'+icon+' '+(d.fichier_nom||'Ouvrir')+(taille?' <span style="color:var(--text-dim);font-size:0.75rem;">('+taille+')</span>':'')+'</a>' : '—')+'</td>'
+                + '<td style="text-align:right;">'+delBtn+'</td>'
+                + '</tr>';
+        }).join('');
+        cont.innerHTML = '<div style="overflow-x:auto;"><table class="doc-table">'
+            + '<thead><tr><th>Type</th><th>Commentaire</th><th>Date</th><th>Fichier</th><th></th></tr></thead>'
+            + '<tbody>'+rows+'</tbody></table></div>';
+    }
+
+    function handleDocDrop(e) {
+        e.preventDefault();
+        if ($('docUploadArea')) $('docUploadArea').classList.remove('dragover');
+        var files = e.dataTransfer && e.dataTransfer.files;
+        if (files && files.length > 0) processDocFile(files[0]);
+    }
+
+    function handleDocFileSelect(e) {
+        var files = e.target && e.target.files;
+        if (files && files.length > 0) processDocFile(files[0]);
+        if (e.target) e.target.value = '';
+    }
+
+    function processDocFile(file) {
+        var allowed = ['application/pdf','image/jpeg','image/png','image/heic','image/jpg'];
+        if (allowed.indexOf(file.type) === -1 && !file.name.match(/\.(pdf|jpg|jpeg|png|heic)$/i)) {
+            alert('Format non autorisé. Veuillez sélectionner un PDF, JPEG ou PNG.');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Fichier trop volumineux (max 10 Mo).');
+            return;
+        }
+        _docPendingFile = file;
+        _docPendingFileUrl = null;
+        if ($('docFileName')) $('docFileName').value = file.name;
+        if ($('docForm')) $('docForm').style.display = '';
+        if ($('docUploadArea')) $('docUploadArea').style.display = 'none';
+    }
+
+    function annulerDocument() {
+        _docPendingFile = null;
+        _docPendingFileUrl = null;
+        if ($('docForm')) { $('docForm').style.display = 'none'; }
+        if ($('docUploadArea')) $('docUploadArea').style.display = '';
+        if ($('docTypeSelect')) $('docTypeSelect').value = '';
+        if ($('docCommentaire')) $('docCommentaire').value = '';
+        if ($('docFileName')) $('docFileName').value = '';
+        if ($('docUploadProgress')) { $('docUploadProgress').style.display = 'none'; $('docUploadProgress').textContent = ''; }
+    }
+
+    function enregistrerDocument() {
+        if (!_docPendingFile) { alert('Aucun fichier sélectionné.'); return; }
+        var typeId = $('docTypeSelect') ? $('docTypeSelect').value : '';
+        if (!typeId) { alert('Veuillez sélectionner un type de document.'); return; }
+        var commentaire = $('docCommentaire') ? $('docCommentaire').value.trim() : '';
+        var prog = $('docUploadProgress');
+        if (prog) { prog.style.display = ''; prog.textContent = '⏳ Upload en cours…'; }
+
+        var ts = Date.now();
+        var ext = _docPendingFile.name.split('.').pop();
+        var path = 'lot_' + currentLotInfo.id + '/' + ts + '_' + _docPendingFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        supabase.storage.from(N8N_DOC_BUCKET)
+            .upload(path, _docPendingFile, { upsert: false, contentType: _docPendingFile.type })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                return supabase.storage.from(N8N_DOC_BUCKET).getPublicUrl(path);
+            })
+            .then(function(r) {
+                var url = r.data && r.data.publicUrl;
+                return supabase.rpc('save_document_lot', {
+                    p_user_id: currentUser.id,
+                    p_lot_id: currentLotInfo.id,
+                    p_type_document_id: typeId,
+                    p_commentaire: commentaire || null,
+                    p_fichier_url: url,
+                    p_fichier_nom: _docPendingFile.name,
+                    p_fichier_taille: _docPendingFile.size,
+                    p_fichier_mime: _docPendingFile.type
+                });
+            })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                if (prog) { prog.style.display = 'none'; }
+                annulerDocument();
+                loadDocumentsLot();
+            })
+            .catch(function(err) {
+                if (prog) { prog.textContent = '❌ Erreur : ' + (err.message || err); }
+                console.error('save_document_lot:', err);
+            });
+    }
+
+    function supprimerDocument(docId) {
+        if (!confirm('Supprimer ce document ? Cette action est irréversible.')) return;
+        // Chercher l'URL pour supprimer du Storage
+        var doc = currentDocumentsLot.find(function(d) { return d.id === docId; });
+        supabase.rpc('delete_document_lot', { p_user_id: currentUser.id, p_doc_id: docId })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                // Supprimer du Storage si possible (URL connue)
+                if (doc && doc.fichier_url) {
+                    var parts = doc.fichier_url.split('/' + N8N_DOC_BUCKET + '/');
+                    if (parts.length > 1) {
+                        supabase.storage.from(N8N_DOC_BUCKET).remove([parts[1]]).catch(function(){});
+                    }
+                }
+                loadDocumentsLot();
+            })
+            .catch(function(err) {
+                alert('Erreur lors de la suppression : ' + (err.message || err));
+                console.error('delete_document_lot:', err);
+            });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ADMIN — Types de documents
+    // ═══════════════════════════════════════════════════════════════════════
+
+    var typesDocsCache = [];
+
+    function loadTypesDocsAdmin() {
+        supabase.from('types_documents_lot')
+            .select('id,nom,description,ordre,is_active')
+            .order('ordre', { ascending: true })
+            .then(function(r) {
+                typesDocsCache = r.data || [];
+                renderTypesDocsAdmin();
+            });
+    }
+
+    function renderTypesDocsAdmin() {
+        var tbody = $('typesDocsTbody');
+        if (!tbody) return;
+        if (!typesDocsCache.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text-dim);">Aucun type défini</td></tr>';
+            return;
+        }
+        tbody.innerHTML = typesDocsCache.map(function(t) {
+            return '<tr>'
+                + '<td style="font-weight:600;">'+escHtml(t.nom)+'</td>'
+                + '<td style="color:var(--text-dim);font-size:0.85rem;">'+escHtml(t.description||'—')+'</td>'
+                + '<td style="text-align:center;">'+(t.is_active ? '<span style="color:#22c55e;">✔ Actif</span>' : '<span style="color:var(--text-dim);">Inactif</span>')+'</td>'
+                + '<td style="text-align:center;" id="usageTypeDoc_'+t.id+'">…</td>'
+                + '<td style="text-align:right;white-space:nowrap;">'
+                + '<button class="btn btn-sm" style="margin-right:0.3rem;" onclick="editTypeDocument(\''+t.id+'\')">✏️</button>'
+                + '<button class="btn btn-sm" style="color:#ef4444;border-color:#ef4444;" onclick="deleteTypeDocument(\''+t.id+'\')">🗑️</button>'
+                + '</td></tr>';
+        }).join('');
+        // Charger les compteurs d'utilisation
+        typesDocsCache.forEach(function(t) {
+            supabase.from('documents_lot').select('id', { count: 'exact', head: true }).eq('type_document_id', t.id)
+                .then(function(r) {
+                    var el = $('usageTypeDoc_' + t.id);
+                    if (el) el.textContent = (r.count || 0) + ' doc(s)';
+                });
+        });
+    }
+
+    function saveTypeDocument() {
+        var nom = $('typesDocsNom') ? $('typesDocsNom').value.trim() : '';
+        var desc = $('typesDocsDesc') ? $('typesDocsDesc').value.trim() : '';
+        var editId = $('typesDocsEditId') ? $('typesDocsEditId').value : '';
+        if (!nom) { alert('Le nom est obligatoire.'); return; }
+        var alert_ = $('typesDocsAlert');
+        if (alert_) alert_.textContent = '';
+        supabase.rpc('save_type_document_lot', {
+            p_user_id: currentUser.id,
+            p_id: editId || null,
+            p_nom: nom,
+            p_desc: desc || null,
+            p_ordre: 0,
+            p_is_active: true
+        }).then(function(r) {
+            if (r.error) throw r.error;
+            cancelTypeDocEdit();
+            loadTypesDocsAdmin();
+        }).catch(function(err) {
+            if (alert_) alert_.textContent = '❌ ' + (err.message || err);
+        });
+    }
+
+    function editTypeDocument(id) {
+        var t = typesDocsCache.find(function(x) { return x.id === id; });
+        if (!t) return;
+        if ($('typesDocsNom')) $('typesDocsNom').value = t.nom;
+        if ($('typesDocsDesc')) $('typesDocsDesc').value = t.description || '';
+        if ($('typesDocsEditId')) $('typesDocsEditId').value = t.id;
+        if ($('typesDocsFormTitle')) $('typesDocsFormTitle').textContent = '✏️ Modifier le type de document';
+        if ($('btnCancelTypeDoc')) $('btnCancelTypeDoc').style.display = '';
+        if ($('typesDocsNom')) $('typesDocsNom').focus();
+    }
+
+    function cancelTypeDocEdit() {
+        if ($('typesDocsNom')) $('typesDocsNom').value = '';
+        if ($('typesDocsDesc')) $('typesDocsDesc').value = '';
+        if ($('typesDocsEditId')) $('typesDocsEditId').value = '';
+        if ($('typesDocsFormTitle')) $('typesDocsFormTitle').textContent = '➕ Nouveau type de document';
+        if ($('btnCancelTypeDoc')) $('btnCancelTypeDoc').style.display = 'none';
+    }
+
+    function deleteTypeDocument(id) {
+        if (!confirm('Supprimer ce type de document ?')) return;
+        var alert_ = $('typesDocsAlert');
+        if (alert_) alert_.textContent = '';
+        supabase.rpc('delete_type_document_lot', { p_user_id: currentUser.id, p_id: id })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                loadTypesDocsAdmin();
+            })
+            .catch(function(err) {
+                if (alert_) alert_.textContent = '❌ ' + (err.message || err);
+            });
+    }
+
     // ── Initialiser l'onglet Déclarations ────────────────────────
     function initDeclarationTab() {
         if (!currentLotInfo) {
@@ -12587,6 +13025,19 @@
     window.enregistrerFacture        = enregistrerFacture;
     window.annulerFacture            = annulerFacture;
     window.supprimerFacture          = supprimerFacture;
+
+    // Documents lot
+    window.handleDocDrop         = handleDocDrop;
+    window.handleDocFileSelect   = handleDocFileSelect;
+    window.enregistrerDocument   = enregistrerDocument;
+    window.annulerDocument       = annulerDocument;
+    window.supprimerDocument     = supprimerDocument;
+    // Admin — Types de documents
+    window.loadTypesDocsAdmin    = loadTypesDocsAdmin;
+    window.saveTypeDocument      = saveTypeDocument;
+    window.cancelTypeDocEdit     = cancelTypeDocEdit;
+    window.editTypeDocument      = editTypeDocument;
+    window.deleteTypeDocument    = deleteTypeDocument;
 
     // Déclarations sortie sur le parcours
     window.selectCdc                   = selectCdc;
