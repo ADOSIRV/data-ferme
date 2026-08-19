@@ -177,8 +177,9 @@
         /* ── Documents lot ── */
         .doc-section { margin-bottom: 1.5rem; }
         .doc-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
-        .doc-upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; color: var(--text-dim); }
-        .doc-upload-area:hover, .doc-upload-area.dragover { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+        .doc-upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: border-color 0.2s, background 0.2s; color: var(--text-dim); }
+        .doc-upload-area.dragover { border-color: var(--blue); background: var(--blue-light); }
+        .doc-upload-btns { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
         .doc-upload-icon { font-size: 2rem; margin-bottom: 0.4rem; }
         .doc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
         @media (max-width: 600px) { .doc-form-grid { grid-template-columns: 1fr; } }
@@ -2554,16 +2555,28 @@
                 <div class="card" style="margin-bottom:1rem;" id="docUploadSection">
                     <div class="doc-section-title">📎 Ajouter un document</div>
                     <div class="doc-upload-area" id="docUploadArea"
-                         onclick="document.getElementById('docFileInput').click()"
                          ondragover="event.preventDefault();this.classList.add('dragover')"
                          ondragleave="this.classList.remove('dragover')"
                          ondrop="handleDocDrop(event)">
-                        <div class="doc-upload-icon">📎</div>
-                        <div style="font-weight:600; margin-bottom:0.2rem;">Glissez un fichier ici ou cliquez pour sélectionner</div>
-                        <div style="font-size:0.78rem;">PDF, JPEG, PNG — 10 Mo maximum</div>
+                        <div class="doc-upload-btns">
+                            <button class="btn btn-primary" type="button"
+                                    onclick="document.getElementById('docFileInput').click()"
+                                    style="display:inline-flex;align-items:center;gap:0.4rem;">
+                                📁 Choisir un fichier
+                            </button>
+                            <button class="btn" type="button"
+                                    onclick="document.getElementById('docCameraInput').click()"
+                                    style="display:inline-flex;align-items:center;gap:0.4rem;">
+                                📷 Prendre une photo
+                            </button>
+                        </div>
+                        <div style="font-size:0.78rem;margin-top:0.6rem;color:var(--text-dim);">ou glissez un fichier ici · PDF, JPEG, PNG — 10 Mo max</div>
                     </div>
                     <input type="file" id="docFileInput" style="display:none;"
                            accept=".pdf,.jpg,.jpeg,.png,.heic,image/jpeg,image/png,image/heic,application/pdf"
+                           onchange="handleDocFileSelect(event)">
+                    <input type="file" id="docCameraInput" style="display:none;"
+                           accept="image/*" capture="environment"
                            onchange="handleDocFileSelect(event)">
                     <div class="doc-upload-progress" id="docUploadProgress" style="display:none;"></div>
                     <div id="docForm" style="display:none; margin-top:1rem;">
@@ -12025,7 +12038,8 @@
     function handleDocFileSelect(e) {
         var files = e.target && e.target.files;
         if (files && files.length > 0) processDocFile(files[0]);
-        if (e.target) e.target.value = '';
+        if ($('docFileInput')) $('docFileInput').value = '';
+        if ($('docCameraInput')) $('docCameraInput').value = '';
     }
 
     function processDocFile(file) {
