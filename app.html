@@ -12065,12 +12065,16 @@
         if (prog) { prog.style.display = ''; prog.textContent = '⏳ Upload en cours…'; }
 
         var ts = Date.now();
-        var ext = _docPendingFile.name.split('.').pop();
         var path = 'lot_' + currentLotInfo.id + '/' + ts + '_' + _docPendingFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        if (prog) { prog.style.display = ''; prog.textContent = '⏳ Étape 1/2 : upload du fichier…'; }
         supabase.storage.from(N8N_DOC_BUCKET)
             .upload(path, _docPendingFile, { upsert: false, contentType: _docPendingFile.type })
             .then(function(r) {
-                if (r.error) throw r.error;
+                if (r.error) {
+                    r.error._step = 'Storage';
+                    throw r.error;
+                }
+                if (prog) prog.textContent = '⏳ Étape 2/2 : enregistrement…';
                 return supabase.storage.from(N8N_DOC_BUCKET).getPublicUrl(path);
             })
             .then(function(r) {
@@ -12087,14 +12091,18 @@
                 });
             })
             .then(function(r) {
-                if (r.error) throw r.error;
+                if (r.error) {
+                    r.error._step = 'RPC';
+                    throw r.error;
+                }
                 if (prog) { prog.style.display = 'none'; }
                 annulerDocument();
                 loadDocumentsLot();
             })
             .catch(function(err) {
-                if (prog) { prog.textContent = '❌ Erreur : ' + (err.message || err); }
-                console.error('save_document_lot:', err);
+                var step = err._step ? ' [' + err._step + ']' : '';
+                if (prog) { prog.textContent = '❌ Erreur' + step + ' : ' + (err.message || err); }
+                console.error('enregistrerDocument' + step + ':', err);
             });
     }
 
