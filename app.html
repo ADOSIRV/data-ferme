@@ -351,9 +351,16 @@
         /* ── Onglets Exploitation ── */
         .exploit-tabs { display: none; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0; }
         .exploit-tabs.show { display: flex; }
-        .exploit-tab { padding: 0.55rem 1.1rem; border: none; background: none; border-radius: 10px 10px 0 0; font-family: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-dim); cursor: pointer; transition: all 0.18s; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .exploit-tab { padding: 0.55rem 1.1rem; border: none; background: none; border-radius: 10px 10px 0 0; font-family: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-dim); cursor: pointer; transition: all 0.18s; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
         .exploit-tab:hover { color: var(--blue); background: var(--blue-light); }
         .exploit-tab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--blue-light); }
+        @media (max-width: 640px) {
+          .exploit-tabs.show { flex-wrap: wrap; gap: 0.3rem; border-bottom: none; margin-bottom: 0.5rem; padding-bottom: 0; }
+          .exploit-tab { flex: 1 1 calc(50% - 0.15rem); min-width: calc(50% - 0.15rem); max-width: calc(50% - 0.15rem); padding: 0.5rem 0.3rem; font-size: 0.75rem; text-align: center; border-radius: 10px; border-bottom: none; border: 2px solid transparent; margin-bottom: 0; white-space: normal; line-height: 1.25; box-sizing: border-box; }
+          .exploit-tab:hover { border-color: var(--blue); }
+          .exploit-tab.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+          .exploit-tabs.show::after { content: ''; display: block; width: 100%; height: 2px; background: var(--border); margin-top: 0.3rem; }
+        }
         .exploit-panel { display: none; }
         .exploit-panel.show { display: block; }
 
