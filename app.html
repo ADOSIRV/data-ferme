@@ -6529,8 +6529,8 @@
 
         // Marqueurs d'intervention (pastilles violettes) — graphiques Croissance & Santé
         var _intervMap = {};
-        if (g.section === 'sante') {
-            var _dateMEP = currentLotInfo && currentLotInfo.date_mise_en_place;
+        if (graphId === 'sante') {
+            var _dateMEP = currentLotInfo && currentLotInfo.date_mise_place;
             (lotData.interventions_lot || []).forEach(function(interv) {
                 if (!interv.date_intervention || !_dateMEP) return;
                 var diffDays = Math.round((new Date(interv.date_intervention + 'T12:00:00') - new Date(_dateMEP + 'T12:00:00')) / 86400000);
@@ -6540,7 +6540,7 @@
                 _intervMap[ja].push({ type_nom: interv.type_nom || 'Intervention', evenement: interv.evenement_accident || '' });
             });
         }
-        var _hasIntervMarkers = g.section === 'sante' && Object.keys(_intervMap).length > 0;
+        var _hasIntervMarkers = graphId === 'sante' && Object.keys(_intervMap).length > 0;
         var _anyMarkers = _hasAlimentMarkers || _hasIntervMarkers;
 
         datasets.push({
