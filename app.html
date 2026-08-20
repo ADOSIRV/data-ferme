@@ -196,6 +196,23 @@
         .doc-file-link:hover { text-decoration: underline; }
         .doc-empty { text-align: center; padding: 2rem; color: var(--text-dim); font-size: 0.9rem; }
         .doc-upload-progress { font-size: 0.82rem; color: var(--blue); margin-top: 0.5rem; }
+        /* ── Interventions ── */
+        .interv-card { border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; margin-bottom: 0.75rem; background: var(--bg-card); }
+        .interv-card-header { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
+        .interv-type-badge { background: var(--blue); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 20px; }
+        .interv-type-badge.vet { background: #7c3aed; }
+        .interv-date { font-size: 0.8rem; color: var(--text-dim); white-space: nowrap; }
+        .interv-spacer { flex: 1; }
+        .interv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 1rem; font-size: 0.84rem; }
+        @media (max-width: 600px) { .interv-fields { grid-template-columns: 1fr; } }
+        .interv-field-label { font-size: 0.72rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+        .interv-field-val { color: var(--text); }
+        .interv-full { grid-column: 1 / -1; }
+        .interv-file-btn { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; color: var(--blue); text-decoration: none; }
+        .interv-file-btn:hover { text-decoration: underline; }
+        .interv-ordonnance-row { display: none; }
+        .interv-form-file-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.3rem; }
+        .interv-file-selected { font-size: 0.83rem; color: var(--blue); }
         /* ── Déclarations sortie sur le parcours ── */
         .decl-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 1.2rem 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
         .decl-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -2082,6 +2099,9 @@
             <button class="admin-menu-btn" id="menuTypesDocuments" data-panel="typesDocuments">
                 <span class="menu-icon">📄</span> Types de documents
             </button>
+            <button class="admin-menu-btn" id="menuTypesInterventions" data-panel="typesInterventions">
+                <span class="menu-icon">💉</span> Types d'interventions
+            </button>
         </div>
     </div>
 
@@ -2186,6 +2206,7 @@
                 <button class="exploit-tab" data-tab="declaration" id="tabDeclaration" style="display:none;">🌿 Déclarations</button>
                 <button class="exploit-tab" data-tab="financier" id="tabFinancier" style="display:none;">💶 Analyse Financière</button>
                 <button class="exploit-tab" data-tab="documents" id="tabDocuments" style="display:none;">📄 Documents</button>
+                <button class="exploit-tab" data-tab="interventions" id="tabInterventions" style="display:none;">💉 Interventions</button>
             </div>
 
             <!-- ── Panel : Graphiques ── -->
@@ -2605,6 +2626,92 @@
                     <div id="docListContainer"><div class="doc-empty">Chargement…</div></div>
                 </div>
             </div><!-- /exploitDocuments -->
+
+            <!-- ── Panel : Interventions ── -->
+            <div class="exploit-panel" id="exploitInterventions">
+                <!-- Formulaire saisie -->
+                <div class="card" style="margin-bottom:1rem;" id="intervFormSection">
+                    <div class="doc-section-title">💉 Saisir une intervention</div>
+                    <div id="intervAlertMsg" class="alert" style="display:none;"></div>
+                    <!-- Ligne 1 : Type + Date intervention -->
+                    <div class="doc-form-grid">
+                        <div class="doc-form-field">
+                            <label>Type d'intervention *</label>
+                            <select id="intervTypeSelect" onchange="onIntervTypeChange()">
+                                <option value="">— Sélectionner —</option>
+                            </select>
+                        </div>
+                        <div class="doc-form-field">
+                            <label>Date de l'intervention *</label>
+                            <input type="date" id="intervDateIntervention">
+                        </div>
+                    </div>
+                    <!-- Événement / Accident -->
+                    <div class="doc-form-field" style="margin-top:0.6rem;">
+                        <label>Événement / Accident ayant nécessité l'intervention</label>
+                        <textarea id="intervEvenement" rows="2" placeholder="Décrivez l'événement ou l'accident observé…" style="resize:vertical;width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;"></textarea>
+                    </div>
+                    <!-- Ligne 2 : Date début + Date fin traitement -->
+                    <div class="doc-form-grid" style="margin-top:0.6rem;">
+                        <div class="doc-form-field">
+                            <label>Date début du traitement</label>
+                            <input type="date" id="intervDateDebut">
+                        </div>
+                        <div class="doc-form-field">
+                            <label>Date fin du traitement</label>
+                            <input type="date" id="intervDateFin">
+                        </div>
+                    </div>
+                    <!-- Traitement prescrit -->
+                    <div class="doc-form-field" style="margin-top:0.6rem;">
+                        <label>Traitement prescrit</label>
+                        <textarea id="intervTraitement" rows="2" placeholder="Nom du traitement et posologie…" style="resize:vertical;width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;"></textarea>
+                    </div>
+                    <!-- Ligne 3 : Produit + N° ordonnance (conditionnel) -->
+                    <div class="doc-form-grid" style="margin-top:0.6rem;">
+                        <div class="doc-form-field">
+                            <label>Produit utilisé</label>
+                            <input type="text" id="intervProduit" placeholder="Nom commercial du produit" style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                        </div>
+                        <div class="doc-form-field interv-ordonnance-row" id="intervOrdonnanceField">
+                            <label>N° d'ordonnance</label>
+                            <input type="text" id="intervNumOrdonnance" placeholder="Ex : ORD-2024-001" style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <!-- Document joint (optionnel) -->
+                    <div style="margin-top:0.75rem;">
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:var(--text-dim);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Document joint (optionnel)</label>
+                        <div class="interv-form-file-row">
+                            <button class="btn btn-sm" type="button" onclick="document.getElementById('intervFileInput').click()" style="display:inline-flex;align-items:center;gap:0.35rem;">📁 Choisir un fichier</button>
+                            <button class="btn btn-sm" type="button" onclick="document.getElementById('intervCameraInput').click()" style="display:inline-flex;align-items:center;gap:0.35rem;">📷 Prendre une photo</button>
+                            <span class="interv-file-selected" id="intervFileNomDisplay"></span>
+                            <button class="btn btn-sm" id="intervBtnRetireFichier" style="display:none;color:#ef4444;border-color:#ef4444;" onclick="retirerFichierInterv()">✕ Retirer</button>
+                        </div>
+                        <input type="file" id="intervFileInput" style="display:none;"
+                               accept=".pdf,.jpg,.jpeg,.png,.heic,image/jpeg,image/png,image/heic,application/pdf"
+                               onchange="handleIntervFileSelect(event)">
+                        <input type="file" id="intervCameraInput" style="display:none;"
+                               accept="image/*" capture="environment"
+                               onchange="handleIntervFileSelect(event)">
+                    </div>
+                    <!-- Commentaire -->
+                    <div class="doc-form-field" style="margin-top:0.6rem;">
+                        <label>Commentaire</label>
+                        <textarea id="intervCommentaire" rows="2" placeholder="Remarques complémentaires…" style="resize:vertical;width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;"></textarea>
+                    </div>
+                    <!-- Actions -->
+                    <div class="doc-form-actions" style="margin-top:0.9rem;">
+                        <button class="btn btn-primary btn-sm" onclick="enregistrerIntervention()">💾 Enregistrer l'intervention</button>
+                        <button class="btn btn-sm" onclick="annulerIntervention()">Réinitialiser</button>
+                    </div>
+                    <div class="doc-upload-progress" id="intervUploadProgress" style="display:none;"></div>
+                </div>
+                <!-- Liste des interventions -->
+                <div class="card">
+                    <div class="doc-section-title">📋 Interventions du lot</div>
+                    <div id="intervListContainer"><div class="doc-empty">Chargement…</div></div>
+                </div>
+            </div><!-- /exploitInterventions -->
 
             <!-- Empty -->
             <div class="chart-card show" id="emptyState">
@@ -3125,6 +3232,60 @@
             </div>
         </div><!-- /panelTypesDocuments -->
 
+        <div class="admin-panel" id="panelTypesInterventions">
+            <div class="admin-panel-header">
+                <span class="admin-panel-icon">💉</span>
+                <div>
+                    <div class="admin-panel-title">Types d'interventions</div>
+                    <div class="admin-panel-subtitle">Gérer la liste des types d'interventions — cochez "Vétérinaire" pour afficher le champ N° d'ordonnance</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="alert" id="typesIntervAlert"></div>
+                <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1rem; margin-bottom:1rem;">
+                    <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-dim); margin-bottom:0.75rem;" id="typesIntervFormTitle">➕ Nouveau type d'intervention</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.6rem;">
+                        <div>
+                            <label style="display:block;font-size:0.72rem;font-weight:600;color:var(--text-dim);margin-bottom:0.25rem;text-transform:uppercase;">Nom *</label>
+                            <input type="text" id="typesIntervNom" placeholder="Ex : Vaccination" class="form-input" style="width:100%;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.72rem;font-weight:600;color:var(--text-dim);margin-bottom:0.25rem;text-transform:uppercase;">Description (optionnel)</label>
+                            <input type="text" id="typesIntervDesc" placeholder="Description courte…" class="form-input" style="width:100%;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.88rem;cursor:pointer;">
+                            <input type="checkbox" id="typesIntervIsVet" style="width:16px;height:16px;">
+                            Intervention vétérinaire (affiche le champ N° ordonnance)
+                        </label>
+                        <div style="margin-left:auto;display:flex;gap:0.4rem;">
+                            <button class="btn btn-primary btn-sm" onclick="saveTypeIntervention()" id="btnSaveTypeInterv">💾 Enregistrer</button>
+                            <button class="btn btn-sm" onclick="cancelTypeIntervEdit()" id="btnCancelTypeInterv" style="display:none;">✕</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="typesIntervEditId">
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="souches-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Description</th>
+                                <th style="text-align:center;">Vétérinaire</th>
+                                <th style="text-align:center;">Actif</th>
+                                <th style="text-align:center;">Utilisé par</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="typesIntervTbody">
+                            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim);">Chargement…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /panelTypesInterventions -->
+
         </div><!-- /sectionExploitation -->
 
         <!-- ================================================
@@ -3642,7 +3803,8 @@
         if (panelName === 'bdAvicole')  initBdAvicolePanel();
         if (panelName === 'souches')       loadAdminSouches();
         if (panelName === 'cooperatives')   loadAdminCooperatives();
-        if (panelName === 'typesDocuments') loadTypesDocsAdmin();
+        if (panelName === 'typesDocuments')    loadTypesDocsAdmin();
+        if (panelName === 'typesInterventions') loadTypesIntervAdmin();
     }
 
     // =====================================================
@@ -5993,7 +6155,8 @@
         $('exploitTableau').classList.remove('show');
         if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
-        if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
+        if ($('exploitDocuments'))      $('exploitDocuments').classList.remove('show');
+        if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
 
         if (tab === 'graphiques') {
             $('exploitGraphiques').classList.add('show');
@@ -6011,6 +6174,11 @@
             if ($('exploitDocuments')) {
                 $('exploitDocuments').classList.add('show');
                 if (!silent) initDocumentsTab();
+            }
+        } else if (tab === 'interventions') {
+            if ($('exploitInterventions')) {
+                $('exploitInterventions').classList.add('show');
+                if (!silent) initInterventionsTab();
             }
         } else {
             // tableau
@@ -6133,37 +6301,58 @@
         if ($('docUploadSection')) {
             $('docUploadSection').style.display = (currentUser && currentUser.role === 'technicien') ? 'none' : '';
         }
+        // Onglet Interventions — éleveur, admin, technicien
+        var tabInterv = $('tabInterventions');
+        if (tabInterv) {
+            tabInterv.style.display = (currentUser && ['eleveur','admin','technicien'].indexOf(currentUser.role) !== -1) ? '' : 'none';
+        }
+        // Masquer le formulaire d'ajout pour les techniciens (lecture seule)
+        if ($('intervFormSection')) {
+            $('intervFormSection').style.display = (currentUser && currentUser.role === 'technicien') ? 'none' : '';
+        }
         // Afficher le bon panel selon l'onglet actif
         if (currentExploitTab === 'declaration') {
             if ($('exploitDeclaration')) $('exploitDeclaration').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             $('exploitTableau').classList.remove('show');
-            if ($('exploitFinancier'))  $('exploitFinancier').classList.remove('show');
-            if ($('exploitDocuments'))  $('exploitDocuments').classList.remove('show');
+            if ($('exploitFinancier'))      $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))      $('exploitDocuments').classList.remove('show');
+            if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
         } else if (currentExploitTab === 'financier') {
             if ($('exploitFinancier')) $('exploitFinancier').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             $('exploitTableau').classList.remove('show');
-            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
-            if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
+            if ($('exploitDeclaration'))    $('exploitDeclaration').classList.remove('show');
+            if ($('exploitDocuments'))      $('exploitDocuments').classList.remove('show');
+            if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
         } else if (currentExploitTab === 'documents') {
             if ($('exploitDocuments')) $('exploitDocuments').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
             $('exploitTableau').classList.remove('show');
-            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
-            if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
+            if ($('exploitDeclaration'))    $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier'))      $('exploitFinancier').classList.remove('show');
+            if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
+        } else if (currentExploitTab === 'interventions') {
+            if ($('exploitInterventions')) $('exploitInterventions').classList.add('show');
+            $('exploitGraphiques').classList.remove('show');
+            $('exploitTableau').classList.remove('show');
+            if ($('exploitDeclaration'))  $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier'))    $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))    $('exploitDocuments').classList.remove('show');
         } else if (currentExploitTab === 'tableau') {
             $('exploitTableau').classList.add('show');
             $('exploitGraphiques').classList.remove('show');
-            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
-            if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
-            if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
+            if ($('exploitDeclaration'))    $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier'))      $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))      $('exploitDocuments').classList.remove('show');
+            if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
         } else {
             $('exploitGraphiques').classList.add('show');
             $('exploitTableau').classList.remove('show');
-            if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
-            if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
-            if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
+            if ($('exploitDeclaration'))    $('exploitDeclaration').classList.remove('show');
+            if ($('exploitFinancier'))      $('exploitFinancier').classList.remove('show');
+            if ($('exploitDocuments'))      $('exploitDocuments').classList.remove('show');
+            if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
             $('graphsContainer').classList.add('show');
             $('statsRow').classList.add('show');
             $('exportSection').classList.add('show');
@@ -6183,7 +6372,8 @@
         $('exploitTableau').classList.remove('show');
         if ($('exploitDeclaration')) $('exploitDeclaration').classList.remove('show');
         if ($('exploitFinancier'))   $('exploitFinancier').classList.remove('show');
-        if ($('exploitDocuments'))   $('exploitDocuments').classList.remove('show');
+        if ($('exploitDocuments'))      $('exploitDocuments').classList.remove('show');
+        if ($('exploitInterventions'))  $('exploitInterventions').classList.remove('show');
         $('graphsContainer').classList.remove('show');
         $('statsRow').classList.remove('show');
         $('exportSection').classList.remove('show');
@@ -6203,6 +6393,8 @@
         if (_chartFinancier) { try { _chartFinancier.destroy(); } catch(e){} _chartFinancier = null; }
         currentDocumentsLot = [];
         _docPendingFile = null; _docPendingFileUrl = null;
+        currentInterventionsLot = [];
+        _intervPendingFile = null;
     }
     
     // =====================================================
@@ -12242,6 +12434,374 @@
             });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // ONGLET INTERVENTIONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    var currentInterventionsLot = [];
+    var _intervPendingFile = null;
+    // Cache {id -> is_veterinaire} pour les types chargés
+    var _intervTypesVetMap = {};
+
+    function initInterventionsTab() {
+        if (!currentLotInfo) return;
+        annulerIntervention();
+        loadTypesInterventions().then(function(types) {
+            fillIntervTypeSelect(types);
+        });
+        loadInterventionsLot();
+    }
+
+    function loadTypesInterventions() {
+        return supabase.from('types_interventions_lot')
+            .select('id,nom,is_veterinaire,ordre')
+            .eq('is_active', true)
+            .order('ordre', { ascending: true })
+            .then(function(r) {
+                var types = r.data || [];
+                _intervTypesVetMap = {};
+                types.forEach(function(t) { _intervTypesVetMap[t.id] = t.is_veterinaire; });
+                return types;
+            });
+    }
+
+    function fillIntervTypeSelect(types) {
+        var sel = $('intervTypeSelect');
+        if (!sel) return;
+        var cur = sel.value;
+        sel.innerHTML = '<option value="">— Sélectionner —</option>';
+        types.forEach(function(t) {
+            var o = document.createElement('option');
+            o.value = t.id;
+            o.textContent = t.nom + (t.is_veterinaire ? ' 🏥' : '');
+            sel.appendChild(o);
+        });
+        if (cur) sel.value = cur;
+        onIntervTypeChange();
+    }
+
+    function onIntervTypeChange() {
+        var sel = $('intervTypeSelect');
+        var field = $('intervOrdonnanceField');
+        if (!sel || !field) return;
+        var isVet = sel.value && _intervTypesVetMap[sel.value];
+        field.style.display = isVet ? '' : 'none';
+        if (!isVet && $('intervNumOrdonnance')) $('intervNumOrdonnance').value = '';
+    }
+
+    function loadInterventionsLot() {
+        if (!currentLotInfo) return;
+        var cont = $('intervListContainer');
+        if (cont) cont.innerHTML = '<div class="doc-empty">Chargement…</div>';
+        supabase.from('interventions_lot')
+            .select('id,lot_id,type_intervention_id,date_intervention,evenement_accident,date_debut_traitement,date_fin_traitement,traitement_prescrit,produit,numero_ordonnance,fichier_url,fichier_nom,fichier_taille,fichier_mime,commentaire,created_at,types_interventions_lot(nom,is_veterinaire)')
+            .eq('lot_id', currentLotInfo.id)
+            .order('date_intervention', { ascending: false })
+            .then(function(r) {
+                currentInterventionsLot = r.data || [];
+                renderInterventionsList();
+            });
+    }
+
+    function renderInterventionsList() {
+        var cont = $('intervListContainer');
+        if (!cont) return;
+        if (!currentInterventionsLot.length) {
+            cont.innerHTML = '<div class="doc-empty">Aucune intervention enregistrée pour ce lot.</div>';
+            return;
+        }
+        var canDelete = currentUser && ['eleveur','admin'].indexOf(currentUser.role) !== -1;
+        var html = currentInterventionsLot.map(function(iv) {
+            var typeNom = (iv.types_interventions_lot && iv.types_interventions_lot.nom) ? iv.types_interventions_lot.nom : '—';
+            var isVet   = iv.types_interventions_lot && iv.types_interventions_lot.is_veterinaire;
+            var dateInterv = iv.date_intervention ? new Date(iv.date_intervention + 'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
+            var dateD  = iv.date_debut_traitement ? new Date(iv.date_debut_traitement + 'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : null;
+            var dateF  = iv.date_fin_traitement   ? new Date(iv.date_fin_traitement   + 'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : null;
+
+            var delBtn = canDelete
+                ? '<button class="btn btn-sm" style="color:#ef4444;border-color:#ef4444;padding:0.2rem 0.5rem;flex-shrink:0;" onclick="supprimerIntervention(\''+iv.id+'\')">🗑️</button>'
+                : '';
+
+            var filePart = '';
+            if (iv.fichier_url) {
+                var ext = (iv.fichier_nom || '').split('.').pop().toLowerCase();
+                var fIcon = (['jpg','jpeg','png','heic'].indexOf(ext) !== -1) ? '🖼️' : '📄';
+                filePart = '<div class="interv-field interv-full" style="margin-top:0.4rem;">'
+                    + '<div class="interv-field-label">Document joint</div>'
+                    + '<a class="interv-file-btn" href="'+iv.fichier_url+'" target="_blank" rel="noopener">'+fIcon+' '+(iv.fichier_nom||'Ouvrir')+'</a>'
+                    + '</div>';
+            }
+
+            var fields = '';
+            if (iv.evenement_accident) fields += '<div class="interv-field interv-full"><div class="interv-field-label">Événement / Accident</div><div class="interv-field-val">'+escHtml(iv.evenement_accident)+'</div></div>';
+            if (iv.traitement_prescrit) fields += '<div class="interv-field interv-full"><div class="interv-field-label">Traitement prescrit</div><div class="interv-field-val">'+escHtml(iv.traitement_prescrit)+'</div></div>';
+            var col2 = '';
+            if (iv.produit)             col2 += '<div class="interv-field"><div class="interv-field-label">Produit</div><div class="interv-field-val">'+escHtml(iv.produit)+'</div></div>';
+            if (isVet && iv.numero_ordonnance) col2 += '<div class="interv-field"><div class="interv-field-label">N° ordonnance</div><div class="interv-field-val">'+escHtml(iv.numero_ordonnance)+'</div></div>';
+            if (dateD || dateF) {
+                var periode = (dateD || '?') + (dateF ? ' → ' + dateF : '');
+                col2 += '<div class="interv-field interv-full"><div class="interv-field-label">Période de traitement</div><div class="interv-field-val">'+escHtml(periode)+'</div></div>';
+            }
+            if (iv.commentaire) col2 += '<div class="interv-field interv-full"><div class="interv-field-label">Commentaire</div><div class="interv-field-val">'+escHtml(iv.commentaire)+'</div></div>';
+            fields += col2;
+
+            return '<div class="interv-card">'
+                + '<div class="interv-card-header">'
+                + '<span class="interv-type-badge'+(isVet?' vet':'')+'">'+escHtml(typeNom)+'</span>'
+                + '<span class="interv-date">'+dateInterv+'</span>'
+                + '<span class="interv-spacer"></span>'
+                + delBtn
+                + '</div>'
+                + '<div class="interv-fields">'+fields+filePart+'</div>'
+                + '</div>';
+        }).join('');
+        cont.innerHTML = html;
+    }
+
+    function handleIntervFileSelect(e) {
+        var files = e.target && e.target.files;
+        if (files && files.length > 0) processIntervFile(files[0]);
+        if ($('intervFileInput'))   $('intervFileInput').value   = '';
+        if ($('intervCameraInput')) $('intervCameraInput').value = '';
+    }
+
+    function processIntervFile(file) {
+        var allowed = ['application/pdf','image/jpeg','image/png','image/heic','image/jpg'];
+        if (allowed.indexOf(file.type) === -1 && !file.name.match(/\.(pdf|jpg|jpeg|png|heic)$/i)) {
+            alert('Format non autorisé. Veuillez sélectionner un PDF, JPEG ou PNG.');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Fichier trop volumineux (max 10 Mo).');
+            return;
+        }
+        _intervPendingFile = file;
+        var nom = $('intervFileNomDisplay');
+        if (nom) nom.textContent = '📎 ' + file.name;
+        var btn = $('intervBtnRetireFichier');
+        if (btn) btn.style.display = '';
+    }
+
+    function retirerFichierInterv() {
+        _intervPendingFile = null;
+        var nom = $('intervFileNomDisplay');
+        if (nom) nom.textContent = '';
+        var btn = $('intervBtnRetireFichier');
+        if (btn) btn.style.display = 'none';
+    }
+
+    function annulerIntervention() {
+        _intervPendingFile = null;
+        if ($('intervTypeSelect'))       $('intervTypeSelect').value = '';
+        if ($('intervDateIntervention')) $('intervDateIntervention').value = '';
+        if ($('intervEvenement'))        $('intervEvenement').value = '';
+        if ($('intervDateDebut'))        $('intervDateDebut').value = '';
+        if ($('intervDateFin'))          $('intervDateFin').value = '';
+        if ($('intervTraitement'))       $('intervTraitement').value = '';
+        if ($('intervProduit'))          $('intervProduit').value = '';
+        if ($('intervNumOrdonnance'))    $('intervNumOrdonnance').value = '';
+        if ($('intervCommentaire'))      $('intervCommentaire').value = '';
+        if ($('intervFileNomDisplay'))   $('intervFileNomDisplay').textContent = '';
+        if ($('intervBtnRetireFichier')) $('intervBtnRetireFichier').style.display = 'none';
+        if ($('intervUploadProgress'))   { $('intervUploadProgress').style.display = 'none'; $('intervUploadProgress').textContent = ''; }
+        if ($('intervAlertMsg'))         { $('intervAlertMsg').style.display = 'none'; $('intervAlertMsg').textContent = ''; }
+        onIntervTypeChange();
+    }
+
+    function enregistrerIntervention() {
+        var typeId = $('intervTypeSelect') ? $('intervTypeSelect').value : '';
+        var dateInterv = $('intervDateIntervention') ? $('intervDateIntervention').value : '';
+        if (!typeId)    { alert('Veuillez sélectionner un type d\'intervention.'); return; }
+        if (!dateInterv) { alert('La date de l\'intervention est obligatoire.'); return; }
+
+        var prog = $('intervUploadProgress');
+        var alertEl = $('intervAlertMsg');
+        if (alertEl) { alertEl.style.display = 'none'; alertEl.textContent = ''; }
+
+        var params = {
+            p_user_id:               currentUser.id,
+            p_lot_id:                currentLotInfo.id,
+            p_type_intervention_id:  typeId,
+            p_date_intervention:     dateInterv,
+            p_evenement_accident:    ($('intervEvenement')     ? $('intervEvenement').value.trim()    : '') || null,
+            p_date_debut_traitement: ($('intervDateDebut')     ? $('intervDateDebut').value           : '') || null,
+            p_date_fin_traitement:   ($('intervDateFin')       ? $('intervDateFin').value             : '') || null,
+            p_traitement_prescrit:   ($('intervTraitement')    ? $('intervTraitement').value.trim()   : '') || null,
+            p_produit:               ($('intervProduit')       ? $('intervProduit').value.trim()      : '') || null,
+            p_numero_ordonnance:     ($('intervNumOrdonnance') ? $('intervNumOrdonnance').value.trim(): '') || null,
+            p_commentaire:           ($('intervCommentaire')   ? $('intervCommentaire').value.trim()  : '') || null,
+            p_fichier_url:   null,
+            p_fichier_nom:   null,
+            p_fichier_taille: null,
+            p_fichier_mime:  null
+        };
+
+        var doSave = function() {
+            if (prog) { prog.style.display = ''; prog.textContent = '⏳ Enregistrement…'; }
+            return supabase.rpc('save_intervention_lot', params)
+                .then(function(r) {
+                    if (r.error) throw r.error;
+                    if (prog) prog.style.display = 'none';
+                    annulerIntervention();
+                    loadInterventionsLot();
+                })
+                .catch(function(err) {
+                    if (prog) { prog.textContent = '❌ Erreur : ' + (err.message || err); }
+                    console.error('save_intervention_lot:', err);
+                });
+        };
+
+        if (_intervPendingFile) {
+            var ts   = Date.now();
+            var path = 'interventions/lot_' + currentLotInfo.id + '/' + ts + '_' + _intervPendingFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            if (prog) { prog.style.display = ''; prog.textContent = '⏳ Étape 1/2 : upload du fichier…'; }
+            supabase.storage.from(N8N_DOC_BUCKET)
+                .upload(path, _intervPendingFile, { upsert: false, contentType: _intervPendingFile.type })
+                .then(function(r) {
+                    if (r.error) { r.error._step = 'Storage'; throw r.error; }
+                    if (prog) prog.textContent = '⏳ Étape 2/2 : enregistrement…';
+                    return supabase.storage.from(N8N_DOC_BUCKET).getPublicUrl(path);
+                })
+                .then(function(r) {
+                    params.p_fichier_url   = r.data && r.data.publicUrl;
+                    params.p_fichier_nom   = _intervPendingFile.name;
+                    params.p_fichier_taille = _intervPendingFile.size;
+                    params.p_fichier_mime  = _intervPendingFile.type;
+                    return doSave();
+                })
+                .catch(function(err) {
+                    var step = err._step ? ' [' + err._step + ']' : '';
+                    if (prog) { prog.textContent = '❌ Erreur' + step + ' : ' + (err.message || err); }
+                    console.error('enregistrerIntervention' + step + ':', err);
+                });
+        } else {
+            doSave();
+        }
+    }
+
+    function supprimerIntervention(interId) {
+        if (!confirm('Supprimer cette intervention ? Cette action est irréversible.')) return;
+        var iv = currentInterventionsLot.find(function(x) { return x.id === interId; });
+        supabase.rpc('delete_intervention_lot', { p_user_id: currentUser.id, p_interv_id: interId })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                // Supprimer le fichier joint du Storage si possible
+                if (iv && iv.fichier_url) {
+                    var parts = iv.fichier_url.split('/' + N8N_DOC_BUCKET + '/');
+                    if (parts.length > 1) {
+                        supabase.storage.from(N8N_DOC_BUCKET).remove([parts[1]]).catch(function(){});
+                    }
+                }
+                loadInterventionsLot();
+            })
+            .catch(function(err) {
+                alert('Erreur lors de la suppression : ' + (err.message || err));
+                console.error('delete_intervention_lot:', err);
+            });
+    }
+
+    // ── Admin — Types d'interventions ──────────────────────────────────────
+    var typesIntervCache = [];
+
+    function loadTypesIntervAdmin() {
+        supabase.from('types_interventions_lot')
+            .select('id,nom,description,is_veterinaire,ordre,is_active')
+            .order('ordre', { ascending: true })
+            .then(function(r) {
+                typesIntervCache = r.data || [];
+                renderTypesIntervAdmin();
+            });
+    }
+
+    function renderTypesIntervAdmin() {
+        var tbody = $('typesIntervTbody');
+        if (!tbody) return;
+        if (!typesIntervCache.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text-dim);">Aucun type défini</td></tr>';
+            return;
+        }
+        tbody.innerHTML = typesIntervCache.map(function(t) {
+            return '<tr>'
+                + '<td style="font-weight:600;">'+escHtml(t.nom)+'</td>'
+                + '<td style="color:var(--text-dim);font-size:0.85rem;">'+escHtml(t.description||'—')+'</td>'
+                + '<td style="text-align:center;">'+(t.is_veterinaire ? '<span style="color:#7c3aed;font-weight:600;">🏥 Oui</span>' : '<span style="color:var(--text-dim);">Non</span>')+'</td>'
+                + '<td style="text-align:center;">'+(t.is_active ? '<span style="color:#22c55e;">✔ Actif</span>' : '<span style="color:var(--text-dim);">Inactif</span>')+'</td>'
+                + '<td style="text-align:center;" id="usageTypeInterv_'+t.id+'">…</td>'
+                + '<td style="text-align:right;white-space:nowrap;">'
+                + '<button class="btn btn-sm" style="margin-right:0.3rem;" onclick="editTypeIntervention(\''+t.id+'\')">✏️</button>'
+                + '<button class="btn btn-sm" style="color:#ef4444;border-color:#ef4444;" onclick="deleteTypeIntervention(\''+t.id+'\')">🗑️</button>'
+                + '</td></tr>';
+        }).join('');
+        // Compteurs d'utilisation
+        typesIntervCache.forEach(function(t) {
+            supabase.from('interventions_lot').select('id', { count: 'exact', head: true }).eq('type_intervention_id', t.id)
+                .then(function(r) {
+                    var el = $('usageTypeInterv_' + t.id);
+                    if (el) el.textContent = (r.count || 0) + ' interv.';
+                });
+        });
+    }
+
+    function saveTypeIntervention() {
+        var nom   = $('typesIntervNom')   ? $('typesIntervNom').value.trim()   : '';
+        var desc  = $('typesIntervDesc')  ? $('typesIntervDesc').value.trim()  : '';
+        var isVet = $('typesIntervIsVet') ? $('typesIntervIsVet').checked      : false;
+        var editId = $('typesIntervEditId') ? $('typesIntervEditId').value : '';
+        if (!nom) { alert('Le nom est obligatoire.'); return; }
+        var alertEl = $('typesIntervAlert');
+        if (alertEl) alertEl.textContent = '';
+        supabase.rpc('save_type_intervention_lot', {
+            p_user_id:        currentUser.id,
+            p_id:             editId || null,
+            p_nom:            nom,
+            p_desc:           desc || null,
+            p_is_veterinaire: isVet,
+            p_ordre:          0,
+            p_is_active:      true
+        }).then(function(r) {
+            if (r.error) throw r.error;
+            cancelTypeIntervEdit();
+            loadTypesIntervAdmin();
+        }).catch(function(err) {
+            if (alertEl) alertEl.textContent = '❌ ' + (err.message || err);
+        });
+    }
+
+    function editTypeIntervention(id) {
+        var t = typesIntervCache.find(function(x) { return x.id === id; });
+        if (!t) return;
+        if ($('typesIntervNom'))    $('typesIntervNom').value = t.nom;
+        if ($('typesIntervDesc'))   $('typesIntervDesc').value = t.description || '';
+        if ($('typesIntervIsVet'))  $('typesIntervIsVet').checked = !!t.is_veterinaire;
+        if ($('typesIntervEditId')) $('typesIntervEditId').value = t.id;
+        if ($('typesIntervFormTitle')) $('typesIntervFormTitle').textContent = '✏️ Modifier le type d\'intervention';
+        if ($('btnCancelTypeInterv')) $('btnCancelTypeInterv').style.display = '';
+        if ($('typesIntervNom')) $('typesIntervNom').focus();
+    }
+
+    function cancelTypeIntervEdit() {
+        if ($('typesIntervNom'))    $('typesIntervNom').value = '';
+        if ($('typesIntervDesc'))   $('typesIntervDesc').value = '';
+        if ($('typesIntervIsVet'))  $('typesIntervIsVet').checked = false;
+        if ($('typesIntervEditId')) $('typesIntervEditId').value = '';
+        if ($('typesIntervFormTitle')) $('typesIntervFormTitle').textContent = '➕ Nouveau type d\'intervention';
+        if ($('btnCancelTypeInterv')) $('btnCancelTypeInterv').style.display = 'none';
+    }
+
+    function deleteTypeIntervention(id) {
+        if (!confirm('Supprimer ce type d\'intervention ?')) return;
+        var alertEl = $('typesIntervAlert');
+        if (alertEl) alertEl.textContent = '';
+        supabase.rpc('delete_type_intervention_lot', { p_user_id: currentUser.id, p_id: id })
+            .then(function(r) {
+                if (r.error) throw r.error;
+                loadTypesIntervAdmin();
+            })
+            .catch(function(err) {
+                if (alertEl) alertEl.textContent = '❌ ' + (err.message || err);
+            });
+    }
+
     // ── Initialiser l'onglet Déclarations ────────────────────────
     function initDeclarationTab() {
         if (!currentLotInfo) {
@@ -13060,6 +13620,20 @@
     window.cancelTypeDocEdit     = cancelTypeDocEdit;
     window.editTypeDocument      = editTypeDocument;
     window.deleteTypeDocument    = deleteTypeDocument;
+
+    // Interventions lot
+    window.onIntervTypeChange      = onIntervTypeChange;
+    window.handleIntervFileSelect  = handleIntervFileSelect;
+    window.retirerFichierInterv    = retirerFichierInterv;
+    window.enregistrerIntervention = enregistrerIntervention;
+    window.annulerIntervention     = annulerIntervention;
+    window.supprimerIntervention   = supprimerIntervention;
+    // Admin — Types d'interventions
+    window.loadTypesIntervAdmin    = loadTypesIntervAdmin;
+    window.saveTypeIntervention    = saveTypeIntervention;
+    window.cancelTypeIntervEdit    = cancelTypeIntervEdit;
+    window.editTypeIntervention    = editTypeIntervention;
+    window.deleteTypeIntervention  = deleteTypeIntervention;
 
     // Déclarations sortie sur le parcours
     window.selectCdc                   = selectCdc;
