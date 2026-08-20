@@ -6460,6 +6460,48 @@
         $('chartLegend' + suffix).innerHTML = html;
     }
     
+    // Retourne les données fusionnées Tuffigo + saisies manuelles pour un indicateur
+    // Les saisies manuelles sont prioritaires sur les données Tuffigo pour les jours communs.
+    function getMergedIndicatorData(t) {
+        // Correspondance indicateur → champ dans lotData.manual
+        var MANUAL_MAP = {
+            poids:       'poids_moyen',
+            mortalite:   'nombre_morts',
+            homogeneite: 'homogeneite',
+            gmq:         'gmq',
+            aliment:     'aliment_animal',
+            eau_conso:   'eau_litres',
+            eau_animal:  'eau_animal',
+            eau_ratio:   'eau_ratio'
+        };
+        // Champ attendu dans le tableau de données (dataField de INDICATORS)
+        var DATA_FIELD_MAP = {
+            poids:       'poids_moyen',
+            mortalite:   'nombre_morts',
+            homogeneite: 'homogeneite',
+            gmq:         'gmq',
+            aliment:     'conso_par_animal',
+            eau_conso:   'consommation_litres',
+            eau_animal:  'conso_par_animal',
+            eau_ratio:   'ratio_eau_aliment'
+        };
+        var manualKey = MANUAL_MAP[t];
+        var dataKey   = DATA_FIELD_MAP[t];
+        var base      = lotData[t] || [];
+        var manual    = lotData.manual || [];
+        if (!manualKey || !manual.length) return base;
+
+        var map = {};
+        base.forEach(function(d) { map[d.jour_age] = Object.assign({}, d); });
+        manual.forEach(function(d) {
+            var val = d[manualKey];
+            if (val == null) return;
+            if (!map[d.jour_age]) map[d.jour_age] = { jour_age: d.jour_age, date_mesure: d.date_mesure || '' };
+            map[d.jour_age][dataKey] = val;
+        });
+        return Object.values(map).sort(function(a, b) { return a.jour_age - b.jour_age; });
+    }
+
     function updateChart(graphId) {
         var g      = graphState[graphId];
         var suffix = graphId.charAt(0).toUpperCase() + graphId.slice(1);
@@ -6482,7 +6524,7 @@
             return;
         }
         var ind1 = INDICATORS[t1];
-        var d1   = filterByPeriod(lotData[t1] || [], g.period);
+        var d1   = filterByPeriod(getMergedIndicatorData(t1), g.period);
         var std1 = standardsData[t1] || [];
 
         if (d1.length === 0) { $('chartTitle' + suffix).textContent = 'Aucune donnée'; $('chartSubtitle' + suffix).textContent = ''; return; }
@@ -6567,7 +6609,7 @@
         
         if (t2) {
             var ind2 = INDICATORS[t2];
-            var d2 = filterByPeriod(lotData[t2] || [], g.period);
+            var d2 = filterByPeriod(getMergedIndicatorData(t2), g.period);
             var std2 = standardsData[t2] || [];
             
             var min2 = [], max2 = [];
