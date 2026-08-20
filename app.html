@@ -3566,7 +3566,7 @@
     var lastActiveGraph = 'sante'; // dernier graphique interagi
     var editingUserId = null;
     
-    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [], manual: [], changements_aliment: [] };
+    var lotData       = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [], manual: [], changements_aliment: [], interventions_lot: [] };
     var standardsData = { poids: [], mortalite: [], aliment: [], oeufs: [], eau_animal: [], eau_ratio: [], eau_conso: [], homogeneite: [], gmq: [], taux_ponte_pct: [], oeufs_a: [], oeufs_b: [] };
     // selectedIndicators et currentPeriod remplacés par graphState ci-dessus
     var currentLotInfo = null;
@@ -5464,7 +5464,9 @@
                 ? supabase.rpc('get_declarations_sortie', { p_user_id: currentUser.id, p_eleveur_id: currentEleveur.id })
                 : Promise.resolve({ data: null }),
             // [15] Changements d'aliment
-            supabase.from('changements_aliment').select('*').eq('lot_id', id).order('jour_age')
+            supabase.from('changements_aliment').select('*').eq('lot_id', id).order('jour_age'),
+            // [16] Interventions lot (pour marqueurs sur graphiques)
+            supabase.rpc('get_interventions_lot', { p_lot_id: id })
         ]).then(function(r) {
             // Sécurité : l'utilisateur a peut-être changé de lot pendant le chargement
             if (!currentLotInfo || currentLotInfo.id !== _capturedLotId) return;
@@ -5482,6 +5484,7 @@
             lotData.gmq         = lotData.poids;
             lotData.manual              = (r[6]  && r[6].data)  ? r[6].data  : [];
             lotData.changements_aliment = (r[15] && r[15].data) ? r[15].data : [];
+            lotData.interventions_lot   = (r[16] && r[16].data) ? r[16].data : [];
             rebuildOeufsIndicators();
             buildCorrectionsMap((r[5] && r[5].data) ? r[5].data : []);
 
@@ -6524,6 +6527,22 @@
         }
         var _hasAlimentMarkers = t1 === 'aliment' && Object.keys(_alimentChangesMap).length > 0;
 
+        // Marqueurs d'intervention (pastilles violettes) — graphiques Croissance & Santé
+        var _intervMap = {};
+        if (g.section === 'sante') {
+            var _dateMEP = currentLotInfo && currentLotInfo.date_mise_en_place;
+            (lotData.interventions_lot || []).forEach(function(interv) {
+                if (!interv.date_intervention || !_dateMEP) return;
+                var diffDays = Math.round((new Date(interv.date_intervention + 'T12:00:00') - new Date(_dateMEP + 'T12:00:00')) / 86400000);
+                var ja = diffDays + 1;
+                if (ja < 1) return;
+                if (!_intervMap[ja]) _intervMap[ja] = [];
+                _intervMap[ja].push({ type_nom: interv.type_nom || 'Intervention', evenement: interv.evenement_accident || '' });
+            });
+        }
+        var _hasIntervMarkers = g.section === 'sante' && Object.keys(_intervMap).length > 0;
+        var _anyMarkers = _hasAlimentMarkers || _hasIntervMarkers;
+
         datasets.push({
             label: ind1.label,
             data: v1,
@@ -6532,11 +6551,11 @@
             borderWidth: 2,
             tension: 0.35,
             fill: false,
-            pointRadius:          _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? 9  : 2; }) : 2,
-            pointHoverRadius:     _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? 13 : 5; }) : 5,
-            pointBackgroundColor: _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? '#f59e0b' : ind1.color; }) : ind1.color,
-            pointBorderColor:     _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? '#ffffff'  : ind1.color; }) : ind1.color,
-            pointBorderWidth:     _hasAlimentMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? 2.5 : 0; }) : 0,
+            pointRadius:          _anyMarkers ? jours.map(function(j) { return (_alimentChangesMap.hasOwnProperty(j) || _intervMap.hasOwnProperty(j)) ? 9  : 2; }) : 2,
+            pointHoverRadius:     _anyMarkers ? jours.map(function(j) { return (_alimentChangesMap.hasOwnProperty(j) || _intervMap.hasOwnProperty(j)) ? 13 : 5; }) : 5,
+            pointBackgroundColor: _anyMarkers ? jours.map(function(j) { return _alimentChangesMap.hasOwnProperty(j) ? '#f59e0b' : _intervMap.hasOwnProperty(j) ? '#7c3aed' : ind1.color; }) : ind1.color,
+            pointBorderColor:     _anyMarkers ? jours.map(function(j) { return (_alimentChangesMap.hasOwnProperty(j) || _intervMap.hasOwnProperty(j)) ? '#ffffff' : ind1.color; }) : ind1.color,
+            pointBorderWidth:     _anyMarkers ? jours.map(function(j) { return (_alimentChangesMap.hasOwnProperty(j) || _intervMap.hasOwnProperty(j)) ? 2.5 : 0; }) : 0,
             yAxisID: 'y1',
             order: 1
         });
@@ -6663,6 +6682,13 @@
                     if (isY1 && t1 === 'aliment' && _alimentChangesMap.hasOwnProperty(jours[index])) {
                         var noteChg = _alimentChangesMap[jours[index]];
                         lines.push('   🌾 Changement d\'aliment' + (noteChg ? ' : ' + noteChg : ''));
+                    }
+
+                    // Interventions du jour
+                    if (isY1 && _hasIntervMarkers && _intervMap.hasOwnProperty(jours[index])) {
+                        _intervMap[jours[index]].forEach(function(interv) {
+                            lines.push('   💉 ' + interv.type_nom + (interv.evenement ? ' : ' + interv.evenement.substring(0, 50) : ''));
+                        });
                     }
 
                     return lines;
@@ -6823,7 +6849,8 @@
 
     /** Appelle le workflow N8N → renvoie { croissance, consommation, ponte } */
     function appelN8NRapportLot(summary) {
-        var fallback = { croissance: 'Analyse non disponible.', consommation: 'Analyse non disponible.', ponte: null };
+        var analysesFallback = { croissance: 'Analyse non disponible.', consommation: 'Analyse non disponible.', ponte: null };
+        var fallback = { analyses: analysesFallback, interventions: [] };
         var n8nUrl = 'https://n8n-b4g4sokkck8kg44884884oc4.76.13.40.181.sslip.io/webhook/generate-rapport-lot';
         return fetch(n8nUrl, {
             method: 'POST',
@@ -6837,7 +6864,7 @@
                 try {
                     var data = JSON.parse(text);
                     if (!data.success) { console.warn('[IA] ' + (data.error || 'erreur inconnue')); return fallback; }
-                    return data.analyses || fallback;
+                    return { analyses: data.analyses || analysesFallback, interventions: data.interventions || [] };
                 } catch(e) {
                     console.warn('[IA] Réponse non-JSON :', text.substring(0, 100));
                     return fallback;
@@ -6867,8 +6894,9 @@
         var analyses   = opts.analyses || {};
         var charts     = opts.charts   || {};
         var logoBase64 = opts.logoBase64;
-        var lot        = summary.lot || {};
-        var hasOeufs   = summary.hasOeufs;
+        var lot           = summary.lot || {};
+        var hasOeufs      = summary.hasOeufs;
+        var interventions = opts.interventions || [];
 
         // ── Helpers ──────────────────────────────────────────────────────────
         function hexToRgb(hex) {
@@ -7297,6 +7325,96 @@
             });
         }
 
+        // ── PAGE INTERVENTIONS ────────────────────────────────────────────────
+        doc.addPage();
+        doc.setFillColor(124, 58, 237);
+        doc.rect(0, 0, pageW, 14, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+        doc.text('Interventions sanitaires', mg, 9.5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(220, 200, 255);
+        doc.text('Lot : ' + (lot.code_lot || '—'), pageW - mg, 9.5, { align: 'right' });
+
+        var yI = 22;
+
+        if (!interventions || !interventions.length) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
+            doc.text('Aucune intervention enregistrée pour ce lot.', mg, yI);
+        } else {
+            var iCols = [
+                { h: 'Date',       w: 22 },
+                { h: 'Type',       w: 40 },
+                { h: 'Evénement',  w: 55 },
+                { h: 'Traitement', w: 50 },
+                { h: 'Produit',    w: 40 },
+                { h: 'N° Ord.',   w: 30 }
+            ];
+            var iSumW = iCols.reduce(function(s, c) { return s + c.w; }, 0);
+            var iScale = cW / iSumW;
+            iCols.forEach(function(c) { c.w = c.w * iScale; });
+            var iRowH  = 6;
+            var iHeadH = 7.5;
+
+            function drawIntervHeader() {
+                doc.setFillColor(30, 41, 59);
+                doc.rect(mg, yI, cW, iHeadH, 'F');
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
+                var xH = mg;
+                iCols.forEach(function(c) {
+                    doc.text(c.h, xH + c.w / 2, yI + iHeadH - 1.5, { align: 'center', maxWidth: c.w - 1 });
+                    xH += c.w;
+                });
+                yI += iHeadH;
+            }
+            drawIntervHeader();
+
+            interventions.forEach(function(interv, ri) {
+                if (yI + iRowH > pageH - 12) {
+                    doc.addPage();
+                    doc.setFillColor(124, 58, 237);
+                    doc.rect(0, 0, pageW, 14, 'F');
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+                    doc.text('Interventions sanitaires (suite)', mg, 9.5);
+                    yI = 22;
+                    drawIntervHeader();
+                }
+                if (ri % 2 === 0) {
+                    doc.setFillColor(248, 250, 252);
+                    doc.rect(mg, yI, cW, iRowH, 'F');
+                }
+                if (interv.is_veterinaire) {
+                    doc.setFillColor(124, 58, 237);
+                    doc.rect(mg, yI + 0.5, 1.5, iRowH - 1, 'F');
+                }
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.15);
+                doc.line(mg, yI + iRowH, mg + cW, yI + iRowH);
+
+                function fmtD(d) {
+                    if (!d) return '—';
+                    try { return new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }); }
+                    catch(e) { return d; }
+                }
+                function fmtS(s, max) { return s ? String(s).substring(0, max || 35) : '—'; }
+
+                var cells = [
+                    fmtD(interv.date_intervention),
+                    fmtS(interv.type_nom, 30),
+                    fmtS(interv.evenement_accident, 40),
+                    fmtS(interv.traitement_prescrit, 35),
+                    fmtS(interv.produit, 25),
+                    interv.is_veterinaire ? fmtS(interv.numero_ordonnance, 20) : '—'
+                ];
+
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(30, 41, 59);
+                var xC = mg;
+                cells.forEach(function(cell, ci) {
+                    doc.text(cell, xC + iCols[ci].w / 2, yI + iRowH - 1.8, { align: 'center', maxWidth: iCols[ci].w - 1 });
+                    xC += iCols[ci].w;
+                });
+                yI += iRowH;
+            });
+        }
+
         // ── Pieds de page (toutes les pages) ─────────────────────────────────
         var totalPages = doc.internal.getNumberOfPages();
         for (var p = 1; p <= totalPages; p++) { pageFooter(p, totalPages); }
@@ -7317,9 +7435,10 @@
         var btn = $('btnRapportLot');
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="export-icon">⏳</span> Génération…'; }
 
-        var summary  = null;
-        var analyses = null;
-        var charts   = {};
+        var summary       = null;
+        var analyses      = null;
+        var interventions = [];
+        var charts        = {};
 
         showLoading('Capture des graphiques…');
 
@@ -7355,7 +7474,8 @@
                 return appelN8NRapportLot(summary);
             })
             .then(function(result) {
-                analyses = result;
+                analyses      = result.analyses;
+                interventions = result.interventions || [];
                 // ── 3. Charger le logo ─────────────────────────────────────
                 showLoading('Génération du PDF…');
                 var logoUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'Logo_Dataferme.png';
@@ -7367,10 +7487,11 @@
             // ── 4. Générer le PDF ──────────────────────────────────────────
             .then(function(logoBase64) {
                 var doc = genererPDFRapportLot({
-                    summary:    summary,
-                    analyses:   analyses,
-                    charts:     charts,
-                    logoBase64: logoBase64
+                    summary:       summary,
+                    analyses:      analyses,
+                    charts:        charts,
+                    logoBase64:    logoBase64,
+                    interventions: interventions
                 });
 
                 // ── 5. Archiver sur Supabase Storage ───────────────────────
@@ -12499,6 +12620,11 @@
             .order('date_intervention', { ascending: false })
             .then(function(r) {
                 currentInterventionsLot = r.data || [];
+                // Sync lotData pour les marqueurs sur graphiques Croissance
+                lotData.interventions_lot = currentInterventionsLot.map(function(iv) {
+                    var t = iv.types_interventions_lot || {};
+                    return { date_intervention: iv.date_intervention, type_nom: t.nom || null, is_veterinaire: !!t.is_veterinaire, evenement_accident: iv.evenement_accident || '' };
+                });
                 renderInterventionsList();
             });
     }
